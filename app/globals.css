@@ -1,50 +1,171 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-@theme {
-  /* ─── Typography ──────────────────────────────────────────── */
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+@custom-variant dark (&:is(.dark *));
+
+/* ═══════════════════════════════════════════════════════════════
+   CLINICFORCE DESIGN TOKENS  —  THE SINGLE SOURCE OF TRUTH
+   Source: docs/06-UI-Design-System.md
+   ─────────────────────────────────────────────────────────────
+   RULE: No hex/rgba/hsl literal may appear in any component file.
+         All colours are declared here and consumed via var(--…).
+   ═══════════════════════════════════════════════════════════════ */
+@theme inline {
+  /* ── Fonts ─────────────────────────────────────────────────── */
+  --font-sans:  var(--font-dm-sans),  ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
 
-  /* ─── Brand Palette ───────────────────────────────────────── */
-  --color-brand-50:  hsl(210 100% 97%);
-  --color-brand-100: hsl(210 100% 93%);
-  --color-brand-200: hsl(210 95%  85%);
-  --color-brand-300: hsl(212 90%  73%);
-  --color-brand-400: hsl(214 85%  62%);
-  --color-brand-500: hsl(216 80%  52%);
-  --color-brand-600: hsl(218 78%  44%);
-  --color-brand-700: hsl(220 76%  36%);
-  --color-brand-800: hsl(222 74%  28%);
-  --color-brand-900: hsl(224 72%  20%);
-  --color-brand-950: hsl(226 70%  13%);
+  /* ── Radius scale ───────────────────────────────────────────── */
+  --radius-sm:  0.375rem;
+  --radius-md:  0.5rem;
+  --radius-lg:  0.625rem;
+  --radius-xl:  0.75rem;
+  --radius-2xl: 1rem;
 
-  /* ─── Neutral / Surface ───────────────────────────────────── */
-  --color-surface-0:   hsl(0 0% 100%);
-  --color-surface-50:  hsl(220 20% 98%);
-  --color-surface-100: hsl(220 16% 96%);
-  --color-surface-200: hsl(220 14% 91%);
-  --color-surface-300: hsl(220 12% 82%);
-  --color-surface-400: hsl(220 10% 64%);
-  --color-surface-500: hsl(220  8% 46%);
-  --color-surface-600: hsl(220  8% 34%);
-  --color-surface-700: hsl(220  8% 24%);
-  --color-surface-800: hsl(220  8% 16%);
-  --color-surface-900: hsl(220  8% 10%);
-  --color-surface-950: hsl(220  8%  6%);
+  /* ── App Background & Surfaces ──────────────────────────────── */
+  --color-bg:           #F0EEE6;   /* App canvas — warm off-white              */
+  --color-surface:      #FAFAF7;   /* Cards, sidebar, navbar                   */
+  --color-surface-alt:  #F5F3EC;   /* Table stripe, input backgrounds          */
+  --color-border:       #E2DDD4;   /* All borders & dividers                   */
 
-  /* ─── Semantic ────────────────────────────────────────────── */
-  --color-success: hsl(142 76% 36%);
-  --color-warning: hsl(38  92% 50%);
-  --color-error:   hsl(0   84% 60%);
+  /* ── Text hierarchy ─────────────────────────────────────────── */
+  --color-text-primary:   #1A1A18; /* Headings, body copy                      */
+  --color-text-secondary: #7A7769; /* Labels, subtitles, secondary detail      */
+  --color-text-muted:     #A8A395; /* Placeholders, timestamps, captions       */
+
+  /* ── Brand / Ink ────────────────────────────────────────────── */
+  --color-ink:      #1A1A18;       /* Dark brand colour — buttons, logo bg     */
+  --color-ink-fg:   #FAFAF7;       /* Foreground on ink backgrounds            */
+
+  /* ── Semantic Status Colours ────────────────────────────────── */
+  /* Each status has: foreground, background tint, and border     */
+  --color-green:        #2D9B6F;
+  --color-green-bg:     #E6F5EE;
+  --color-green-border: #C0E8D4;
+
+  --color-amber:        #D97706;
+  --color-amber-bg:     #FEF3C7;
+  --color-amber-border: #FDE68A;
+
+  --color-red:          #DC2626;
+  --color-red-bg:       #FEE2E2;
+  --color-red-border:   #FECACA;
+
+  --color-blue:         #2563EB;
+  --color-blue-bg:      #EFF6FF;
+  --color-blue-border:  #BFDBFE;
+
+  --color-purple:       #7C3AED;
+  --color-purple-bg:    #F5F3FF;
+  --color-purple-border:#DDD6FE;
+
+  /* ── Glass / frosted surfaces ───────────────────────────────── */
+  /* Named by opacity tier so components pick the right one       */
+  --color-glass-fill:      rgba(255, 255, 255, 0.78); /* Nav island           */
+  --color-glass-fill-sm:   rgba(255, 255, 255, 0.50); /* Icon buttons         */
+  --color-glass-fill-card: rgba(255, 255, 255, 0.82); /* Main content card    */
+  --color-glass-fill-data: rgba(255, 255, 255, 0.80); /* Data cards / tables  */
+  --color-glass-border:    rgba(255, 255, 255, 0.65); /* Nav island border    */
+  --color-glass-border-sm: rgba(226, 221, 212, 0.60); /* Icon button border   */
+
+  /* ── Table / Row surface ────────────────────────────────────── */
+  --color-row-hover:   rgba(245, 243, 236, 0.45);     /* Table row hover      */
+  --color-row-header:  rgba(245, 243, 236, 0.50);     /* Table header strip   */
+
+  /* ── Shadows ────────────────────────────────────────────────── */
+  --shadow-card:   0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  --shadow-card-border: 1px solid rgba(0, 0, 0, 0.04);
+  --shadow-nav:    0 3px 12px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-main:   0 4px 24px -4px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03);
+
+  /* ── Scrollbar ──────────────────────────────────────────────── */
+  --color-scrollbar-thumb:       var(--color-border);
+  --color-scrollbar-thumb-hover: #C8C2B8;
+
+  /* ── Shadcn token bridge ────────────────────────────────────── */
+  --color-background:         var(--background);
+  --color-foreground:         var(--foreground);
+  --color-card:               var(--card);
+  --color-card-foreground:    var(--card-foreground);
+  --color-popover:            var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:            var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:              var(--secondary);
+  --color-secondary-foreground:   var(--secondary-foreground);
+  --color-muted:              var(--muted);
+  --color-muted-foreground:   var(--muted-foreground);
+  --color-accent:             var(--accent);
+  --color-accent-foreground:  var(--accent-foreground);
+  --color-destructive:        var(--destructive);
+  --color-input:              var(--input);
+  --color-ring:               var(--ring);
 }
 
-/* ─── Base ──────────────────────────────────────────────────── */
-* {
-  box-sizing: border-box;
+/* ── Shadcn CSS vars (light mode) ─────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+  --background:            var(--color-bg);
+  --foreground:            var(--color-text-primary);
+  --card:                  var(--color-glass-fill-card);
+  --card-foreground:       var(--color-text-primary);
+  --popover:               var(--color-surface);
+  --popover-foreground:    var(--color-text-primary);
+  --primary:               var(--color-ink);
+  --primary-foreground:    var(--color-ink-fg);
+  --secondary:             var(--color-surface-alt);
+  --secondary-foreground:  var(--color-text-primary);
+  --muted:                 var(--color-surface-alt);
+  --muted-foreground:      var(--color-text-secondary);
+  --accent:                var(--color-surface-alt);
+  --accent-foreground:     var(--color-text-primary);
+  --destructive:           var(--color-red);
+  --border:                var(--color-border);
+  --input:                 var(--color-border);
+  --ring:                  var(--color-text-muted);
 }
 
-body {
-  background-color: var(--color-surface-50);
-  color: var(--color-surface-900);
-  font-family: var(--font-sans);
+/* ── Base reset ───────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+
+  /* Thin scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
+}
+
+/* ── Glass utility ────────────────────────────────────────────── */
+.glass {
+  background: var(--color-glass-fill);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-glass-border);
+}
+
+/* ── Main content floating card ───────────────────────────────── */
+.main-card {
+  background: var(--color-glass-fill-card);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-main);
 }
