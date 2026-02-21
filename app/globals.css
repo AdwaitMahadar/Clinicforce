@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Typography ──────────────────────────────────────────── */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-dm-serif), ui-serif, Georgia, serif;
+
+  /* ─── Brand Palette ───────────────────────────────────────── */
+  --color-brand-50:  hsl(210 100% 97%);
+  --color-brand-100: hsl(210 100% 93%);
+  --color-brand-200: hsl(210 95%  85%);
+  --color-brand-300: hsl(212 90%  73%);
+  --color-brand-400: hsl(214 85%  62%);
+  --color-brand-500: hsl(216 80%  52%);
+  --color-brand-600: hsl(218 78%  44%);
+  --color-brand-700: hsl(220 76%  36%);
+  --color-brand-800: hsl(222 74%  28%);
+  --color-brand-900: hsl(224 72%  20%);
+  --color-brand-950: hsl(226 70%  13%);
+
+  /* ─── Neutral / Surface ───────────────────────────────────── */
+  --color-surface-0:   hsl(0 0% 100%);
+  --color-surface-50:  hsl(220 20% 98%);
+  --color-surface-100: hsl(220 16% 96%);
+  --color-surface-200: hsl(220 14% 91%);
+  --color-surface-300: hsl(220 12% 82%);
+  --color-surface-400: hsl(220 10% 64%);
+  --color-surface-500: hsl(220  8% 46%);
+  --color-surface-600: hsl(220  8% 34%);
+  --color-surface-700: hsl(220  8% 24%);
+  --color-surface-800: hsl(220  8% 16%);
+  --color-surface-900: hsl(220  8% 10%);
+  --color-surface-950: hsl(220  8%  6%);
+
+  /* ─── Semantic ────────────────────────────────────────────── */
+  --color-success: hsl(142 76% 36%);
+  --color-warning: hsl(38  92% 50%);
+  --color-error:   hsl(0   84% 60%);
+}
+
+/* ─── Base ──────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-surface-50);
+  color: var(--color-surface-900);
+  font-family: var(--font-sans);
+}
