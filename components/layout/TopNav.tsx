@@ -13,6 +13,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 const NAV_ITEMS = [
   { href: "/home/dashboard",         label: "Home",         icon: Home },
@@ -52,14 +53,53 @@ export function TopNav() {
                   key={href}
                   href={href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+                    "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150",
                     isActive
-                      ? "bg-white text-[var(--color-text-primary)] shadow-sm ring-1 ring-[var(--color-border)] font-semibold"
-                      : "text-[var(--color-text-secondary)] hover:bg-white/60 hover:text-[var(--color-text-primary)]"
+                      ? "text-[var(--color-text-primary)] font-semibold"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                   )}
                 >
-                  <Icon size={15} strokeWidth={2} />
-                  <span className="hidden sm:inline">{label}</span>
+                  {/* Sliding pill background — shared layoutId makes it animate between items */}
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="absolute inset-0 rounded-lg"
+                      style={{
+                        background: "white",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 0 0 1px var(--color-border)",
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 35,
+                        mass: 0.6,
+                      }}
+                    />
+                  )}
+
+                  {/* Icon — always visible, sits above pill */}
+                  <span className="relative z-10">
+                    <Icon size={15} strokeWidth={2} />
+                  </span>
+
+                  {/* Label — only rendered when active, animates in */}
+                  <AnimatePresence mode="wait">
+                    {isActive && (
+                      <motion.span
+                        key={href}
+                        className="relative z-10 overflow-hidden whitespace-nowrap"
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: "auto", opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{
+                          width:   { type: "spring", stiffness: 500, damping: 35, mass: 0.6 },
+                          opacity: { duration: 0.15, delay: 0.05 },
+                        }}
+                      >
+                        {label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </Link>
               );
             })}

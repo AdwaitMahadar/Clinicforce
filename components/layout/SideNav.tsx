@@ -15,6 +15,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TOP_NAV_ITEMS = [
   { href: "/home/dashboard",         label: "Home",         icon: Home },
@@ -36,6 +37,7 @@ interface SideNavProps {
 
 export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: SideNavProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
 
   // Current entity segment: /patients/dashboard → "patients"
@@ -54,6 +56,8 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
         "h-full flex flex-col z-10 transition-all duration-300 flex-shrink-0",
         collapsed ? "w-20" : "w-60"
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* ── Logo / Brand row ── */}
       <div className="pt-5 pb-2 px-3">
@@ -65,6 +69,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
           )}
           style={{ backdropFilter: "blur(8px)" }}
         >
+          {/* ── Expanded: logo + collapse button ── */}
           {!collapsed && (
             <div className="flex items-center gap-2 pl-1">
               <div
@@ -78,17 +83,49 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
               </span>
             </div>
           )}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="size-8 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen size={17} strokeWidth={2} />
-            ) : (
+
+          {/* ── Collapsed: logo at rest, expand button on hover ── */}
+          {collapsed ? (
+            <div className="relative size-8 flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {isHovered ? (
+                  <motion.button
+                    key="expand-btn"
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    transition={{ duration: 0.15 }}
+                    onClick={() => setCollapsed(false)}
+                    className="absolute inset-0 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
+                    title="Expand sidebar"
+                  >
+                    <PanelLeftOpen size={17} strokeWidth={2} />
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    key="logo-badge"
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    transition={{ duration: 0.15 }}
+                    className="size-7 rounded-md flex items-center justify-center shadow-sm flex-shrink-0"
+                    style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+                  >
+                    <span className="text-xs font-bold">CF</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            /* ── Expanded collapse button ── */
+            <button
+              onClick={() => setCollapsed(true)}
+              className="size-8 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
+              title="Collapse sidebar"
+            >
               <PanelLeftClose size={17} strokeWidth={2} />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </div>
 
@@ -103,15 +140,32 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
               href={href}
               title={collapsed ? label : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150",
                 isActive
-                  ? "bg-white/80 text-[var(--color-text-primary)] shadow-sm border border-white/50 font-semibold"
-                  : "text-[var(--color-text-secondary)] hover:bg-black/[0.03] hover:text-[var(--color-text-primary)]",
+                  ? "text-[var(--color-text-primary)] font-semibold"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]",
                 collapsed && "justify-center px-0"
               )}
             >
-              <Icon size={18} strokeWidth={2} className="flex-shrink-0" />
-              {!collapsed && <span className="whitespace-nowrap">{label}</span>}
+              {/* Sliding pill background */}
+              {isActive && (
+                <motion.span
+                  layoutId="side-nav-pill"
+                  className="absolute inset-0 rounded-lg"
+                  style={{
+                    background: "rgba(255,255,255,0.80)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.50)",
+                  }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 35,
+                    mass: 0.6,
+                  }}
+                />
+              )}
+              <Icon size={18} strokeWidth={2} className="relative z-10 flex-shrink-0" />
+              {!collapsed && <span className="relative z-10 whitespace-nowrap">{label}</span>}
             </Link>
           );
         })}

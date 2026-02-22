@@ -123,7 +123,7 @@ export function DataTable<TData>({
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
-                className="transition-colors cursor-pointer hover:bg-[var(--color-row-hover)]"
+                className="group transition-colors cursor-pointer hover:bg-[var(--color-row-hover)]"
                 style={{ borderBottom: "1px solid var(--color-border)" }}
               >
                 {row.getVisibleCells().map((cell) => (

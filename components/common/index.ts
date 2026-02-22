@@ -9,3 +9,9 @@ export { DataTable } from "./DataTable";
 export type { ColumnDef } from "./DataTable";
 export { EventLog }  from "./EventLog";
 export type { LogEvent } from "./EventLog";
+
+// ─── Table controls ───────────────────────────────────────────────────────────
+export { TableFilterBar } from "./TableFilterBar";
+export type { FilterColumn, ActiveFilter } from "./TableFilterBar";
+export { TablePagination } from "./TablePagination";
+

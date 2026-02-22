@@ -3,12 +3,17 @@ import { cn } from "@/lib/utils";
 
 /** Extend this union when new statuses are added to the product. */
 export type AppStatus =
+  // ── Appointment statuses ─────────────────────────────────────
   | "confirmed"
   | "pending"
   | "cancelled"
   | "completed"
   | "no-show"
-  | "rescheduled";
+  | "rescheduled"
+  // ── Patient statuses ─────────────────────────────────────────
+  | "active"
+  | "inactive"
+  | "critical";
 
 interface StatusStyle {
   bg: string;
@@ -22,12 +27,17 @@ interface StatusStyle {
  * Colours reference CSS vars — never hardcode hex here.
  */
 const STATUS_MAP: Record<AppStatus, StatusStyle> = {
+  // ── Appointment statuses ────────────────────────────────────────────────────
   confirmed:   { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  label: "Confirmed"   },
   pending:     { bg: "var(--color-amber-bg)",  text: "var(--color-amber)",  border: "var(--color-amber-border)",  label: "Pending"     },
   cancelled:   { bg: "var(--color-red-bg)",    text: "var(--color-red)",    border: "var(--color-red-border)",    label: "Cancelled"   },
   completed:   { bg: "var(--color-blue-bg)",   text: "var(--color-blue)",   border: "var(--color-blue-border)",   label: "Completed"   },
   "no-show":   { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)", label: "No-show"     },
   rescheduled: { bg: "var(--color-amber-bg)",  text: "var(--color-amber)",  border: "var(--color-amber-border)",  label: "Rescheduled" },
+  // ── Patient statuses ────────────────────────────────────────────────────────
+  active:   { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  label: "Active"   },
+  inactive: { bg: "var(--color-surface-alt)", text: "var(--color-text-secondary)", border: "var(--color-border)", label: "Inactive" },
+  critical: { bg: "var(--color-red-bg)",    text: "var(--color-red)",    border: "var(--color-red-border)",    label: "Critical" },
 };
 
 interface StatusBadgeProps {
