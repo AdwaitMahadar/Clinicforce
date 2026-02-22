@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>HealthPlus CMS - Patient Directory</title>
+<title>HealthPlus CMS - Appointments</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -146,6 +146,14 @@
         #sidebar.collapsed .pill-content {
             display: none;
         }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: auto repeat(5, 1fr);
+        }
+        .calendar-day {
+            min-height: 120px;
+        }
     </style>
 <script>
         function toggleSidebar() {
@@ -201,14 +209,14 @@
 <header class="nav-island rounded-lg pl-1 pr-1.5 py-1 flex items-center gap-1.5 pointer-events-auto w-[60%] lg:w-1/2 h-[42px] bg-white/80 border border-stone-200/50 shadow-sm">
 <div class="flex items-center gap-1 p-0.5 shrink-0">
 <a class="size-8 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-stone-100 rounded-md transition-colors group" href="#" title="Home">
-<span class="material-symbols-outlined text-[18px]">home</span>
+<span class="material-symbols-outlined text-[20px]">home</span>
 </a>
-<a class="size-8 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-stone-100 rounded-md transition-colors group" href="#" title="Appointments">
-<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+<a class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-800 bg-stone-100 rounded-md hover:bg-white transition-colors shadow-sm ring-1 ring-stone-200/50" href="#" title="Appointments">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span class="hidden sm:inline">Appointments</span>
 </a>
-<a class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-800 bg-stone-100 rounded-md hover:bg-white transition-colors shadow-sm ring-1 ring-stone-200/50" href="#" title="Patients">
+<a class="size-8 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-stone-100 rounded-md transition-colors group" href="#" title="Patients">
 <span class="material-symbols-outlined text-[20px]">group</span>
-<span class="hidden sm:inline">Patients</span>
 </a>
 <a class="size-8 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:bg-stone-100 rounded-md transition-colors group" href="#" title="Medicines">
 <span class="material-symbols-outlined text-[20px]">medication</span>
@@ -239,257 +247,245 @@
 </div>
 <div class="main-content-layer w-[calc(100%-1rem)] flex flex-col overflow-hidden relative border border-white">
 <div class="flex-1 overflow-y-auto w-full relative p-6 pb-6">
-<div class="max-w-[1600px] mx-auto w-full h-full flex flex-col">
-<div class="flex items-center justify-between mb-6 pt-2">
+<div class="max-w-[1800px] mx-auto w-full h-full flex flex-col">
+<div class="flex items-center justify-between mb-4 pt-2 shrink-0">
 <div>
-<h2 class="text-3xl font-bold tracking-tight text-zinc-800">Patients Directory</h2>
-<p class="text-sm text-zinc-500 mt-1">Manage patient records, history, and active treatments.</p>
+<h2 class="text-3xl font-bold tracking-tight text-zinc-800">Appointments</h2>
+<p class="text-sm text-zinc-500 mt-1">Manage patient visits and doctor schedules.</p>
 </div>
-<button class="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md px-5 py-2.5 text-sm font-medium transition-all shadow-md shadow-zinc-200 hover:shadow-lg hover:shadow-zinc-300">
+<div class="flex items-center gap-3">
+<div class="bg-white border border-stone-200 rounded-md p-1 flex shadow-sm mr-2 items-center gap-2">
+<div class="flex">
+<button class="px-3 py-1.5 text-xs font-semibold bg-zinc-800 text-white rounded-md shadow-sm transition-all">Month</button>
+<button class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-800 hover:bg-stone-50 rounded-md transition-all">Week</button>
+<button class="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-800 hover:bg-stone-50 rounded-md transition-all">Day</button>
+</div>
+<div class="h-4 w-[1px] bg-stone-200 mx-1"></div>
+<button class="size-7 flex items-center justify-center hover:bg-stone-50 rounded-md text-zinc-600 transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_left</span></button>
+<span class="text-xs font-bold text-zinc-800 px-1 min-w-[80px] text-center">October 2023</span>
+<button class="size-7 flex items-center justify-center hover:bg-stone-50 rounded-md text-zinc-600 transition-colors"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button>
+</div>
+<button class="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md px-5 py-2.5 text-sm font-medium transition-all shadow-md shadow-zinc-200 hover:shadow-lg hover:shadow-zinc-300 ml-2">
 <span class="material-symbols-outlined text-[20px]">add</span>
-                        New Patient
-                    </button>
-</div>
-<div class="w-full bg-white/80 border border-stone-100 rounded-lg p-3 mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm backdrop-blur-sm">
-<div class="relative flex-1 w-full sm:w-auto">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-[20px]">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-md text-sm text-zinc-700 focus:outline-none focus:border-zinc-300 placeholder-zinc-400" placeholder="Search by name, ID, or phone number..." type="text"/>
-</div>
-<div class="flex items-center gap-3 w-full sm:w-auto">
-<div class="relative group">
-<button class="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-md text-sm text-zinc-600 hover:text-zinc-800 hover:border-stone-300 transition-all">
-<span class="material-symbols-outlined text-[18px]">filter_list</span>
-                        Status: All
-                        <span class="material-symbols-outlined text-[18px] ml-1">expand_more</span>
-</button>
-</div>
-<div class="relative group">
-<button class="flex items-center gap-2 px-4 py-2 bg-white border border-stone-200 rounded-md text-sm text-zinc-600 hover:text-zinc-800 hover:border-stone-300 transition-all">
-<span class="material-symbols-outlined text-[18px]">sort</span>
-                        Sort: Recent
-                        <span class="material-symbols-outlined text-[18px] ml-1">expand_more</span>
-</button>
-</div>
-<button class="p-2 text-zinc-400 hover:text-zinc-700 hover:bg-stone-100 rounded-md transition-colors" title="Export List">
-<span class="material-symbols-outlined text-[20px]">download</span>
-</button>
+                  New Appt
+                </button>
 </div>
 </div>
-<div class="glass rounded-lg notion-shadow overflow-hidden flex-1 bg-white/80 flex flex-col">
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="border-b border-zinc-100 bg-stone-50/50">
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[60px]">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Patient Info</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">ID Number</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Last Visit</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Assigned Dr.</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
-<th class="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-zinc-50">
-<tr class="hover:bg-stone-50/50 transition-colors group">
-<td class="px-6 py-4">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-3">
-<div class="size-10 rounded-full bg-emerald-100 flex items-center justify-center text-sm font-bold text-emerald-700">MR</div>
-<div>
-<p class="text-sm font-bold text-zinc-800">Michael Ross</p>
-<p class="text-xs text-zinc-500">michael.ross@example.com</p>
+<div class="flex-1 glass bg-white/80 rounded-lg shadow-sm border border-white/60 overflow-hidden flex flex-col">
+<div class="grid grid-cols-7 border-b border-zinc-100 bg-stone-50/50">
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Sunday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Monday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Tuesday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Wednesday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Thursday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Friday</div>
+<div class="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-400">Saturday</div>
+</div>
+<div class="flex-1 grid grid-cols-7 grid-rows-5 divide-x divide-y divide-zinc-100 bg-white/30">
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-medium text-zinc-300 block mb-1">29</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-medium text-zinc-300 block mb-1">30</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">1</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">2</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100">
+                     09:00 - Michael Ross
+                 </div>
 </div>
 </div>
-</td>
-<td class="px-6 py-4">
-<span class="font-mono text-xs text-zinc-500 bg-stone-100 px-2 py-1 rounded">#PT-8821</span>
-</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Oct 24, 2023</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Dr. Sarah Jenkins</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                Active
-                            </span>
-</td>
-<td class="px-6 py-4 text-right">
-<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="View Profile">
-<span class="material-symbols-outlined text-[18px]">visibility</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="Edit">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="More">
-<span class="material-symbols-outlined text-[18px]">more_horiz</span>
-</button>
-</div>
-</td>
-</tr>
-<tr class="hover:bg-stone-50/50 transition-colors group">
-<td class="px-6 py-4">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-3">
-<div class="size-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-700">EW</div>
-<div>
-<p class="text-sm font-bold text-zinc-800">Emma Watson</p>
-<p class="text-xs text-zinc-500">emma.watson@example.com</p>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">3</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 truncate font-medium cursor-pointer hover:bg-amber-100">
+                    10:30 - Emma Watson
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 truncate font-medium cursor-pointer hover:bg-rose-100">
+                     14:00 - John Lee
+                 </div>
 </div>
 </div>
-</td>
-<td class="px-6 py-4">
-<span class="font-mono text-xs text-zinc-500 bg-stone-100 px-2 py-1 rounded">#PT-8822</span>
-</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Oct 22, 2023</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Dr. Alan Grant</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                Active
-                            </span>
-</td>
-<td class="px-6 py-4 text-right">
-<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="View Profile">
-<span class="material-symbols-outlined text-[18px]">visibility</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="Edit">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="More">
-<span class="material-symbols-outlined text-[18px]">more_horiz</span>
-</button>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">4</span>
 </div>
-</td>
-</tr>
-<tr class="hover:bg-stone-50/50 transition-colors group">
-<td class="px-6 py-4">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-3">
-<div class="size-10 rounded-full bg-stone-200 flex items-center justify-center text-sm font-bold text-stone-600">JD</div>
-<div>
-<p class="text-sm font-bold text-zinc-800">John Doe</p>
-<p class="text-xs text-zinc-500">john.doe@example.com</p>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">5</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">6</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">7</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100 truncate font-medium cursor-pointer hover:bg-teal-100">
+                    11:15 - Anna Kim
+                </div>
 </div>
 </div>
-</td>
-<td class="px-6 py-4">
-<span class="font-mono text-xs text-zinc-500 bg-stone-100 px-2 py-1 rounded">#PT-8790</span>
-</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Sep 15, 2023</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Dr. Sarah Jenkins</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-200">
-                                Inactive
-                            </span>
-</td>
-<td class="px-6 py-4 text-right">
-<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="View Profile">
-<span class="material-symbols-outlined text-[18px]">visibility</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="Edit">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="More">
-<span class="material-symbols-outlined text-[18px]">more_horiz</span>
-</button>
-</div>
-</td>
-</tr>
-<tr class="hover:bg-stone-50/50 transition-colors group">
-<td class="px-6 py-4">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-3">
-<div class="size-10 rounded-full bg-rose-100 flex items-center justify-center text-sm font-bold text-rose-700">AW</div>
-<div>
-<p class="text-sm font-bold text-zinc-800">Alice Wong</p>
-<p class="text-xs text-zinc-500">alice.w@example.com</p>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors bg-stone-50/30">
+<span class="flex items-center justify-between mb-1">
+<span class="text-sm font-bold text-white bg-zinc-800 size-6 flex items-center justify-center rounded-full shadow-sm">8</span>
+<span class="text-[10px] text-zinc-400 font-medium">Today</span>
+</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-100 truncate font-medium cursor-pointer hover:bg-purple-100 flex items-center gap-1">
+<span class="size-1 bg-purple-500 rounded-full"></span> 09:00 - David Park
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100 flex items-center gap-1">
+<span class="size-1 bg-indigo-500 rounded-full"></span> 11:30 - Sarah Connor
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-zinc-600 border border-zinc-200 truncate font-medium cursor-pointer hover:bg-stone-200 flex items-center gap-1 opacity-70">
+<span class="size-1 bg-zinc-400 rounded-full"></span> 13:00 - Staff Meeting
+                </div>
 </div>
 </div>
-</td>
-<td class="px-6 py-4">
-<span class="font-mono text-xs text-zinc-500 bg-stone-100 px-2 py-1 rounded">#PT-8805</span>
-</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Oct 05, 2023</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Dr. Emily Chen</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
-                                Critical
-                            </span>
-</td>
-<td class="px-6 py-4 text-right">
-<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="View Profile">
-<span class="material-symbols-outlined text-[18px]">visibility</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="Edit">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="More">
-<span class="material-symbols-outlined text-[18px]">more_horiz</span>
-</button>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">9</span>
 </div>
-</td>
-</tr>
-<tr class="hover:bg-stone-50/50 transition-colors group">
-<td class="px-6 py-4">
-<input class="rounded border-stone-300 text-zinc-700 focus:ring-zinc-500" type="checkbox"/>
-</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-3">
-<div class="size-10 rounded-full bg-amber-100 flex items-center justify-center text-sm font-bold text-amber-700">RB</div>
-<div>
-<p class="text-sm font-bold text-zinc-800">Robert Brown</p>
-<p class="text-xs text-zinc-500">r.brown@example.com</p>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">10</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 truncate font-medium cursor-pointer hover:bg-amber-100">
+                    08:45 - Chris Evans
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 truncate font-medium cursor-pointer hover:bg-rose-100">
+                     15:30 - Emergency
+                 </div>
 </div>
 </div>
-</td>
-<td class="px-6 py-4">
-<span class="font-mono text-xs text-zinc-500 bg-stone-100 px-2 py-1 rounded">#PT-8810</span>
-</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Oct 19, 2023</td>
-<td class="px-6 py-4 text-sm text-zinc-600">Dr. Alan Grant</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                Active
-                            </span>
-</td>
-<td class="px-6 py-4 text-right">
-<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="View Profile">
-<span class="material-symbols-outlined text-[18px]">visibility</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="Edit">
-<span class="material-symbols-outlined text-[18px]">edit</span>
-</button>
-<button class="p-1.5 hover:bg-stone-200 rounded text-zinc-500 hover:text-zinc-800 transition-colors" title="More">
-<span class="material-symbols-outlined text-[18px]">more_horiz</span>
-</button>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">11</span>
 </div>
-</td>
-</tr>
-</tbody>
-</table>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">12</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100">
+                    10:00 - Follow up
+                </div>
 </div>
-<div class="px-6 py-4 border-t border-zinc-100 bg-stone-50/30 flex items-center justify-between">
-<p class="text-xs text-zinc-500">Showing <span class="font-medium text-zinc-800">1</span> to <span class="font-medium text-zinc-800">5</span> of <span class="font-medium text-zinc-800">1,284</span> results</p>
-<div class="flex gap-2">
-<button class="px-3 py-1.5 border border-stone-200 rounded-md text-xs font-medium text-zinc-600 hover:bg-white hover:text-zinc-900 transition-colors disabled:opacity-50" disabled="">Previous</button>
-<button class="px-3 py-1.5 border border-stone-200 rounded-md text-xs font-medium text-zinc-600 hover:bg-white hover:text-zinc-900 transition-colors">Next</button>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">13</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">14</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100 truncate font-medium cursor-pointer hover:bg-teal-100">
+                    09:15 - Dental Check
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100 truncate font-medium cursor-pointer hover:bg-teal-100">
+                    10:45 - Dental Check
+                </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">15</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">16</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-100 truncate font-medium cursor-pointer hover:bg-purple-100">
+                     13:20 - Lab Results
+                 </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">17</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">18</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">19</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">20</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 truncate font-medium cursor-pointer hover:bg-amber-100">
+                    11:00 - Vaccination
+                </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100">
+                     14:30 - Routine
+                 </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">21</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">22</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 truncate font-medium cursor-pointer hover:bg-emerald-100">
+                    Full Day Surgery
+                </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">23</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">24</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-100 truncate font-medium cursor-pointer hover:bg-purple-100">
+                     09:00 - Blood Work
+                 </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">25</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">26</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">27</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">28</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100">
+                     08:30 - Checkup
+                 </div>
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 truncate font-medium cursor-pointer hover:bg-indigo-100">
+                     10:00 - Checkup
+                 </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">29</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">30</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 truncate font-medium cursor-pointer hover:bg-amber-100">
+                    11:30 - Meeting
+                </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors">
+<span class="text-sm font-bold text-zinc-700 block mb-1">31</span>
+<div class="space-y-1 mt-1">
+<div class="text-[10px] px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 truncate font-medium cursor-pointer hover:bg-rose-100">
+                     16:00 - Wrap up
+                 </div>
+</div>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors bg-stone-50/30">
+<span class="text-sm font-medium text-zinc-300 block mb-1">1</span>
+</div>
+<div class="calendar-day p-2 relative group hover:bg-stone-50/50 transition-colors bg-stone-50/30">
+<span class="text-sm font-medium text-zinc-300 block mb-1">2</span>
 </div>
 </div>
 </div>
 </div>
 </div>
 </div>
-</main></div>
+</main>
+</div>
 </body></html>

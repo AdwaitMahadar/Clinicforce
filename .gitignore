@@ -21,6 +21,8 @@
 /build
 
 # misc
+/mock
+/sample-render
 .DS_Store
 *.pem
 

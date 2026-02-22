@@ -15,3 +15,7 @@ export { TableFilterBar } from "./TableFilterBar";
 export type { FilterColumn, ActiveFilter } from "./TableFilterBar";
 export { TablePagination } from "./TablePagination";
 
+// ─── Calendar components ──────────────────────────────────────────────────────
+export { MonthView }            from "./MonthView";
+export { TimeGridView }         from "./TimeGridView";
+export { AppointmentEventCard } from "./AppointmentEventCard";

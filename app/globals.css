@@ -169,3 +169,98 @@
   border-radius: 0.875rem;
   box-shadow: var(--shadow-main);
 }
+
+/* ── FullCalendar — Clinicforce theme override ─────────────────── */
+.fullcalendar-clinicforce .fc {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+}
+
+/* Remove default theme colours */
+.fullcalendar-clinicforce .fc-theme-standard td,
+.fullcalendar-clinicforce .fc-theme-standard th,
+.fullcalendar-clinicforce .fc-theme-standard .fc-scrollgrid {
+  border-color: var(--color-border);
+}
+
+/* Header day labels */
+.fullcalendar-clinicforce .fc-col-header-cell {
+  background: var(--color-row-header);
+  border-color: var(--color-border) !important;
+  padding: 0.5rem 0;
+}
+.fullcalendar-clinicforce .fc-col-header-cell-cushion {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.fullcalendar-clinicforce .fc-col-header-cell-cushion:hover {
+  color: var(--color-text-primary);
+}
+
+/* Today column highlight */
+.fullcalendar-clinicforce .fc-day-today {
+  background: rgba(26, 26, 24, 0.02) !important;
+}
+.fullcalendar-clinicforce .fc-day-today .fc-col-header-cell-cushion {
+  color: var(--color-ink);
+}
+
+/* Time slot labels (left gutter) */
+.fullcalendar-clinicforce .fc-timegrid-slot-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  vertical-align: top;
+  padding-top: 4px;
+}
+.fullcalendar-clinicforce .fc-timegrid-slot {
+  height: 3rem !important;
+}
+.fullcalendar-clinicforce .fc-timegrid-slot-minor {
+  border-top: 1px dashed var(--color-border);
+}
+
+/* Event container — remove default background */
+.fullcalendar-clinicforce .fc-event {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none;
+  padding: 0 !important;
+}
+.fullcalendar-clinicforce .fc-event-main {
+  padding: 0;
+}
+.fullcalendar-clinicforce .fc-event:hover {
+  z-index: 5;
+}
+
+/* Now indicator */
+.fullcalendar-clinicforce .fc-timegrid-now-indicator-line {
+  border-color: var(--color-red);
+}
+.fullcalendar-clinicforce .fc-timegrid-now-indicator-arrow {
+  border-top-color: var(--color-red);
+  border-bottom-color: var(--color-red);
+}
+
+/* Scrollbar */
+.fullcalendar-clinicforce .fc-scroller::-webkit-scrollbar {
+  width: 5px;
+}
+.fullcalendar-clinicforce .fc-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+.fullcalendar-clinicforce .fc-scroller::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 99px;
+}
+
+/* Remove focus outline on events */
+.fullcalendar-clinicforce .fc-event:focus-within {
+  outline: none;
+  box-shadow: none;
+}
