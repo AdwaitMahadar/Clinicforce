@@ -190,7 +190,7 @@ export function TableFilterBar({
                 color:       filterPanelOpen || hasFilters
                   ? "var(--color-text-primary)"
                   : "var(--color-text-secondary)",
-                ringColor: hasFilters ? "var(--color-border)" : undefined,
+                ...(hasFilters ? { "--tw-ring-color": "var(--color-border)" } as React.CSSProperties : {}),
               }}
               onClick={() => {
                 setFilterPanelOpen((o) => !o);
