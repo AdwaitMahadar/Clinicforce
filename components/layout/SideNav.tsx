@@ -60,10 +60,10 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* ── Logo / Brand row ── */}
-      <div className="pt-5 pb-2 px-3">
+      <div className="pt-4 pb-2 px-3">
         <div
           className={cn(
-            "flex items-center rounded-xl p-1.5 transition-all",
+            "flex items-center rounded-xl p-1 transition-all h-12",
             collapsed ? "justify-center" : "justify-between",
             "bg-white/40 border border-white/60 shadow-sm"
           )}
@@ -71,12 +71,12 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
         >
           {/* ── Expanded: logo + collapse button ── */}
           {!collapsed && (
-            <div className="flex items-center gap-2 pl-1">
+            <div className="flex items-center gap-2 pl-1.5">
               <div
-                className="size-7 rounded-md flex items-center justify-center shadow-sm flex-shrink-0"
+                className="size-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
                 style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
               >
-                <span className="text-xs font-bold">CF</span>
+                <span className="text-sm font-bold tracking-tight">CF</span>
               </div>
               <span className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] whitespace-nowrap">
                 Clinicforce
@@ -86,7 +86,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
 
           {/* ── Collapsed: logo at rest, expand button on hover ── */}
           {collapsed ? (
-            <div className="relative size-8 flex items-center justify-center">
+            <div className="relative size-9 flex items-center justify-center">
               <AnimatePresence mode="wait">
                 {isHovered ? (
                   <motion.button
@@ -99,7 +99,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                     className="absolute inset-0 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
                     title="Expand sidebar"
                   >
-                    <PanelLeftOpen size={17} strokeWidth={2} />
+                    <PanelLeftOpen size={18} strokeWidth={2} />
                   </motion.button>
                 ) : (
                   <motion.div
@@ -108,10 +108,10 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
                     transition={{ duration: 0.15 }}
-                    className="size-7 rounded-md flex items-center justify-center shadow-sm flex-shrink-0"
+                    className="size-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
                     style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
                   >
-                    <span className="text-xs font-bold">CF</span>
+                    <span className="text-sm font-bold tracking-tight">CF</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -120,10 +120,10 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
             /* ── Expanded collapse button ── */
             <button
               onClick={() => setCollapsed(true)}
-              className="size-8 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
+              className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
               title="Collapse sidebar"
             >
-              <PanelLeftClose size={17} strokeWidth={2} />
+              <PanelLeftClose size={18} strokeWidth={2} />
             </button>
           )}
         </div>
@@ -172,10 +172,10 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
       </nav>
 
       {/* ── User profile ── */}
-      <div className="p-3 mt-auto">
+      <div className="p-3 mt-auto mb-2">
         <div
           className={cn(
-            "flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer transition-colors",
+            "flex items-center gap-2.5 px-1.5 py-1 rounded-xl cursor-pointer transition-colors h-12",
             "bg-white/40 border border-white/60 shadow-sm hover:bg-white/60",
             collapsed && "justify-center"
           )}
@@ -183,7 +183,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
         >
           {/* Avatar */}
           <div
-            className="size-9 rounded-lg flex items-center justify-center text-xs font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
+            className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
             style={{ background: "var(--color-surface-alt)" }}
           >
             {initials}
@@ -191,16 +191,16 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
 
           {!collapsed && (
             <>
-              <div className="overflow-hidden flex-1">
-                <p className="text-sm font-semibold truncate text-[var(--color-text-primary)] max-w-[110px]">
+              <div className="overflow-hidden flex-1 pl-0.5">
+                <p className="text-sm font-semibold truncate text-[var(--color-text-primary)] mb-0.5 leading-none">
                   {userName}
                 </p>
-                <p className="text-[10px] text-[var(--color-text-muted)] truncate">
+                <p className="text-[10px] text-[var(--color-text-muted)] truncate leading-none">
                   {userRole}
                 </p>
               </div>
-              <button className="ml-auto text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] flex-shrink-0">
-                <MoreVertical size={14} />
+              <button className="flex items-center justify-center size-8 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-black/5 transition-colors flex-shrink-0 mr-0.5">
+                <MoreVertical size={18} strokeWidth={2} />
               </button>
             </>
           )}

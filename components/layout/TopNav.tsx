@@ -33,14 +33,13 @@ export function TopNav() {
       {/* ── Centered nav island ── */}
       <header className="flex-1 flex justify-center">
         <div
-          className="flex items-center gap-1 px-1.5 py-1 rounded-xl"
+          className="flex items-center gap-1 px-1.5 py-1 rounded-xl h-12"
           style={{
             background:           "var(--color-glass-fill)",
             backdropFilter:       "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             border:               "1px solid var(--color-glass-border)",
             boxShadow:            "var(--shadow-nav)",
-            height:               "44px",
           }}
         >
           {/* Nav links */}
@@ -53,7 +52,7 @@ export function TopNav() {
                   key={href}
                   href={href}
                   className={cn(
-                    "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150",
+                    "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150",
                     isActive
                       ? "text-[var(--color-text-primary)] font-semibold"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
@@ -78,8 +77,8 @@ export function TopNav() {
                   )}
 
                   {/* Icon — always visible, sits above pill */}
-                  <span className="relative z-10">
-                    <Icon size={15} strokeWidth={2} />
+                  <span className="relative z-10 flex items-center">
+                    <Icon size={18} strokeWidth={2} />
                   </span>
 
                   {/* Label — only rendered when active, animates in */}
@@ -108,53 +107,52 @@ export function TopNav() {
           {/* Search */}
           <div className="relative flex items-center">
             <Search
-              size={14}
+              size={15}
               className="absolute left-2.5 text-[var(--color-text-muted)] pointer-events-none"
             />
             <input
               type="text"
               placeholder="Search..."
-              className="w-44 bg-[var(--color-surface-alt)]/60 border border-[var(--color-border)] rounded-lg py-1 pl-7 pr-3 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:bg-white focus:border-[var(--color-text-muted)] transition-all h-8"
+              className="w-44 bg-[var(--color-surface-alt)]/60 border border-[var(--color-border)] rounded-lg py-1.5 pl-7 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:bg-white focus:border-[var(--color-text-muted)] transition-all h-9"
             />
           </div>
         </div>
       </header>
 
       {/* ── Right actions ── */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div
+        className="flex items-center gap-1 px-1.5 py-1 rounded-xl flex-shrink-0 h-12"
+        style={{
+          background:           "var(--color-glass-fill)",
+          backdropFilter:       "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border:               "1px solid var(--color-glass-border)",
+          boxShadow:            "var(--shadow-nav)",
+        }}
+      >
         <button
-          className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors relative"
-          style={{
-            background:     "var(--color-glass-fill-sm)",
-            border:         "1px solid var(--color-glass-border-sm)",
-            backdropFilter: "blur(8px)",
-          }}
+          className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)] transition-colors relative"
           title="Notifications"
         >
-          <Bell size={16} strokeWidth={2} />
-          <span className="absolute top-2 right-2 size-1.5 bg-red-500 rounded-full ring-1 ring-white" />
+          <Bell size={18} strokeWidth={2} />
+          <span className="absolute top-2 right-2.5 size-1.5 bg-red-500 rounded-full ring-1 ring-white" />
         </button>
 
         <button
-          className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-          style={{
-            background:     "var(--color-glass-fill-sm)",
-            border:         "1px solid var(--color-glass-border-sm)",
-            backdropFilter: "blur(8px)",
-          }}
+          className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)] transition-colors"
           title="Help"
         >
-          <HelpCircle size={16} strokeWidth={2} />
+          <HelpCircle size={18} strokeWidth={2} />
         </button>
 
-        <div className="h-5 w-px bg-[var(--color-border)]" />
+        <div className="h-5 w-px bg-[var(--color-border)] mx-1" />
 
         <div
-          className="size-9 rounded-lg flex items-center justify-center flex-shrink-0"
+          className="size-9 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
           style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
           title="App menu"
         >
-          <LayoutGrid size={16} strokeWidth={2} />
+          <LayoutGrid size={18} strokeWidth={2} />
         </div>
       </div>
     </div>
