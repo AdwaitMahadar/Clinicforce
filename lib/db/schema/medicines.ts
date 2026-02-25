@@ -19,6 +19,7 @@ export const medicines = pgTable("medicines", {
     .references(() => clinics.id, { onDelete: "restrict" }),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
+  category: varchar("category", { length: 100 }),
   brand: varchar("brand", { length: 255 }),
   form: varchar("form", { length: 100 }), // Tablet, Syrup, Capsule, etc.
   lastPrescribedDate: timestamp("last_prescribed_date"),

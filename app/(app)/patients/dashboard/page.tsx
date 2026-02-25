@@ -75,7 +75,7 @@ const patientColumns: ColumnDef<PatientRow>[] = [
   },
   {
     accessorKey: "assignedDoctor",
-    header: "Assigned Dr.",
+    header: "Last Consulted Dr.",
     cell: ({ row }) => (
       <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
         {row.getValue("assignedDoctor")}
