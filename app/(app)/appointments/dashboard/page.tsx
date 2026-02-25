@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,19 @@ function navigateDate(view: CalendarView, date: Date, direction: -1 | 1): Date {
   return direction === 1 ? addDays(date, 1) : subDays(date, 1);
 }
 
-// ─── View toggle button ────────────────────────────────────────────────────────
-function ViewToggle({
+// ─── Fused view + date control ────────────────────────────────────────────────
+function ViewDateControl({
   current,
-  onChange,
+  onViewChange,
+  currentDate,
+  onNavigate,
+  onToday,
 }: {
   current: CalendarView;
-  onChange: (v: CalendarView) => void;
+  onViewChange: (v: CalendarView) => void;
+  currentDate: Date;
+  onNavigate: (direction: -1 | 1) => void;
+  onToday: () => void;
 }) {
   const views: { key: CalendarView; label: string }[] = [
     { key: "month", label: "Month" },
@@ -43,64 +50,61 @@ function ViewToggle({
     { key: "day",   label: "Day"   },
   ];
 
+  const isTodayVisible = current === "day" && isToday(currentDate);
+
   return (
-    <div
-      className="flex p-1 rounded-lg gap-0.5"
+    <motion.div
+      layout
+      className="flex items-center p-1 rounded-lg gap-0.5"
       style={{
         background: "var(--color-glass-fill-data)",
         border:     "var(--shadow-card-border)",
         boxShadow:  "var(--shadow-card)",
       }}
+      transition={{
+        layout: { type: "spring", stiffness: 350, damping: 30, mass: 0.5 },
+      }}
     >
+      {/* View tabs */}
       {views.map(({ key, label }) => (
         <button
           key={key}
-          onClick={() => onChange(key)}
-          className="px-3 py-1.5 text-xs font-semibold rounded-md transition-all"
-          style={
-            current === key
-              ? {
-                  background: "var(--color-ink)",
-                  color:      "var(--color-ink-fg)",
-                  boxShadow:  "var(--shadow-card)",
-                }
-              : {
-                  background: "transparent",
-                  color:      "var(--color-text-secondary)",
-                }
-          }
+          onClick={() => onViewChange(key)}
+          className="relative px-3 py-1.5 text-xs font-semibold rounded-md transition-colors duration-150"
+          style={{
+            color: current === key
+              ? "var(--color-ink-fg)"
+              : "var(--color-text-secondary)",
+          }}
         >
-          {label}
+          {/* Sliding active pill — animates between tabs on click */}
+          {current === key && (
+            <motion.span
+              layoutId="view-pill"
+              className="absolute inset-0 rounded-md"
+              style={{
+                background: "var(--color-ink)",
+                boxShadow:  "var(--shadow-card)",
+              }}
+              transition={{
+                type:      "spring",
+                stiffness: 500,
+                damping:   35,
+                mass:      0.6,
+              }}
+            />
+          )}
+          <span className="relative z-10">{label}</span>
         </button>
       ))}
-    </div>
-  );
-}
 
-// ─── Date navigator ───────────────────────────────────────────────────────────
-function DateNavigator({
-  view,
-  currentDate,
-  onNavigate,
-  onToday,
-}: {
-  view: CalendarView;
-  currentDate: Date;
-  onNavigate: (direction: -1 | 1) => void;
-  onToday: () => void;
-}) {
-  const isTodayVisible =
-    view === "day" && isToday(currentDate);
+      {/* Divider */}
+      <div
+        className="self-stretch mx-1"
+        style={{ width: "1px", background: "var(--color-border)" }}
+      />
 
-  return (
-    <div
-      className="flex items-center gap-1 p-1 rounded-lg"
-      style={{
-        background: "var(--color-glass-fill-data)",
-        border:     "var(--shadow-card-border)",
-        boxShadow:  "var(--shadow-card)",
-      }}
-    >
+      {/* Date navigator */}
       <button
         onClick={() => onNavigate(-1)}
         className="size-7 flex items-center justify-center rounded-md transition-colors hover:bg-[var(--color-surface-alt)]"
@@ -112,14 +116,14 @@ function DateNavigator({
 
       <button
         onClick={onToday}
-        className="px-3 py-1.5 text-xs font-semibold rounded-md transition-all"
+        className="px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap"
         style={
           isTodayVisible
             ? { color: "var(--color-text-muted)", cursor: "default" }
             : { color: "var(--color-text-primary)" }
         }
       >
-        <span className="hidden sm:inline">{getHeaderLabel(view, currentDate)}</span>
+        <span className="hidden sm:inline">{getHeaderLabel(current, currentDate)}</span>
         <span className="sm:hidden">Today</span>
       </button>
 
@@ -131,7 +135,7 @@ function DateNavigator({
       >
         <ChevronRight size={14} />
       </button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -163,12 +167,10 @@ export default function AppointmentsDashboardPage() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
-      {/* View toggle */}
-      <ViewToggle current={view} onChange={handleViewChange} />
-
-      {/* Date navigator */}
-      <DateNavigator
-        view={view}
+      {/* Fused view + date control */}
+      <ViewDateControl
+        current={view}
+        onViewChange={handleViewChange}
         currentDate={currentDate}
         onNavigate={handleNavigate}
         onToday={handleToday}

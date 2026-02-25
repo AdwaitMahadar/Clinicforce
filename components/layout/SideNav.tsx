@@ -53,7 +53,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
   return (
     <aside
       className={cn(
-        "h-full flex flex-col z-10 transition-all duration-300 flex-shrink-0",
+        "h-full flex flex-col z-10 transition-all duration-200 flex-shrink-0",
         collapsed ? "w-20" : "w-60"
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -158,9 +158,9 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                   }}
                   transition={{
                     type: "spring",
-                    stiffness: 500,
+                    stiffness: 600,
                     damping: 35,
-                    mass: 0.6,
+                    mass: 0.4,
                   }}
                 />
               )}

@@ -69,9 +69,9 @@ export function TopNav() {
                       }}
                       transition={{
                         type: "spring",
-                        stiffness: 500,
+                        stiffness: 600,
                         damping: 35,
-                        mass: 0.6,
+                        mass: 0.4,
                       }}
                     />
                   )}
@@ -91,8 +91,8 @@ export function TopNav() {
                         animate={{ width: "auto", opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{
-                          width:   { type: "spring", stiffness: 500, damping: 35, mass: 0.6 },
-                          opacity: { duration: 0.15, delay: 0.05 },
+                          width:   { type: "spring", stiffness: 600, damping: 35, mass: 0.4 },
+                          opacity: { duration: 0.1, delay: 0.03 },
                         }}
                       >
                         {label}
