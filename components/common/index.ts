@@ -19,3 +19,8 @@ export { TablePagination } from "./TablePagination";
 export { MonthView }            from "./MonthView";
 export { TimeGridView }         from "./TimeGridView";
 export { AppointmentEventCard } from "./AppointmentEventCard";
+
+// ─── Forms ───────────────────────────────────────────────────────────────────
+export { DetailForm } from "./DetailForm";
+export type { DetailFormProps, FormFieldDescriptor, SelectOption } from "./DetailForm";
+

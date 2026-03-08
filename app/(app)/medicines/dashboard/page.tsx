@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pill, Beaker, Syringe, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -118,6 +119,7 @@ const MEDICINE_FILTER_COLUMNS: FilterColumn[] = [
 ];
 
 export default function MedicinesDashboardPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [page, setPage] = useState(1);
@@ -158,6 +160,7 @@ export default function MedicinesDashboardPage() {
           <Button
             className="gap-2 shadow-sm"
             style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+            onClick={() => router.push("/medicines/new")}
           >
             <Plus size={15} />
             Add Medicine
@@ -180,6 +183,7 @@ export default function MedicinesDashboardPage() {
           columns={medicineColumns}
           data={filtered}
           enableSorting
+          onRowClick={(row) => router.push(`/medicines/${row.id}`)}
           emptyState={
             <div className="flex flex-col items-center gap-2 py-10">
               <p

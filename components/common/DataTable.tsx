@@ -31,6 +31,8 @@ interface DataTableProps<TData> {
   enableSorting?: boolean;
   /** Shown when data is an empty array. */
   emptyState?: React.ReactNode;
+  /** When provided, rows become clickable and this handler is called with the row's data. */
+  onRowClick?: (row: TData) => void;
   className?: string;
 }
 
@@ -57,6 +59,7 @@ export function DataTable<TData>({
   data,
   enableSorting = true,
   emptyState,
+  onRowClick,
   className,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -125,6 +128,7 @@ export function DataTable<TData>({
                 key={row.id}
                 className="group transition-colors cursor-pointer hover:bg-[var(--color-row-hover)]"
                 style={{ borderBottom: "1px solid var(--color-border)" }}
+                onClick={onRowClick ? () => onRowClick(row.original) : undefined}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>

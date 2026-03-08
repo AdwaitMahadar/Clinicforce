@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         <TooltipProvider delayDuration={300}>
           {children}
+          <Toaster position="bottom-right" richColors />
         </TooltipProvider>
       </body>
     </html>

@@ -3,11 +3,13 @@ import { SideNav } from "./SideNav";
 
 interface AppShellProps {
   children: React.ReactNode;
+  /** Rendered at the root of the shell — outside all overflow containers. Used for intercepting-route modals. */
+  modal?: React.ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, modal }: AppShellProps) {
   return (
-    <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden relative">
       {/* Left sidebar */}
       <SideNav />
 
@@ -23,6 +25,9 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal portal — outside all overflow/scroll containers so position:fixed works correctly */}
+      {modal}
     </div>
   );
 }
