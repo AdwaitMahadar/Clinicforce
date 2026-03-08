@@ -14,7 +14,7 @@ import { users } from "./auth";
 import { patients } from "./patients";
 
 export const appointmentStatusEnum = pgEnum("appointment_status", [
-  "pending",
+  "scheduled",
   "completed",
   "cancelled",
   "no-show",
@@ -44,11 +44,13 @@ export const appointments = pgTable(
       .references(() => users.id, { onDelete: "restrict" }),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
-    status: appointmentStatusEnum("status").notNull().default("pending"),
+    status: appointmentStatusEnum("status").notNull().default("scheduled"),
     type: appointmentTypeEnum("type").notNull().default("general"),
     date: timestamp("date").notNull(),
     duration: integer("duration").notNull().default(30), // minutes
     notes: text("notes"),
+    scheduledStartTime: timestamp("scheduled_start_time"),
+    scheduledEndTime: timestamp("scheduled_end_time"),
     actualCheckIn: timestamp("actual_check_in"),
     actualCheckOut: timestamp("actual_check_out"),
     isActive: boolean("is_active").notNull().default(true),
