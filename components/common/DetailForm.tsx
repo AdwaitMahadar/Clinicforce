@@ -6,23 +6,34 @@
  * A generic field-driven form panel, wired to React Hook Form + Zod v4.
  * Designed for entity detail modals (Medicine, Patient, Appointment, etc.)
  *
- * Usage:
- * ```tsx
- * import { medicineSchema, type MedicineFormValues } from "@/lib/validators/medicine";
+ * ─── Two layout modes ────────────────────────────────────────────────────────
  *
- * <DetailForm<MedicineFormValues>
- *   schema={medicineSchema}
- *   defaultValues={{ name: "Amoxicillin", category: "Antibiotics" }}
- *   fields={[
- *     { name: "name",     label: "Medicine Name", type: "text" },
- *     { name: "category", label: "Category",      type: "select",
- *       options: [{ label: "Antibiotics", value: "Antibiotics" }] },
- *   ]}
- *   onSubmit={async (values) => { ... }}
- *   onDelete={async () => { ... }}
- *   onCancel={() => { ... }}
- * />
- * ```
+ * 1. FLAT (original) — pass `fields`:
+ *    Renders a single scrollable 2-column grid. Used by MedicineDetailPanel.
+ *
+ *    <DetailForm fields={[...]} ... />
+ *
+ * 2. SECTIONED — pass `sections`:
+ *    Renders side-by-side columns, each with its own title, field grid, and
+ *    optional background. Used by AppointmentDetailPanel.
+ *    `rightSlot` lets you inject a read-only panel (e.g. Documents + Activity
+ *    Log) as a third column that sits alongside but outside the form itself.
+ *
+ *    <DetailForm
+ *      sections={[
+ *        { title: "Primary Info", width: "30%", borderRight: true, fields: [...] },
+ *        { title: "Timeline & Notes", background: "var(--color-surface-alt)", fields: [...] },
+ *      ]}
+ *      rightSlot={<DocumentsAndLog />}
+ *      ...
+ *    />
+ *
+ * ─── Field types ──────────────────────────────────────────────────────────────
+ *
+ *   "text" | "date" | "email" | "number" | "time"  → <Input type={…} />
+ *   "textarea"                                      → <Textarea />
+ *   "select"                                        → <Select />
+ *   "custom"  (requires renderControl)              → caller-supplied JSX
  *
  * Rules:
  * - All colours come from CSS variables — no hardcoded hex values
@@ -61,7 +72,7 @@ import {
 } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
 
-// ─── Field descriptor types ────────────────────────────────────────────────────
+// ─── Field descriptor types ───────────────────────────────────────────────────
 
 export interface SelectOption {
   label: string;
@@ -79,7 +90,7 @@ interface BaseField<TValues extends FieldValues> {
 }
 
 export interface TextField<TValues extends FieldValues> extends BaseField<TValues> {
-  type: "text" | "date" | "email" | "number";
+  type: "text" | "date" | "email" | "number" | "time";
 }
 
 export interface TextareaField<TValues extends FieldValues> extends BaseField<TValues> {
@@ -92,10 +103,41 @@ export interface SelectField<TValues extends FieldValues> extends BaseField<TVal
   options: SelectOption[];
 }
 
+/**
+ * CustomField — for fields that can't be expressed by the built-in types
+ * (e.g. an avatar + text combo, a rich editor, a date-time picker).
+ * Supply a `renderControl` function that receives the RHF field object
+ * and returns JSX. FormLabel and FormMessage are still rendered automatically.
+ */
+export interface CustomField<TValues extends FieldValues> extends BaseField<TValues> {
+  type: "custom";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  renderControl: (field: any) => React.ReactNode;
+}
+
 export type FormFieldDescriptor<TValues extends FieldValues> =
   | TextField<TValues>
   | TextareaField<TValues>
-  | SelectField<TValues>;
+  | SelectField<TValues>
+  | CustomField<TValues>;
+
+// ─── Section type (for multi-column / sectioned layouts) ──────────────────────
+
+export interface FormSection<TValues extends FieldValues> {
+  /** Rendered as a small uppercase heading above the field grid */
+  title?: string;
+  /** Fields rendered in this column's 2-col sub-grid */
+  fields: FormFieldDescriptor<TValues>[];
+  /** Column background — CSS variable or any valid CSS colour value */
+  background?: string;
+  /**
+   * Fixed column width (e.g. "30%"). When omitted the column uses
+   * `flex: 1` and expands to fill available space.
+   */
+  width?: string;
+  /** When true, draws a right border separating this column from the next */
+  borderRight?: boolean;
+}
 
 // ─── Main component props ─────────────────────────────────────────────────────
 
@@ -105,8 +147,28 @@ export interface DetailFormProps<TValues extends FieldValues> {
   schema: $ZodType<TValues, any>;
   /** Initial field values — usually the record fetched from the DB / mock */
   defaultValues: DefaultValues<TValues>;
-  /** Field definitions that drive the rendered form */
-  fields: FormFieldDescriptor<TValues>[];
+
+  /**
+   * FLAT mode — a single scrollable 2-column grid.
+   * Mutually exclusive with `sections`.
+   */
+  fields?: FormFieldDescriptor<TValues>[];
+
+  /**
+   * SECTIONED mode — side-by-side columns, each with their own field grid.
+   * Mutually exclusive with `fields`.
+   */
+  sections?: FormSection<TValues>[];
+
+  /**
+   * Content rendered as an extra column to the RIGHT of the section columns.
+   * Rendered inside the form's flex container but outside the scrollable
+   * field area — ideal for read-only panels (Documents, Activity Log) that
+   * are separate from the form's save/submit lifecycle.
+   * Only valid when `sections` is provided.
+   */
+  rightSlot?: React.ReactNode;
+
   /** Called with validated values on submit */
   onSubmit: (values: TValues) => Promise<void>;
   /** Optional delete handler — shows delete button when provided */
@@ -122,12 +184,117 @@ export interface DetailFormProps<TValues extends FieldValues> {
   className?: string;
 }
 
+// ─── Field control renderer ───────────────────────────────────────────────────
+
+function renderFieldControl<TValues extends FieldValues>(
+  descriptor: FormFieldDescriptor<TValues>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  field: any,
+  isSaving: boolean
+): React.ReactNode {
+  if (descriptor.type === "custom") {
+    return descriptor.renderControl(field);
+  }
+
+  if (descriptor.type === "textarea") {
+    return (
+      <Textarea
+        rows={(descriptor as TextareaField<TValues>).rows ?? 5}
+        placeholder={descriptor.placeholder}
+        disabled={descriptor.disabled ?? isSaving}
+        className="resize-none"
+        {...field}
+        value={String(field.value ?? "")}
+      />
+    );
+  }
+
+  if (descriptor.type === "select") {
+    return (
+      <Select
+        disabled={descriptor.disabled ?? isSaving}
+        onValueChange={field.onChange}
+        defaultValue={String(field.value ?? "")}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue
+            placeholder={
+              descriptor.placeholder ??
+              `Select ${descriptor.label.toLowerCase()}`
+            }
+          />
+        </SelectTrigger>
+        <SelectContent>
+          {(descriptor as SelectField<TValues>).options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  // text | date | email | number | time
+  return (
+    <Input
+      type={descriptor.type}
+      placeholder={descriptor.placeholder}
+      disabled={descriptor.disabled ?? isSaving}
+      {...field}
+      value={String(field.value ?? "")}
+    />
+  );
+}
+
+// ─── Field grid (shared between flat and sectioned modes) ─────────────────────
+
+function FieldGrid<TValues extends FieldValues>({
+  fields,
+  control,
+  isSaving,
+  gap = "gap-5",
+}: {
+  fields: FormFieldDescriptor<TValues>[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  control: any;
+  isSaving: boolean;
+  gap?: string;
+}) {
+  return (
+    <div className={cn("grid grid-cols-2 auto-rows-auto", gap)}>
+      {fields.map((descriptor) => (
+        <div
+          key={String(descriptor.name)}
+          className={descriptor.colSpan === 2 ? "col-span-2" : "col-span-1"}
+        >
+          <FormField
+            control={control}
+            name={descriptor.name}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{descriptor.label}</FormLabel>
+                <FormControl>
+                  {renderFieldControl(descriptor, field, isSaving)}
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DetailForm<TValues extends FieldValues>({
   schema,
   defaultValues,
   fields,
+  sections,
+  rightSlot,
   onSubmit,
   onDelete,
   onCancel,
@@ -178,94 +345,57 @@ export function DetailForm<TValues extends FieldValues>({
         onSubmit={handleSubmit}
         className={cn("flex flex-col h-full", className)}
       >
-        {/* ── Scrollable field area ───────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          <div className="grid grid-cols-2 auto-rows-auto gap-5">
-            {fields.map((descriptor) => (
+
+        {/* ── SECTIONED body (multi-column) ──────────────────────── */}
+        {sections ? (
+          <div className="flex flex-1 min-h-0">
+            {sections.map((section, idx) => (
               <div
-                key={String(descriptor.name)}
-                className={descriptor.colSpan === 2 ? "col-span-2" : "col-span-1"}
+                key={idx}
+                className="flex flex-col overflow-y-auto p-6 gap-4"
+                style={{
+                  ...(section.width
+                    ? { width: section.width, flexShrink: 0 }
+                    : { flex: 1 }),
+                  background: section.background,
+                  borderRight: section.borderRight
+                    ? "1px solid var(--color-border)"
+                    : undefined,
+                }}
               >
-                <FormField
+                {section.title && (
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-widest flex-shrink-0"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {section.title}
+                  </p>
+                )}
+                <FieldGrid
+                  fields={section.fields}
                   control={form.control}
-                  name={descriptor.name}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel
-                        className="text-[10px] font-bold uppercase tracking-widest"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        {descriptor.label}
-                      </FormLabel>
-                      <FormControl>
-                        {descriptor.type === "textarea" ? (
-                          <Textarea
-                            rows={(descriptor as TextareaField<TValues>).rows ?? 5}
-                            placeholder={descriptor.placeholder}
-                            disabled={descriptor.disabled ?? isSaving}
-                            className="resize-none text-sm"
-                            style={{
-                              background: "var(--color-surface-alt)",
-                              color: "var(--color-text-primary)",
-                            }}
-                            {...field}
-                            value={String(field.value ?? "")}
-                          />
-                        ) : descriptor.type === "select" ? (
-                          <Select
-                            disabled={descriptor.disabled ?? isSaving}
-                            onValueChange={field.onChange}
-                            defaultValue={String(field.value ?? "")}
-                          >
-                            <SelectTrigger
-                              className="text-sm w-full"
-                              style={{
-                                background: "var(--color-surface-alt)",
-                                color: "var(--color-text-primary)",
-                              }}
-                            >
-                              <SelectValue
-                                placeholder={
-                                  descriptor.placeholder ??
-                                  `Select ${descriptor.label.toLowerCase()}`
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(descriptor as SelectField<TValues>).options.map(
-                                (opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                )
-                              )}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            type={descriptor.type}
-                            placeholder={descriptor.placeholder}
-                            disabled={descriptor.disabled ?? isSaving}
-                            className="text-sm"
-                            style={{
-                              background: "var(--color-surface-alt)",
-                              color: "var(--color-text-primary)",
-                            }}
-                            {...field}
-                            value={String(field.value ?? "")}
-                          />
-                        )}
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
+                  isSaving={isSaving}
+                  gap="gap-4"
                 />
               </div>
             ))}
-          </div>
-        </div>
 
-        {/* ── Sticky footer ───────────────────────────────────────── */}
+            {/* Read-only right panel (Documents, Activity Log, etc.) */}
+            {rightSlot}
+          </div>
+        ) : (
+          /* ── FLAT body (single scrollable grid) ─────────────────── */
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <FieldGrid
+              fields={fields ?? []}
+              control={form.control}
+              isSaving={isSaving}
+              gap="gap-5"
+            />
+          </div>
+        )}
+
+        {/* ── Sticky footer ─────────────────────────────────────────── */}
         <div
           className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"
           style={{ borderColor: "var(--color-border)" }}

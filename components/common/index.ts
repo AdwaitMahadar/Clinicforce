@@ -22,5 +22,15 @@ export { AppointmentEventCard } from "./AppointmentEventCard";
 
 // ─── Forms ───────────────────────────────────────────────────────────────────
 export { DetailForm } from "./DetailForm";
-export type { DetailFormProps, FormFieldDescriptor, SelectOption } from "./DetailForm";
+export type {
+  DetailFormProps,
+  FormFieldDescriptor,
+  FormSection,
+  SelectOption,
+  CustomField,
+} from "./DetailForm";
+
+// ─── Overlays ─────────────────────────────────────────────────────────────────
+export { ModalShell } from "./ModalShell";
+export type { ModalShellProps, ModalSize } from "./ModalShell";
 

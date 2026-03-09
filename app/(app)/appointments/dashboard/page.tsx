@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import type { MockAppointment } from "@/mock/appointments/dashboard";
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -141,8 +143,13 @@ function ViewDateControl({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AppointmentsDashboardPage() {
+  const router = useRouter();
   const [view,        setView]        = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  function handleEventClick(appt: MockAppointment) {
+    router.push(`/appointments/${appt.id}`);
+  }
 
   // Subtitle changes by view
   const subtitle = useMemo(() => {
@@ -180,6 +187,7 @@ export default function AppointmentsDashboardPage() {
       <Button
         className="gap-2 shadow-sm"
         style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+        onClick={() => router.push("/appointments/new")}
       >
         <Plus size={15} />
         New Appt
@@ -211,10 +219,7 @@ export default function AppointmentsDashboardPage() {
             appointments={MOCK_APPOINTMENTS}
             currentDate={currentDate}
             onDateChange={setCurrentDate}
-            onDayClick={(date) => {
-              setCurrentDate(date);
-              setView("day");
-            }}
+            onEventClick={handleEventClick}
           />
         )}
 
@@ -224,6 +229,7 @@ export default function AppointmentsDashboardPage() {
             view={view}
             currentDate={currentDate}
             onDateChange={setCurrentDate}
+            onEventClick={handleEventClick}
           />
         )}
       </div>
