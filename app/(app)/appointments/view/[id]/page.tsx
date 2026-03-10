@@ -1,14 +1,19 @@
 /**
- * app/(app)/appointments/[id]/page.tsx
+ * app/(app)/appointments/view/[id]/page.tsx
  *
  * Full-page fallback for appointment detail.
- * Shown on direct URL access / hard refresh of /appointments/[id].
+ * Shown on direct URL access / hard refresh of /appointments/view/[id].
  * During normal in-app navigation the intercepting modal takes over.
+ *
+ * ROUTING NOTE:
+ * Detail routes use /view/[id] (not /[id]) so the intercepting route
+ * @modal/(.)appointments/view/[id] never conflicts with static segments
+ * like /appointments/dashboard or /appointments/new.
  */
 
 import { notFound } from "next/navigation";
 import { getMockAppointmentDetail } from "@/mock/appointments/detail";
-import { AppointmentDetailPanel } from "../_components/AppointmentDetailPanel";
+import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
 
 interface AppointmentDetailPageProps {
   params: Promise<{ id: string }>;

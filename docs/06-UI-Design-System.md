@@ -60,16 +60,22 @@ Use Next.js App Router's `@modal` parallel route pattern for this.
 ```
 app/
   @modal/
-    (.)patients/[id]/
+    (.)patients/view/[id]/
       page.tsx        ← intercepted modal view
   patients/
     dashboard/
       page.tsx        ← list view (stays mounted under modal)
-    [id]/
-      page.tsx        ← full page fallback (direct URL access)
+    view/
+      [id]/
+        page.tsx      ← full page fallback (direct URL access)
 ```
 
 **Rule:** Every entity that supports row-click detail (Patients, Appointments, Medicines, Users) must have both an intercepting modal route and a full-page fallback route. The modal is shown when navigating from within the app; the full page is shown on direct URL access or page refresh.
+
+**CRITICAL — Detail URL Pattern:**
+Detail routes MUST use the `/view/[id]` sub-path pattern (e.g. `/appointments/view/abc-123`), **never** a bare `/[id]` directly under the entity (e.g. `/appointments/abc-123`).
+
+Reason: Next.js intercepting route `(.)appointments/[id]` is a dynamic segment that matches ANY string, including static nav segments like `dashboard`, `new`, and `reports`. This causes `router.push('/appointments/dashboard')` to be intercepted as a modal, freezing the background page and breaking navigation. The `/view/` sub-path creates a completely separate route namespace — `(.)appointments/view/[id]` can never match `/appointments/dashboard`.
 
 ---
 
@@ -85,18 +91,26 @@ app/
     appointments/
       dashboard/page.tsx
       reports/page.tsx
+      new/page.tsx              ← Full page fallback for new appointment
+      view/
+        [id]/page.tsx           ← Full page appointment detail fallback
     patients/
       dashboard/page.tsx
       reports/page.tsx
-      [id]/page.tsx             ← Full page patient detail
+      view/
+        [id]/page.tsx           ← Full page patient detail
     medicines/
       dashboard/page.tsx
       reports/page.tsx
-      [id]/page.tsx
+      new/page.tsx
+      view/
+        [id]/page.tsx           ← Full page medicine detail
     @modal/                     ← Parallel route for intercepting modals
-      (.)patients/[id]/page.tsx
-      (.)appointments/[id]/page.tsx
-      (.)medicines/[id]/page.tsx
+      (.)patients/view/[id]/page.tsx
+      (.)appointments/new/page.tsx
+      (.)appointments/view/[id]/page.tsx
+      (.)medicines/new/page.tsx
+      (.)medicines/view/[id]/page.tsx
   (auth)/                       ← Route group for login/auth pages
     login/page.tsx
 

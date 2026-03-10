@@ -148,7 +148,7 @@ export default function AppointmentsDashboardPage() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
   function handleEventClick(appt: MockAppointment) {
-    router.push(`/appointments/${appt.id}`);
+    router.push(`/appointments/view/${appt.id}`);
   }
 
   // Subtitle changes by view

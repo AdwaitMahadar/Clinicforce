@@ -65,10 +65,16 @@ app/
     layout.tsx              ← AppShell: TopNav + SideNav + main content
     home/dashboard/         ← Clinic overview
     appointments/dashboard/ ← Appointments calendar (Month/Week/Day views)
+    appointments/view/[id]/ ← Full-page appointment detail (direct URL fallback)
     patients/dashboard/     ← Patient records table
+    patients/view/[id]/     ← Full-page patient detail
     medicines/dashboard/    ← Medicine library table
-    [entity]/[id]/          ← Full-page entity detail (direct URL fallback)
+    medicines/view/[id]/    ← Full-page medicine detail
     @modal/                 ← Intercepting route modals (parallel route)
+      (.)appointments/view/[id]/  ← Appointment detail modal
+      (.)appointments/new/        ← New appointment modal
+      (.)medicines/view/[id]/     ← Medicine detail modal
+      (.)medicines/new/           ← New medicine modal
   (auth)/
     login/page.tsx
 
@@ -111,6 +117,8 @@ Two-axis matrix: **top navbar** (entity/domain) × **left sidebar** (view within
 Routes follow `/{entity}/{view}` — all static segments. Root `/` redirects to `/home/dashboard`.
 
 Detail records open as **intercepting route modals** (`@modal` parallel routes). Every entity also has a full-page fallback for direct URL / refresh access.
+
+**CRITICAL — `/view/[id]` routing pattern:** Detail routes MUST use `/view/[id]` (e.g. `/appointments/view/abc-123`), never a bare `/[id]` (e.g. `/appointments/abc-123`). A bare `[id]` is a dynamic segment that matches ANY string — including `dashboard`, `new`, and `reports` — causing the `@modal` interceptor to match nav-bar clicks and freeze the page. The `/view/` sub-segment creates a separate namespace that can never conflict with static nav segments.
 
 ---
 
@@ -210,3 +218,4 @@ A final checklist — these are the most common mistakes to avoid:
 - **Do not** define Zod schemas inline in components or actions — they live in `lib/validators/`
 - **Do not** implement client-side filtering, sorting, or pagination — always server-side
 - **Do not** rely on UI hiding alone for access control — server actions must enforce roles too
+- **Do not** create intercepting modal routes at `@modal/(.)entity/[id]` — use `@modal/(.)entity/view/[id]` instead. A bare `[id]` segment matches static nav paths like `dashboard`, causing the interceptor to fire on TopNav clicks and break navigation entirely.

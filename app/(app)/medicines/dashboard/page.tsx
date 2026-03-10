@@ -183,7 +183,7 @@ export default function MedicinesDashboardPage() {
           columns={medicineColumns}
           data={filtered}
           enableSorting
-          onRowClick={(row) => router.push(`/medicines/${row.id}`)}
+          onRowClick={(row) => router.push(`/medicines/view/${row.id}`)}
           emptyState={
             <div className="flex flex-col items-center gap-2 py-10">
               <p
