@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -125,6 +126,7 @@ const PATIENT_FILTER_COLUMNS: FilterColumn[] = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PatientsDashboardPage() {
+  const router = useRouter();
   const [search,        setSearch]        = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
   const [page,          setPage]          = useState(1);
@@ -168,6 +170,7 @@ export default function PatientsDashboardPage() {
         subtitle="Manage patient records, history, and active treatments."
         actions={
           <Button
+            onClick={() => router.push("/patients/new")}
             className="gap-2 shadow-sm"
             style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
           >
@@ -194,6 +197,7 @@ export default function PatientsDashboardPage() {
           columns={patientColumns}
           data={filtered}
           enableSorting
+          onRowClick={(row) => router.push(`/patients/view/${row.id}`)}
           emptyState={
             <div className="flex flex-col items-center gap-2 py-10">
               <p
