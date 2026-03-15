@@ -221,7 +221,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
               {isCreate ? "New Medicine" : medicine!.name}
             </h3>
             <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-              {isCreate ? "Fill in the details to add a new medicine" : `Edit Details · ${medicine!.sku}`}
+              {isCreate ? "Fill in the details to add a new medicine" : "Edit Details"}
             </p>
           </div>
         </div>

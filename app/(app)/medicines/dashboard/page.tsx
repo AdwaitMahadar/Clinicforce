@@ -45,12 +45,7 @@ const medicineColumns: ColumnDef<MedicineRow>[] = [
           {getIcon(row.original.icon)}
         </div>
         <div>
-          <span className="text-sm font-bold block" style={{ color: "var(--color-text-primary)" }}>
-            {row.original.name}
-          </span>
-          <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            SKU: {row.original.sku}
-          </span>
+          {row.original.name}
         </div>
       </div>
     ),
@@ -126,12 +121,10 @@ export default function MedicinesDashboardPage() {
 
   const filtered = MOCK_MEDICINES.filter((m) => {
     const fullName = m.name.toLowerCase();
-    const skuName = m.sku.toLowerCase();
-    
+
     if (
       search &&
       !fullName.includes(search.toLowerCase()) &&
-      !skuName.includes(search.toLowerCase()) &&
       !m.category.toLowerCase().includes(search.toLowerCase())
     ) {
       return false;
@@ -144,7 +137,7 @@ export default function MedicinesDashboardPage() {
       if (f.columnKey === "brand" && m.brand !== f.value) return false;
       if (f.columnKey === "name") {
         const query = f.value.toLowerCase();
-        if (!fullName.includes(query) && !skuName.includes(query)) return false;
+        if (!fullName.includes(query)) return false;
       }
     }
 
@@ -171,7 +164,7 @@ export default function MedicinesDashboardPage() {
       <TableFilterBar
         searchValue={search}
         onSearchChange={(v) => { setSearch(v); setPage(1); }}
-        searchPlaceholder="Search inventory by name, SKU or category..."
+        searchPlaceholder="Search inventory by name or category..."
         filterColumns={MEDICINE_FILTER_COLUMNS}
         activeFilters={activeFilters}
         onFiltersChange={(f) => { setActiveFilters(f); setPage(1); }}

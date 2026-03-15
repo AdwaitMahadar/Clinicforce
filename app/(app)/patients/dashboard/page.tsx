@@ -103,7 +103,6 @@ const PATIENT_FILTER_COLUMNS: FilterColumn[] = [
     options: [
       { label: "Active",   value: "active"   },
       { label: "Inactive", value: "inactive" },
-      { label: "Critical", value: "critical" },
     ],
   },
   {

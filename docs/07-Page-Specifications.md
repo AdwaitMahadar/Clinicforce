@@ -1,0 +1,715 @@
+# 07 — Page Specifications
+
+This document defines the backend contract for every page in the authenticated app shell.
+For each page it specifies: the URL, which server actions to write, what data goes in and out,
+filtering/sorting/pagination requirements, and which RBAC rules apply.
+
+Use `docs/03-Database-Schema.md` for field definitions, `docs/08-Business-Rules.md` for
+validation rules, and `docs/04-API-Specification.md` (when written) for the action signatures.
+
+---
+
+## Navigation Matrix
+
+```
+Top nav (entity) × Side nav (view)  →  /{entity}/{view}
+
+                 /dashboard       /reports
+/home            Home Dashboard   Home Reports
+/appointments    Appt Dashboard   Appt Reports
+/patients        Patient List     Patient Reports
+/medicines       Medicine List    Medicine Reports
+```
+
+Detail modals open at `/{entity}/view/{id}` (intercepting route) or fall back to full page.
+New-record modals open at `/{entity}/new` (intercepting route) or fall back to full page.
+
+---
+
+## 1. Home Dashboard — `/home/dashboard`
+
+> **Status:** Not yet built.
+
+### Purpose
+High-level clinic overview — metrics, recent activity, quick-action shortcuts.
+
+### Server Actions Needed
+
+#### `getHomeStats()`
+- **Input:** `clinicId` from session
+- **Output:**
+  ```ts
+  {
+    totalPatients:          number;   // COUNT patients WHERE is_active = true
+    appointmentsToday:      number;   // COUNT appointments WHERE date::date = today AND is_active = true
+    appointmentsPending:    number;   // COUNT appointments WHERE status = 'pending' AND is_active = true
+    appointmentsCompleted:  number;   // COUNT appointments WHERE status = 'completed' last 30 days
+    newPatientsThisMonth:   number;   // COUNT patients created in current calendar month
+  }
+  ```
+- **RBAC:** All roles.
+
+#### `getRecentAppointments()`
+- **Input:** `clinicId`, `limit = 5`
+- **Output:** Array of `{ id, title, patientName, doctorName, date, status, type }`
+  - `patientName` = JOIN patients on `patient_id`
+  - `doctorName`  = JOIN users on `doctor_id`
+- **Sort:** `date DESC`
+- **RBAC:** All roles.
+
+#### `getRecentPatients()`
+- **Input:** `clinicId`, `limit = 5`
+- **Output:** Array of `{ id, chartId, firstName, lastName, status, createdAt }`
+- **Sort:** `created_at DESC`
+- **RBAC:** All roles.
+
+---
+
+## 2. Home Reports — `/home/reports`
+
+> **Status:** Not yet built. Placeholder only — Phase 3.
+
+---
+
+## 3. Appointments Dashboard — `/appointments/dashboard`
+
+> **Status:** UI built (calendar Month/Week/Day views). Server actions pending.
+
+### Views
+The dashboard has three calendar sub-views controlled by a view-switcher pill:
+
+| View | Component | Layout |
+|---|---|---|
+| Month | `MonthView` | Custom 2-panel grid (left: day tiles, right: event list for selected day) |
+| Week | `TimeGridView` + FullCalendar | `timeGridWeek` with custom event cards |
+| Day | `TimeGridView` + FullCalendar | `timeGridDay` with custom event cards |
+
+### Server Actions Needed
+
+#### `getAppointments({ view, rangeStart, rangeEnd })`
+- **Input:**
+  ```ts
+  {
+    clinicId:   string;   // from session — never from client
+    rangeStart: Date;     // first visible date of the current view window
+    rangeEnd:   Date;     // last visible date of the current view window
+    view:       "month" | "week" | "day";
+  }
+  ```
+- **Output:** Array of `AppointmentEvent`:
+  ```ts
+  {
+    id:          string;
+    title:       string;
+    patientName: string;   // JOIN patients
+    doctorName:  string;   // JOIN users
+    date:        string;   // ISO timestamp (scheduled start)
+    duration:    number;   // minutes
+    status:      "pending" | "completed" | "cancelled" | "no-show";
+    type:        "general" | "follow-up" | "emergency" | ...;
+    notes:       string | null;
+  }
+  ```
+- **Filter:** `clinic_id = session.clinicId`, `is_active = true`, `date BETWEEN rangeStart AND rangeEnd`
+- **Sort:** `date ASC`
+- **RBAC:** All roles.
+
+#### Notes
+- Month view groups events by day in the client after fetching the full month range.
+- Week/Day views pass the event array directly to FullCalendar.
+- Clicking any event pushes `router.push('/appointments/view/${id}')` → intercepting modal.
+- "New Appointment" button pushes `router.push('/appointments/new')` → intercepting modal.
+
+---
+
+## 4. Appointment Detail Modal / Page — `/appointments/view/[id]`
+
+> **Status:** UI built (modal + full-page fallback). Server actions pending.
+
+### Layout
+`AppointmentDetailPanel` — 3-column:
+- **Left (40%):** Primary info form (title, patient, doctor, type, status, date, duration, times)
+- **Centre (35%):** Notes textarea + Documents linked to this appointment
+- **Right (25%):** Activity log
+
+### Server Actions Needed
+
+#### `getAppointmentDetail(id)`
+- **Input:** `id` (UUID), `clinicId` from session
+- **Output:**
+  ```ts
+  {
+    id:                 string;
+    title:              string;
+    patientId:          string;
+    patientName:        string;   // JOIN patients (first_name + last_name)
+    patientChartId:     string;
+    doctorId:           string;
+    doctorName:         string;   // JOIN users (first_name + last_name)
+    type:               string;
+    status:             string;
+    date:               string;   // ISO timestamp
+    duration:           number;
+    scheduledStartTime: string | null;
+    scheduledEndTime:   string | null;
+    actualCheckIn:      string | null;
+    actualCheckOut:     string | null;
+    notes:              string | null;
+    documents:          DocumentSummary[];
+    activityLog:        LogEvent[];
+    createdAt:          string;
+    createdBy:          string;   // display name resolved from users
+  }
+  ```
+- **Security:** Verify `clinic_id = session.clinicId` — throw 404 if not found or wrong clinic.
+- **RBAC:** All roles.
+
+#### `updateAppointment(id, data)`
+- **Input:** `id`, `AppointmentFormValues` (from `lib/validators/appointment.ts`), `clinicId` from session
+- **Validates:** Zod schema in `lib/validators/appointment.ts`
+- **Enforces:**
+  - `doctorId` must be an active user with role `doctor`
+  - `patientId` must be an active patient
+  - Duration between 15–480 minutes
+- **Returns:** Updated appointment or validation error
+- **RBAC:** All roles can edit. `clinicId` and `createdBy` are immutable.
+
+#### `deleteAppointment(id)` *(soft delete)*
+- **Input:** `id`, `clinicId` from session
+- **Action:** `SET is_active = false`
+- **RBAC:** Doctor and Admin only.
+
+---
+
+## 5. New Appointment Modal / Page — `/appointments/new`
+
+> **Status:** UI built (modal + full-page fallback). Server actions pending.
+
+### Server Actions Needed
+
+#### `createAppointment(data)`
+- **Input:** `AppointmentFormValues` (from `lib/validators/appointment.ts`), `clinicId` from session
+- **Validates:** Zod schema in `lib/validators/appointment.ts`
+- **Enforces:**
+  - `doctorId` → active user with role `doctor`
+  - `patientId` → active patient
+  - Duration 15–480 minutes
+  - Default `status = 'pending'`
+  - `createdBy` = `session.userId` (immutable after creation)
+  - `clinicId` = `session.clinicId` (immutable after creation)
+- **Returns:** Created appointment `{ id }` (client then navigates to detail view)
+- **RBAC:** All roles.
+
+#### Supporting Selects (for form dropdowns)
+Both needed to populate the patient and doctor pickers in the form:
+
+`getActivePatients()` — `{ id, firstName, lastName, chartId }[]` where `is_active = true`
+`getActiveDoctors()` — `{ id, firstName, lastName, chartId }[]` where `is_active = true AND type = 'doctor'`
+
+---
+
+## 6. Appointments Reports — `/appointments/reports`
+
+> **Status:** Placeholder only — Phase 3.
+
+---
+
+## 7. Patients Dashboard — `/patients/dashboard`
+
+> **Status:** UI built (DataTable with search + filter). Server actions pending.
+
+### Table Columns
+| Column | DB Field | Sortable? | Filterable? |
+|---|---|---|---|
+| Patient (name + email) | `first_name`, `last_name`, `email` | ✓ by last_name | Search only |
+| Chart ID | `chart_id` | — | Search only |
+| Last Visit | Derived from most recent appointment `date` | ✓ | — |
+| Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
+| Status | `is_active` boolean → mapped to `active` / `inactive` display | — | ✓ (select) |
+
+> **Note on "Last Visit":** Derived field — a subquery or join to appointments to get `MAX(date)` for that patient. Not stored on the patient record directly.
+
+> **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
+
+### Server Actions Needed
+
+#### `getPatients({ search, filters, page, pageSize, sort })`
+- **Input:**
+  ```ts
+  {
+    clinicId:    string;   // from session
+    search?:     string;   // matches first_name, last_name, chart_id, phone
+    status?:     "active" | "inactive" | "critical";
+    doctorId?:   string;   // filter by last consulted doctor
+    page:        number;   // 1-indexed
+    pageSize:    number;   // default 10
+    sortBy?:     "lastName" | "lastVisit";
+    sortDir?:    "asc" | "desc";
+  }
+  ```
+- **Output:**
+  ```ts
+  {
+    rows: PatientRow[];
+    total: number;          // for pagination
+  }
+  ```
+  where `PatientRow`:
+  ```ts
+  {
+    id:             string;
+    chartId:        string;
+    firstName:      string;
+    lastName:       string;
+    email:          string;
+    phone:          string;
+    lastVisit:      string | null;   // MAX(appointments.date) for this patient
+    assignedDoctor: string | null;   // doctor name from that last appointment
+    status:         "active" | "inactive" | "critical";
+  }
+  ```
+- **Filter:** Always `clinic_id = session.clinicId`
+- **RBAC:** All roles.
+
+---
+
+## 8. Patient Detail Modal / Page — `/patients/view/[id]`
+
+> **Status:** UI built (3-column view modal + full-page fallback). Server actions pending.
+
+### Layout
+`PatientDetailPanel mode="view"` — 3 columns:
+- **Left (35%):** Personal info (name, DOB, gender, address, phone, email) + Medical context (blood group, allergies) + Emergency contact
+- **Centre (40%):** Tabbed — Documents | Appointments
+- **Right (25%):** Clinical notes textarea + Activity log
+
+### Server Actions Needed
+
+#### `getPatientDetail(id)`
+- **Input:** `id` (UUID), `clinicId` from session
+- **Output:**
+  ```ts
+  {
+    id:                    string;
+    chartId:               string;
+    firstName:             string;
+    lastName:              string;
+    email:                 string;
+    phone:                 string;
+    dateOfBirth:           string;   // ISO date
+    gender:                string;
+    address:               string;
+    bloodGroup:            string | null;
+    allergies:             string | null;
+    emergencyContactName:  string | null;
+    emergencyContactPhone: string | null;
+    notes:                 string | null;   // clinical notes
+    isActive:              boolean;
+    createdAt:             string;
+    createdBy:             string;   // display name
+    appointments:          PatientAppointmentSummary[];
+    documents:             DocumentSummary[];
+    activityLog:           LogEvent[];
+  }
+  ```
+  where `PatientAppointmentSummary`:
+  ```ts
+  {
+    id:     string;
+    title:  string;
+    doctor: string;   // doctor display name
+    date:   string;
+    time:   string;
+    status: string;
+  }
+  ```
+  and `DocumentSummary`:
+  ```ts
+  {
+    id:           string;
+    name:         string;   // file_name from DB
+    type:         string;   // mime-type or document classification
+    size:         string;   // human-readable e.g. "2.4 MB"
+    uploadedAt:   string;   // formatted date
+  }
+  ```
+- **Security:** Verify `clinic_id = session.clinicId`.
+- **RBAC:** All roles.
+
+#### `updatePatient(id, data)`
+- **Input:** `id`, patient form fields, `clinicId` from session
+- **Validates:** Zod schema (to be created at `lib/validators/patient.ts`)
+- **Enforces:**
+  - At least one of `email` or `phone` must be non-empty
+  - `clinicId` and `createdBy` are immutable
+- **RBAC:** Doctor and Admin only (Staff cannot edit).
+
+#### `getNoteForPatient(id)` / `saveNoteForPatient(id, note)`
+The clinical notes field in the right column is a freeform textarea backed by `patients.notes`.
+- Update happens on save / blur (debounced or explicit save button — TBD in Phase 3).
+- **RBAC:** Doctor and Admin only.
+
+#### `getPresignedUrl(documentId)`
+- Called when a user clicks a document row to view it.
+- **Input:** `documentId`, `clinicId` from session
+- **Output:** `{ url: string }` — valid for 60 minutes
+- **RBAC:** All roles.
+
+---
+
+## 9. New Patient Modal / Page — `/patients/new`
+
+> **Status:** UI built (form modal + full-page fallback). Server actions pending.
+
+### Form Fields
+| Field | Required | DB Column | Validation |
+|---|---|---|---|
+| First Name | ✓ | `first_name` | min 1, max 100 |
+| Last Name | ✓ | `last_name` | min 1, max 100 |
+| Email | ✓ or phone | `email` | valid email format |
+| Phone | ✓ or email | `phone` | non-empty string |
+| Address | — | `address` | text |
+| Date of Birth | ✓ | `date_of_birth` | valid date, not in future |
+| Gender | ✓ | `gender` | `male / female / other` |
+| Blood Group | — | `blood_group` | `A+ A- B+ B- AB+ AB- O+ O-` or null |
+| Allergies | — | `allergies` | text or null |
+| Emergency Contact Name | — | `emergency_contact_name` | text |
+| Emergency Contact Phone | — | `emergency_contact_phone` | text |
+| Initial Clinical Notes | — | `notes` | text |
+
+### Server Actions Needed
+
+#### `createPatient(data)`
+- **Input:** Patient form values, `clinicId` from session
+- **Validates:** Zod schema (`lib/validators/patient.ts` — to be created)
+- **Enforces:**
+  - At least one of `email` or `phone` must be non-empty
+  - Generates `chartId` using the 10000–99999 range algorithm (see `docs/08-Business-Rules.md §3`)
+  - Sets `createdBy = session.userId` (immutable)
+  - Sets `clinicId = session.clinicId` (immutable)
+  - Sets `is_active = true`
+- **Returns:** `{ id }` — client navigates to `/patients/view/${id}`
+- **RBAC:** All roles.
+
+---
+
+## 10. Patients Reports — `/patients/reports`
+
+> **Status:** Placeholder only — Phase 3.
+
+---
+
+## 11. Medicines Dashboard — `/medicines/dashboard`
+
+> **Status:** UI built (DataTable with search + filter). Server actions pending.
+
+### Table Columns
+| Column | DB Field | Sortable? | Filterable? |
+|---|---|---|---|
+| Medicine Name | `name` | ✓ by name | Search |
+| Category | `category` | — | ✓ (select) |
+| Form | `form` | — | ✓ (select) |
+| Brand | `brand` | — | — |
+| Last Prescribed | `last_prescribed_date` | ✓ | — |
+| Status | `is_active` | — | ✓ (select: Active / Inactive) |
+
+> **SKU removed.** The `sku` field was present in early mock data but is not part of the DB schema and has been fully removed from the UI, types, and mock data.
+
+### Server Actions Needed
+
+#### `getMedicines({ search, filters, page, pageSize, sort })`
+- **Input:**
+  ```ts
+  {
+    clinicId:    string;   // from session
+    search?:     string;   // matches name, sku, brand
+    category?:   string;
+    form?:       string;
+    isActive?:   boolean;  // default: true only
+    page:        number;
+    pageSize:    number;   // default 10
+    sortBy?:     "name" | "lastPrescribedDate";
+    sortDir?:    "asc" | "desc";
+  }
+  ```
+- **Output:**
+  ```ts
+  {
+    rows:  MedicineRow[];
+    total: number;
+  }
+  ```
+  where `MedicineRow`:
+  ```ts
+  {
+    id:                 string;
+    name:               string;
+    sku:                string;
+    category:           string;
+    form:               string;
+    brand:              string;
+    lastPrescribedDate: string | null;
+    isActive:           boolean;
+  }
+  ```
+- **RBAC:** All roles.
+
+---
+
+## 12. Medicine Detail Modal / Page — `/medicines/view/[id]`
+
+> **Status:** UI built (modal + full-page fallback). Server actions pending.
+
+### Layout
+`MedicineDetailPanel` — 2 sections:
+- **Main form area:** Name, SKU, Category, Brand, Form, Last Prescribed Date, Description, Active toggle
+- **Right section:** Activity log
+
+### Server Actions Needed
+
+#### `getMedicineDetail(id)`
+- **Input:** `id` (UUID), `clinicId` from session
+- **Output:**
+  ```ts
+  {
+    id:                 string;
+    name:               string;
+    sku:                string;
+    category:           string;
+    brand:              string;
+    form:               string;
+    description:        string | null;
+    lastPrescribedDate: string | null;
+    isActive:           boolean;
+    createdAt:          string;
+    createdBy:          string;
+    activityLog:        LogEvent[];
+  }
+  ```
+- **Security:** Verify `clinic_id = session.clinicId`.
+- **RBAC:** All roles.
+
+#### `updateMedicine(id, data)`
+- **Input:** `id`, `MedicineFormValues` (from `lib/validators/medicine.ts`), `clinicId` from session
+- **Validates:** `{ name, category, brand, form, lastPrescribedDate?, description? }`
+- **Enforces:** `clinicId` and `createdBy` are immutable
+- **RBAC:** Doctor and Admin only (Staff cannot edit).
+
+#### `deactivateMedicine(id)` *(soft delete)*
+- **Input:** `id`, `clinicId` from session
+- **Action:** `SET is_active = false`
+- **RBAC:** Doctor and Admin only.
+
+---
+
+## 13. New Medicine Modal / Page — `/medicines/new`
+
+> **Status:** UI built (form modal + full-page fallback). Server actions pending.
+
+### Form Fields
+| Field | Required | DB Column | Validation |
+|---|---|---|---|
+| Name | ✓ | `name` | min 2, max 255 |
+| Category | ✓ | `category` | enum (see `lib/validators/medicine.ts`) |
+| Brand | ✓ | `brand` | min 1, max 255 |
+| Form | ✓ | `form` | enum (Tablet, Syrup, Capsule, etc.) |
+| Last Prescribed Date | — | `last_prescribed_date` | ISO date or null |
+| Description | — | `description` | text |
+
+### Server Actions Needed
+
+#### `createMedicine(data)`
+- **Input:** `MedicineFormValues`, `clinicId` from session
+- **Validates:** Zod schema in `lib/validators/medicine.ts`
+- **Enforces:**
+  - Sets `createdBy = session.userId`
+  - Sets `clinicId = session.clinicId`
+  - Sets `is_active = true`
+- **Returns:** `{ id }` — client navigates to `/medicines/view/${id}`
+- **RBAC:** All roles (Staff can add, but cannot edit or delete).
+
+---
+
+## 14. Medicines Reports — `/medicines/reports`
+
+> **Status:** Placeholder only — Phase 3.
+
+---
+
+## 15. Cross-Cutting: Document Upload Flow
+
+Every detail panel for Patients and Appointments has a documents column with an upload button.
+This flow spans multiple pages and is described here once.
+
+### Steps
+
+1. Client requests a presigned **upload URL** from the server.
+2. Server generates a presigned PUT URL from S3/Minio (valid 15 minutes).
+3. Client uploads the file directly to S3 using the presigned URL (no server transit).
+4. On upload success, client calls `confirmDocumentUpload()` to persist the metadata to the DB.
+
+### Server Actions Needed
+
+#### `getUploadPresignedUrl({ fileName, mimeType, fileSize })`
+- **Validates:** mime type in allowed set, file size ≤ 10MB
+- **Input:** `{ fileName, mimeType, fileSize, assignedToId, assignedToType, appointmentId? }`
+- **Output:** `{ uploadUrl: string, fileKey: string }` — the `fileKey` is the S3 object key to be confirmed after upload
+- **RBAC:** All roles.
+
+#### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, assignedToType, appointmentId? })`
+- Creates the `documents` record in DB after the S3 upload confirms success
+- Sets `uploadedBy = session.userId`, `clinicId = session.clinicId`
+- **RBAC:** All roles.
+
+#### `getViewPresignedUrl(documentId)`
+- Returns a presigned GET URL valid for 60 minutes
+- Verifies `clinic_id = session.clinicId` before generating
+- **RBAC:** All roles.
+
+#### `deleteDocument(documentId)`
+- Deletes S3 object AND the DB record atomically
+- If S3 delete fails → abort DB delete
+- **RBAC:** Doctor and Admin only.
+
+---
+
+## 16. Cross-Cutting: Activity Log
+
+The activity log appears in: Appointment Detail, Patient Detail, Medicine Detail.
+
+In Phase 3 this will be a real `audit_log` table. For now it is mock data.
+
+### Planned Schema (`audit_log`)
+```
+id:           uuid  (PK)
+clinic_id:    uuid
+entity_type:  enum ('appointment', 'patient', 'medicine', 'document', 'user')
+entity_id:    uuid
+action:       varchar(100)   e.g. "Status changed", "File uploaded"
+detail:       text
+performed_by: text           (references users.id)
+created_at:   timestamp
+```
+
+### Server Action Needed
+
+#### `getActivityLog(entityType, entityId)`
+- **Input:** `entityType`, `entityId`, `clinicId` from session
+- **Output:** `LogEvent[]` sorted by `created_at DESC`
+- **RBAC:** All roles.
+
+#### `appendActivityLog(entityType, entityId, action, detail)` *(internal only)*
+- Called inside other server actions (e.g. after `updateAppointment`) — never directly from the client
+- Captures `performedBy = session.userId`, `createdAt = now()`
+
+---
+
+## 17. Schema Gaps — Decision Log
+
+All gaps have been reviewed and resolved as follows:
+
+| Gap | Decision | Status |
+|---|---|---|
+| `patients.status` — UI had `active/inactive/critical` | **Keep as `is_active boolean`.** UI now maps it to only `active` / `inactive`. "Critical" is fully removed. | ✅ Resolved |
+| `medicines.category` — used in UI, missing from DB | **Add `category varchar(100)` to the `medicines` table.** Required before seeding. | ✅ Confirmed — add to schema |
+| `medicines.sku` — present in UI, not in DB | **Remove from UI.** SKU is not part of the product. Fully removed from types, mock data, and all components. | ✅ Resolved — removed |
+| `audit_log` table — activity log is mock data | **Keep as mock data for now.** Real `audit_log` table implementation deferred until end-to-end flow is running. | ✅ Deferred — no action needed yet |
+| Doctor/patient pickers for appointment form | **Implement `getActivePatients()` and `getActiveDoctors()`.** Approved — required for appointment create/edit. | ✅ Confirmed — add these actions |
+
+---
+
+---
+
+## 18. URL Reference Summary
+
+| Route | Page | Component | Action(s) |
+|---|---|---|---|
+| `/home/dashboard` | Home overview | — | `getHomeStats`, `getRecentAppointments`, `getRecentPatients` |
+| `/appointments/dashboard` | Calendar view | `MonthView`, `TimeGridView` | `getAppointments` |
+| `/appointments/new` | New appt form | `AppointmentDetailPanel mode="create"` | `createAppointment`, `getActivePatients`, `getActiveDoctors` |
+| `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `updateAppointment`, `deleteAppointment` |
+| `/patients/dashboard` | Patient list | `DataTable` | `getPatients` |
+| `/patients/new` | New patient form | `PatientDetailPanel mode="create"` | `createPatient` |
+| `/patients/view/[id]` | Patient detail | `PatientDetailPanel mode="view"` | `getPatientDetail`, `updatePatient`, `getViewPresignedUrl` |
+| `/medicines/dashboard` | Medicine list | `DataTable` | `getMedicines` |
+| `/medicines/new` | New medicine form | `MedicineDetailPanel mode="create"` | `createMedicine` |
+| `/medicines/view/[id]` | Medicine detail | `MedicineDetailPanel mode="edit"` | `getMedicineDetail`, `updateMedicine`, `deactivateMedicine` |
+
+---
+
+## 19. Pre-Backend Checklist
+
+Before writing your first server action, complete the following in order.
+Every item here is a hard prerequisite — skipping any will cause type errors or migrations later.
+
+
+### Step 1 — Zod Validators
+Create or complete validators in `lib/validators/`. These are the single source of truth used by both the client (React Hook Form) and the server (server actions).
+
+- [ ] `lib/validators/patient.ts` — does not yet exist, create it:
+  ```ts
+  // Required fields: firstName, lastName, (email OR phone), dateOfBirth, gender
+  // Optional: address, bloodGroup, allergies, emergencyContactName, emergencyContactPhone, notes
+  // Enforce: at least one of email / phone must be non-empty (use .refine())
+  ```
+- [ ] `lib/validators/appointment.ts` — exists ✓. Review against DB schema to confirm field names match column names.
+- [ ] `lib/validators/medicine.ts` — exists ✓. Already includes `category` and `form`.
+
+### Step 2 — Auth / Session Helper
+- [ ] Ensure `lib/auth/session.ts` exports a working `getSession()` function that returns `{ userId, clinicId, role }`
+- [ ] This is the only source of `clinicId` and `userId` in all server actions — never trust these from the client
+
+### Step 3 — RBAC Helper
+- [ ] Create `lib/auth/rbac.ts` with a single helper:
+  ```ts
+  export function requireRole(
+    session: AppSession,
+    allowed: Array<"admin" | "doctor" | "staff">
+  ): void
+  // Throws an Unauthorized error if session.role is not in the allowed array
+  // Call this at the top of every server action before any DB work
+  ```
+
+### Step 4 — Shared Supporting Actions (no UI dependency)
+Build these utility actions first — they are dependencies of the main page actions and have no UI yet:
+
+- [ ] `getActivePatients()` → used by appointment create/edit form patient picker
+- [ ] `getActiveDoctors()` → used by appointment create/edit form doctor picker
+- [ ] `appendActivityLog()` → internal helper called from other actions (not a public action)
+
+### Step 5 — Page Actions (build in this order)
+Build actions entity by entity, testing each before moving on:
+
+1. **Medicines** — simplest entity, no relations to other business tables
+   - [ ] `getMedicines` (list with filters)
+   - [ ] `getMedicineDetail`
+   - [ ] `createMedicine`
+   - [ ] `updateMedicine`
+   - [ ] `deactivateMedicine`
+
+2. **Patients** — depends on appointments for "last visit" derived field
+   - [ ] `getPatients` (list with filters + last visit subquery)
+   - [ ] `getPatientDetail`
+   - [ ] `createPatient` (include ChartId generation algorithm)
+   - [ ] `updatePatient`
+
+3. **Appointments** — depends on patients and users (doctors)
+   - [ ] `getAppointments` (calendar range query)
+   - [ ] `getAppointmentDetail`
+   - [ ] `createAppointment`
+   - [ ] `updateAppointment`
+   - [ ] `deleteAppointment` (soft)
+
+4. **Documents** — depends on patients and appointments
+   - [ ] `getUploadPresignedUrl`
+   - [ ] `confirmDocumentUpload`
+   - [ ] `getViewPresignedUrl`
+   - [ ] `deleteDocument`
+
+5. **Home Dashboard** — depends on all of the above
+   - [ ] `getHomeStats`
+   - [ ] `getRecentAppointments`
+   - [ ] `getRecentPatients`
+
+### Step 6 — Wire UI to Actions
+For each entity, replace the `MOCK_` imports in page files with calls to the real server actions. The mock types in `mock/` served as the contract — your server action return types should match them exactly so component code needs minimal changes.

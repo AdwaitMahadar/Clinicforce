@@ -12,8 +12,7 @@ export type AppStatus =
   | "rescheduled"
   // ── Patient statuses ─────────────────────────────────────────
   | "active"
-  | "inactive"
-  | "critical";
+  | "inactive";
 
 interface StatusStyle {
   bg: string;
@@ -37,7 +36,6 @@ const STATUS_MAP: Record<AppStatus, StatusStyle> = {
   // ── Patient statuses ────────────────────────────────────────────────────────
   active:   { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  label: "Active"   },
   inactive: { bg: "var(--color-surface-alt)", text: "var(--color-text-secondary)", border: "var(--color-border)", label: "Inactive" },
-  critical: { bg: "var(--color-red-bg)",    text: "var(--color-red)",    border: "var(--color-red-border)",    label: "Critical" },
 };
 
 interface StatusBadgeProps {
