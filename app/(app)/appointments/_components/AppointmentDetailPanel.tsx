@@ -260,7 +260,7 @@ const EMPTY_VALUES: AppointmentFormValues = {
   patientName:        "",
   doctorName:         "",
   type:               "general",
-  status:             "confirmed",
+  status:             "scheduled",
   date:               new Date().toISOString().slice(0, 10),
   duration:           "30",
   scheduledStartTime: "",
@@ -381,8 +381,10 @@ export function AppointmentDetailPanel({
         title:              appointment!.title,
         patientName:        appointment!.patientName,
         doctorName:         appointment!.doctorName,
-        type:               appointment!.type,
-        status:             appointment!.status,
+        // Cast: mock data uses wider AppointmentType enum; legacy schema uses DB-aligned subset.
+        // These fields become patientId/doctorId and use DB enums in Step 6 (server wiring).
+        type:               appointment!.type as AppointmentFormValues["type"],
+        status:             appointment!.status as AppointmentFormValues["status"],
         date:               appointment!.date,
         duration:           String(appointment!.duration),
         scheduledStartTime: appointment!.scheduledStartTime,
