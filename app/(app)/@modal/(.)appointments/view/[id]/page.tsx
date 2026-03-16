@@ -1,52 +1,54 @@
-"use client";
-
 /**
  * app/(app)/@modal/(.)appointments/view/[id]/page.tsx
  *
- * Intercepting modal for viewing/editing an existing appointment.
- * Triggered by clicking an event chip in any calendar view,
- * which pushes to /appointments/view/[id].
- *
- * ROUTING NOTE:
- * The /view/ sub-segment ensures this interceptor only matches
- * /appointments/view/[id] — never /appointments/dashboard, /appointments/new,
- * or /appointments/reports. This prevents the "frozen background" bug.
- *
- * Lifecycle:
- *   - Soft nav (Link/router.push) → this modal renders, dashboard stays mounted behind it
- *   - Hard refresh at /appointments/view/[id] → falls through to the full-page route
- *   - Back button / Escape → router.back() → modal closes, dashboard visible again
+ * Intercepting modal — async Server Component.
+ * Fetches appointment detail directly. No useEffect, no useState.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { getMockAppointmentDetail } from "@/mock/appointments/detail";
+import { notFound } from "next/navigation";
+import { format } from "date-fns";
+import { getAppointmentDetail } from "@/lib/actions/appointments";
 import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/AppointmentDetailPanel";
 import { ModalShell } from "@/components/common/ModalShell";
+import type { AppointmentDetail } from "@/types/appointment";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default function InterceptedAppointmentModal({ params }: Props) {
-  const router = useRouter();
-  const [appointment, setAppointment] = useState<ReturnType<typeof getMockAppointmentDetail>>(null);
+function fmtTime(v: Date | string | null | undefined): string {
+  if (!v) return "";
+  try { return format(new Date(v as string), "HH:mm"); } catch { return ""; }
+}
 
-  useEffect(() => {
-    params.then(({ id }) => setAppointment(getMockAppointmentDetail(id)));
-  }, [params]);
+export default async function InterceptedAppointmentModal({ params }: Props) {
+  const { id } = await params;
+  const result = await getAppointmentDetail(id);
 
-  const handleClose = useCallback(() => router.back(), [router]);
+  if (!result.success) notFound();
 
-  if (!appointment) return null;
+  const r = result.data;
+  const appointment: AppointmentDetail = {
+    id:                 r.id,
+    patientName:        "",
+    patientInitials:    "",
+    doctorName:         "",
+    title:              r.title,
+    type:               r.type    as AppointmentDetail["type"],
+    status:             r.status  as AppointmentDetail["status"],
+    date:               r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+    duration:           Number(r.duration ?? 30),
+    scheduledStartTime: fmtTime(r.scheduledStartTime),
+    scheduledEndTime:   fmtTime(r.scheduledEndTime),
+    actualCheckIn:      fmtTime(r.actualCheckIn),
+    actualCheckOut:     fmtTime(r.actualCheckOut),
+    notes:              r.notes          ?? "",
+    activityLog:        [],
+  };
 
   return (
     <ModalShell size="xl" label={`Edit: ${appointment.title}`}>
-      <AppointmentDetailPanel
-        mode="edit"
-        appointment={appointment}
-        onClose={handleClose}
-      />
+      <AppointmentDetailPanel mode="edit" appointment={appointment} />
     </ModalShell>
   );
 }

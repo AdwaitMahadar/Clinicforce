@@ -4,16 +4,12 @@
  * Full-page fallback for medicine detail.
  * Shown on direct URL access / hard refresh of /medicines/view/[id].
  * During normal in-app navigation the intercepting modal takes over.
- *
- * ROUTING NOTE:
- * Detail routes use /view/[id] (not /[id]) so the intercepting route
- * @modal/(.)medicines/view/[id] never conflicts with static segments
- * like /medicines/dashboard or /medicines/new.
  */
 
 import { notFound } from "next/navigation";
-import { getMockMedicineDetail } from "@/mock/medicines/detail";
+import { getMedicineDetail } from "@/lib/actions/medicines";
 import { MedicineDetailPanel } from "../../_components/MedicineDetailPanel";
+import type { MedicineDetail } from "@/types/medicine";
 
 interface MedicineDetailPageProps {
   params: Promise<{ id: string }>;
@@ -21,9 +17,28 @@ interface MedicineDetailPageProps {
 
 export default async function MedicineDetailPage({ params }: MedicineDetailPageProps) {
   const { id } = await params;
-  const medicine = getMockMedicineDetail(id);
+  const result = await getMedicineDetail(id);
 
-  if (!medicine) notFound();
+  if (!result.success) notFound();
+
+  // Map server action data shape → MedicineDetail shape the panel expects
+  const r = result.data;
+  const medicine: MedicineDetail = {
+    id:                 r.id,
+    name:               r.name,
+    category:           r.category ?? "",
+    brand:              r.brand ?? "",
+    form:               r.form ?? "",
+    description:        r.description ?? "",
+    lastPrescribedDate: r.lastPrescribedDate
+      ? new Date(r.lastPrescribedDate).toISOString().slice(0, 10)
+      : "",
+    isActive:  r.isActive,
+    createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : "",
+    createdBy: "",
+    // TODO: Implement when audit_log table is built.
+    activityLog: [],
+  };
 
   return (
     <div className="p-8 h-full flex flex-col">

@@ -23,8 +23,10 @@ import {
   CalendarDays, File, FileSpreadsheet, Image, Download, Plus, X,
   Save,
 } from "lucide-react";
+import { toast } from "sonner";
 import { InitialsBadge, StatusBadge, EventLog } from "@/components/common";
-import type { PatientDetail, PatientDocument } from "@/mock/patients/detail";
+import type { PatientDetail, PatientDocument } from "@/types/patient";
+import { createPatient } from "@/lib/actions/patients";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -153,6 +155,32 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
   const [activeTab, setActiveTab] = useState<"documents" | "appointments">("documents");
   const handleClose = useCallback(() => onClose?.(), [onClose]);
 
+  const handleCreateSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const get = (k: string) => (fd.get(k) as string) || undefined;
+    const result = await createPatient({
+      firstName:            fd.get("firstName") as string,
+      lastName:             fd.get("lastName")  as string,
+      email:                get("email"),
+      phone:                get("phone"),
+      dateOfBirth:          get("dateOfBirth"),
+      gender:               (get("gender") as "male" | "female" | "other") ?? "other",
+      address:              get("address"),
+      bloodGroup:           get("bloodGroup") as "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | undefined,
+      allergies:            get("allergies"),
+      emergencyContactName: get("emergencyContactName"),
+      emergencyContactPhone:get("emergencyContactPhone"),
+      notes:                get("notes"),
+    });
+    if (result.success) {
+      toast.success("Patient registered successfully.");
+      onClose?.();
+    } else {
+      toast.error(result.error ?? "Failed to register patient.");
+    }
+  }, [onClose]);
+
   // ── CREATE MODE ──────────────────────────────────────────────────────────────
   if (mode === "create") {
     return (
@@ -185,7 +213,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
 
         {/* Scrollable form body */}
         <div className="flex-1 overflow-y-auto p-8">
-          <form className="max-w-3xl mx-auto space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="max-w-3xl mx-auto space-y-6" onSubmit={handleCreateSubmit}>
 
             {/* ── Personal Information ── */}
             <div>

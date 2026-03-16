@@ -1,83 +1,31 @@
-"use client";
+/**
+ * app/(app)/medicines/dashboard/page.tsx
+ *
+ * Pure async Server Component. Reads searchParams from the URL
+ * (managed by TableFilterBar + TablePagination via nuqs), calls the
+ * server action directly, and renders the full page UI.
+ *
+ * No "use client", no useState, no useEffect, no client shell.
+ */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Pill, Beaker, Syringe, FileText } from "lucide-react";
+import { notFound } from "next/navigation";
+import { format } from "date-fns";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
-  DataTable,
   TableFilterBar,
   TablePagination,
 } from "@/components/common";
-import type { ColumnDef, FilterColumn, ActiveFilter } from "@/components/common";
-import {
-  MOCK_MEDICINES,
-  MOCK_MEDICINES_TOTAL,
-  MOCK_MEDICINES_PAGE_SIZE,
-} from "@/mock/medicines/dashboard";
-import type { MedicineRow, MedicineIcon } from "@/mock/medicines/dashboard";
+import type { FilterColumn } from "@/components/common";
+import { MedicinesTable } from "../_components/MedicinesTable";
+import { getMedicines } from "@/lib/actions/medicines";
+import type { MedicineRow } from "@/types/medicine";
+import Link from "next/link";
 
-const getIcon = (iconName: MedicineIcon) => {
-  switch (iconName) {
-    case "pill": return <Pill size={20} />;
-    case "medication_liquid": return <Beaker size={20} />;
-    case "vaccines": return <Syringe size={20} />;
-    case "prescriptions": return <FileText size={20} />;
-    default: return <Pill size={20} />;
-  }
-};
+const PAGE_SIZE = 10;
 
-const medicineColumns: ColumnDef<MedicineRow>[] = [
-  {
-    id: "medicine",
-    header: "Medicine Name",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3">
-        <div
-          className="size-10 rounded-md flex items-center justify-center border"
-          style={{
-            background: "var(--color-surface-alt)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-text-muted)"
-          }}
-        >
-          {getIcon(row.original.icon)}
-        </div>
-        <div>
-          {row.original.name}
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-    cell: ({ row }) => (
-      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-        {row.getValue("category")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "brand",
-    header: "Brand",
-    cell: ({ row }) => (
-      <span className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
-        {row.getValue("brand")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "lastUsed",
-    header: () => <div className="text-right w-full">Last Used</div>,
-    cell: ({ row }) => (
-      <div className="text-right text-sm" style={{ color: "var(--color-text-secondary)" }}>
-        {row.getValue("lastUsed")}
-      </div>
-    ),
-  },
-];
+
 
 const MEDICINE_FILTER_COLUMNS: FilterColumn[] = [
   {
@@ -85,121 +33,76 @@ const MEDICINE_FILTER_COLUMNS: FilterColumn[] = [
     label: "Category",
     type: "select",
     options: [
-      { label: "Antibiotics", value: "Antibiotics" },
-      { label: "Painkillers", value: "Painkillers" },
+      { label: "Antibiotics",   value: "Antibiotics"   },
+      { label: "Painkillers",   value: "Painkillers"   },
       { label: "Diabetes Care", value: "Diabetes Care" },
-      { label: "Antihistamines", value: "Antihistamines" },
-      { label: "Vitamins", value: "Vitamins" },
-      { label: "Cardiovascular", value: "Cardiovascular" },
+      { label: "Antihistamines",value: "Antihistamines"},
+      { label: "Vitamins",      value: "Vitamins"      },
+      { label: "Cardiovascular",value: "Cardiovascular"},
     ],
   },
-  {
-    key: "brand",
-    label: "Brand",
-    type: "select",
-    options: [
-      { label: "MediLife Pharma", value: "MediLife Pharma" },
-      { label: "Pfizer Inc.", value: "Pfizer Inc." },
-      { label: "Sanofi", value: "Sanofi" },
-      { label: "GlaxoSmithKline", value: "GlaxoSmithKline" },
-      { label: "Zyrtec / Johnson & Johnson", value: "Zyrtec / Johnson & Johnson" },
-      { label: "AstraZeneca", value: "AstraZeneca" },
-    ],
-  },
-  {
-    key: "name",
-    label: "Name",
-    type: "text",
-  },
+  { key: "form", label: "Form", type: "text" },
 ];
 
-export default function MedicinesDashboardPage() {
-  const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
-  const [page, setPage] = useState(1);
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-  const filtered = MOCK_MEDICINES.filter((m) => {
-    const fullName = m.name.toLowerCase();
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-    if (
-      search &&
-      !fullName.includes(search.toLowerCase()) &&
-      !m.category.toLowerCase().includes(search.toLowerCase())
-    ) {
-      return false;
-    }
+export default async function MedicinesDashboardPage({ searchParams }: PageProps) {
+  const sp       = await searchParams;
+  const search   = typeof sp.search   === "string" ? sp.search   : undefined;
+  const category = typeof sp.category === "string" ? sp.category : undefined;
+  const form     = typeof sp.form     === "string" ? sp.form     : undefined;
+  const page     = typeof sp.page     === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
 
-    for (const f of activeFilters) {
-      if (!f.value) continue;
+  const result = await getMedicines({ search, category, form, page, pageSize: PAGE_SIZE });
 
-      if (f.columnKey === "category" && m.category !== f.value) return false;
-      if (f.columnKey === "brand" && m.brand !== f.value) return false;
-      if (f.columnKey === "name") {
-        const query = f.value.toLowerCase();
-        if (!fullName.includes(query)) return false;
-      }
-    }
+  if (!result.success) notFound();
 
-    return true;
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: MedicineRow[] = (result.data.rows as any[]).map((r: any): MedicineRow => ({
+    id:       r.id,
+    name:     r.name,
+    category: r.category ?? "—",
+    brand:    r.brand    ?? "—",
+    lastUsed: r.lastPrescribedDate
+      ? format(new Date(r.lastPrescribedDate), "MMM d, yyyy")
+      : "Never",
+    icon:     "pill",
+    status:   r.isActive ? "active" : "inactive",
+  }));
+  const total = result.data.total;
 
   return (
     <div className="p-8 h-full flex flex-col gap-5">
       <PageHeader
-        title="Medicine Inventory"
-        subtitle="Manage stock, track brands, and usage history."
+        title="Medicines"
+        subtitle="Manage the clinic's medicine and prescription inventory."
         actions={
-          <Button
-            className="gap-2 shadow-sm"
-            style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-            onClick={() => router.push("/medicines/new")}
-          >
-            <Plus size={15} />
-            Add Medicine
-          </Button>
+          <Link href="/medicines/new">
+            <Button
+              className="gap-2 shadow-sm"
+              style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+            >
+              <Plus size={15} />
+              New Medicine
+            </Button>
+          </Link>
         }
       />
 
       <TableFilterBar
-        searchValue={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
-        searchPlaceholder="Search inventory by name or category..."
+        searchPlaceholder="Search by name, brand, or category..."
         filterColumns={MEDICINE_FILTER_COLUMNS}
-        activeFilters={activeFilters}
-        onFiltersChange={(f) => { setActiveFilters(f); setPage(1); }}
-        onExport={() => console.log("export medicines")}
       />
 
       <div className="flex-1 min-h-0">
-        <DataTable
-          columns={medicineColumns}
-          data={filtered}
-          enableSorting
-          onRowClick={(row) => router.push(`/medicines/view/${row.id}`)}
-          emptyState={
-            <div className="flex flex-col items-center gap-2 py-10">
-              <p
-                className="text-sm font-medium"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                No medicines match your filters.
-              </p>
-              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Try adjusting your search or removing a filter.
-              </p>
-            </div>
-          }
-        />
+        <MedicinesTable data={rows} />
       </div>
 
-      <TablePagination
-        page={page}
-        totalRows={MOCK_MEDICINES_TOTAL}
-        pageSize={MOCK_MEDICINES_PAGE_SIZE}
-        onPageChange={setPage}
-        entityLabel="medicine"
-      />
+      <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="medicine" />
     </div>
   );
 }

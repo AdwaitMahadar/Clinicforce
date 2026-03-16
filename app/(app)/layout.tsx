@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children, modal }: AppLayoutProps) {
   return (
     <AppShell modal={modal}>
-      {children}
+      <NuqsAdapter>{children}</NuqsAdapter>
     </AppShell>
   );
 }

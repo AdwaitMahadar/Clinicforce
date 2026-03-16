@@ -1,0 +1,85 @@
+"use client";
+
+import { DataTable, InitialsBadge, StatusBadge } from "@/components/common";
+import type { ColumnDef } from "@/components/common";
+import type { PatientRow } from "@/types/patient";
+
+const patientColumns: ColumnDef<PatientRow>[] = [
+  {
+    id: "patient",
+    header: "Patient",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-3 min-w-[200px]">
+        <InitialsBadge name={`${row.original.firstName} ${row.original.lastName}`} size="md" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text-primary)" }}>
+            {row.original.firstName} {row.original.lastName}
+          </p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+            {row.original.email}
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "chartId",
+    header: "Chart ID",
+    cell: ({ row }) => (
+      <span
+        className="font-mono text-xs px-2 py-1 rounded-md whitespace-nowrap"
+        style={{
+          background: "var(--color-surface-alt)",
+          color:      "var(--color-text-secondary)",
+          border:     "1px solid var(--color-border)",
+        }}
+      >
+        {row.getValue("chartId")}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "lastVisit",
+    header: "Last Visit",
+    cell: ({ row }) => (
+      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+        {row.getValue("lastVisit")}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "assignedDoctor",
+    header: "Last Consulted Dr.",
+    cell: ({ row }) => (
+      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+        {row.getValue("assignedDoctor")}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
+  },
+];
+
+interface PatientsTableProps {
+  data: PatientRow[];
+}
+
+export function PatientsTable({ data }: PatientsTableProps) {
+  return (
+    <DataTable
+      columns={patientColumns}
+      data={data}
+      enableSorting
+      emptyState={
+        <div className="flex flex-col items-center gap-2 py-10">
+          <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+            No patients match your filters.
+          </p>
+        </div>
+      }
+    />
+  );
+}

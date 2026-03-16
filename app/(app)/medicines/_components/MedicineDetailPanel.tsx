@@ -24,17 +24,24 @@
  */
 
 import { Pill, Beaker, Syringe, FileText } from "lucide-react";
+import { toast } from "sonner";
 import { EventLog } from "@/components/common/EventLog";
 import { DetailForm } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
-import type { MedicineDetail } from "@/mock/medicines/detail";
-import type { MedicineIcon } from "@/mock/medicines/dashboard";
+import type { MedicineDetail } from "@/types/medicine";
+import type { MedicineIcon } from "@/types/medicine";
 import {
   medicineSchema,
   MEDICINE_CATEGORIES,
   MEDICINE_FORMS,
   type MedicineFormValues,
 } from "@/lib/validators/medicine";
+import {
+  createMedicine,
+  updateMedicine,
+  deactivateMedicine,
+} from "@/lib/actions/medicines";
+
 
 // ─── Icon resolver ─────────────────────────────────────────────────────────────
 
@@ -175,21 +182,31 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
 
   const handleSubmit = async (values: MedicineFormValues) => {
     if (isCreate) {
-      // Phase 3: await createMedicine({ clinicId, ...values });
-      console.log("Medicine created:", values);
+      const result = await createMedicine(values);
+      if (result.success) {
+        toast.success("Medicine added successfully.");
+        onClose?.();
+      } else {
+        toast.error(result.error ?? "Failed to add medicine.");
+      }
     } else {
-      // Phase 3: await updateMedicine({ id: medicine!.id, clinicId, ...values });
-      console.log("Medicine updated:", values);
+      const result = await updateMedicine({ id: medicine!.id, ...values });
+      if (result.success) {
+        toast.success("Medicine updated successfully.");
+      } else {
+        toast.error(result.error ?? "Failed to update medicine.");
+      }
     }
-    await new Promise((r) => setTimeout(r, 600));
-    if (isCreate) onClose?.(); // close after creation
   };
 
   const handleDelete = async () => {
-    // Phase 3: await deleteMedicine({ id: medicine!.id, clinicId });
-    console.log("Medicine deleted:", medicine!.id);
-    await new Promise((r) => setTimeout(r, 600));
-    onClose?.();
+    const result = await deactivateMedicine(medicine!.id);
+    if (result.success) {
+      toast.success("Medicine deactivated.");
+      onClose?.();
+    } else {
+      toast.error(result.error ?? "Failed to deactivate medicine.");
+    }
   };
 
   return (

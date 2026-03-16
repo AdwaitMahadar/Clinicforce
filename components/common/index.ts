@@ -31,6 +31,7 @@ export type {
 } from "./DetailForm";
 
 // ─── Overlays ─────────────────────────────────────────────────────────────────
-export { ModalShell } from "./ModalShell";
+export { ModalShell }       from "./ModalShell";
 export type { ModalShellProps, ModalSize } from "./ModalShell";
+export { ModalCloseButton } from "./ModalCloseButton";
 

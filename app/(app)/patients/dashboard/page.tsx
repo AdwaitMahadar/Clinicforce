@@ -1,99 +1,31 @@
-"use client";
+/**
+ * app/(app)/patients/dashboard/page.tsx
+ *
+ * Pure async Server Component. Reads searchParams from the URL
+ * (managed by TableFilterBar + TablePagination via nuqs), calls the
+ * server action directly, and renders the full page UI.
+ *
+ * No "use client", no useState, no useEffect, no client shell.
+ */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
+import { format } from "date-fns";
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
-  DataTable,
-  InitialsBadge,
-  StatusBadge,
   TableFilterBar,
   TablePagination,
 } from "@/components/common";
-import type { ColumnDef, FilterColumn, ActiveFilter } from "@/components/common";
-import {
-  MOCK_PATIENTS,
-  MOCK_PATIENTS_TOTAL,
-  MOCK_PATIENTS_PAGE_SIZE,
-} from "@/mock/patients/dashboard";
-import type { PatientRow, PatientStatus } from "@/mock/patients/dashboard";
+import type { FilterColumn } from "@/components/common";
+import { PatientsTable } from "../_components/PatientsTable";
+import { getPatients } from "@/lib/actions/patients";
+import type { PatientRow } from "@/types/patient";
 
-// ─── Column definitions ────────────────────────────────────────────────────────
+const PAGE_SIZE = 10;
 
-const patientColumns: ColumnDef<PatientRow>[] = [
-  {
-    id: "patient",
-    header: "Patient",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-3 min-w-[200px]">
-        <InitialsBadge
-          name={`${row.original.firstName} ${row.original.lastName}`}
-          size="md"
-        />
-        <div className="min-w-0">
-          <p
-            className="text-sm font-semibold truncate"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            {row.original.firstName} {row.original.lastName}
-          </p>
-          <p
-            className="text-xs truncate mt-0.5"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            {row.original.email}
-          </p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "chartId",
-    header: "Chart ID",
-    cell: ({ row }) => (
-      <span
-        className="font-mono text-xs px-2 py-1 rounded-md whitespace-nowrap"
-        style={{
-          background: "var(--color-surface-alt)",
-          color:      "var(--color-text-secondary)",
-          border:     "1px solid var(--color-border)",
-        }}
-      >
-        {row.getValue("chartId")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "lastVisit",
-    header: "Last Visit",
-    cell: ({ row }) => (
-      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-        {row.getValue("lastVisit")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "assignedDoctor",
-    header: "Last Consulted Dr.",
-    cell: ({ row }) => (
-      <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-        {row.getValue("assignedDoctor")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <StatusBadge status={row.getValue<PatientStatus>("status")} />
-    ),
-  },
-];
 
-// ─── Filter schema for the Patients table ─────────────────────────────────────
-// This is the only domain-specific config — the FilterBar itself is generic.
 
 const PATIENT_FILTER_COLUMNS: FilterColumn[] = [
   {
@@ -105,123 +37,70 @@ const PATIENT_FILTER_COLUMNS: FilterColumn[] = [
       { label: "Inactive", value: "inactive" },
     ],
   },
-  {
-    key: "assignedDoctor",
-    label: "Assigned Doctor",
-    type: "select",
-    options: [
-      { label: "Dr. Sarah Jenkins", value: "Dr. Sarah Jenkins" },
-      { label: "Dr. Alan Grant",    value: "Dr. Alan Grant"    },
-      { label: "Dr. Emily Chen",    value: "Dr. Emily Chen"    },
-    ],
-  },
-  {
-    key: "name",
-    label: "Name",
-    type: "text",
-  },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function PatientsDashboardPage() {
-  const router = useRouter();
-  const [search,        setSearch]        = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
-  const [page,          setPage]          = useState(1);
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-  // ── Client-side filtering (Phase 3: replace with server-side via nuqs URL params) ──
-  const filtered = MOCK_PATIENTS.filter((p) => {
-    // Search: name, chartId, phone
-    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
-    if (
-      search &&
-      !fullName.includes(search.toLowerCase()) &&
-      !p.chartId.toLowerCase().includes(search.toLowerCase()) &&
-      !p.phone.includes(search)
-    ) {
-      return false;
-    }
+export default async function PatientsDashboardPage({ searchParams }: PageProps) {
+  const sp     = await searchParams;
+  const search = typeof sp.search === "string" ? sp.search : undefined;
+  const status = typeof sp.status === "string"
+    ? (sp.status as "active" | "inactive")
+    : undefined;
+  const page   = typeof sp.page   === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
 
-    // Active filters — every filter row must be satisfied (AND logic)
-    for (const f of activeFilters) {
-      if (!f.value) continue; // skip empty rows
+  const result = await getPatients({ search, status, page, pageSize: PAGE_SIZE });
 
-      if (f.columnKey === "status" && p.status !== f.value) return false;
+  if (!result.success) notFound();
 
-      if (f.columnKey === "assignedDoctor" && p.assignedDoctor !== f.value) return false;
-
-      if (f.columnKey === "name") {
-        const query = f.value.toLowerCase();
-        if (!fullName.includes(query)) return false;
-      }
-    }
-
-    return true;
-  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows: PatientRow[] = (result.data.rows as any[]).map((r: any): PatientRow => ({
+    id:             r.id,
+    chartId:        String(r.chartId),
+    firstName:      r.firstName,
+    lastName:       r.lastName,
+    email:          r.email ?? "",
+    phone:          r.phone ?? "",
+    lastVisit:      r.lastVisit
+      ? format(new Date(r.lastVisit), "MMM d, yyyy")
+      : "No visits",
+    assignedDoctor: r.assignedDoctor ?? "—",
+    status:         r.isActive ? "active" : "inactive",
+  }));
+  const total = result.data.total;
 
   return (
     <div className="p-8 h-full flex flex-col gap-5">
-
-      {/* Header */}
       <PageHeader
         title="Patients Directory"
         subtitle="Manage patient records, history, and active treatments."
         actions={
-          <Button
-            onClick={() => router.push("/patients/new")}
-            className="gap-2 shadow-sm"
-            style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-          >
-            <Plus size={15} />
-            New Patient
-          </Button>
+          <Link href="/patients/new">
+            <Button
+              className="gap-2 shadow-sm"
+              style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+            >
+              <Plus size={15} />
+              New Patient
+            </Button>
+          </Link>
         }
       />
 
-      {/* Search & Filter bar */}
       <TableFilterBar
-        searchValue={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
         searchPlaceholder="Search by name, ID, or phone number..."
         filterColumns={PATIENT_FILTER_COLUMNS}
-        activeFilters={activeFilters}
-        onFiltersChange={(f) => { setActiveFilters(f); setPage(1); }}
-        onExport={() => console.log("export patients")}
       />
 
-      {/* Table */}
       <div className="flex-1 min-h-0">
-        <DataTable
-          columns={patientColumns}
-          data={filtered}
-          enableSorting
-          onRowClick={(row) => router.push(`/patients/view/${row.id}`)}
-          emptyState={
-            <div className="flex flex-col items-center gap-2 py-10">
-              <p
-                className="text-sm font-medium"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                No patients match your filters.
-              </p>
-              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-                Try adjusting your search or removing a filter.
-              </p>
-            </div>
-          }
-        />
+        <PatientsTable data={rows} />
       </div>
 
-      {/* Pagination */}
-      <TablePagination
-        page={page}
-        totalRows={MOCK_PATIENTS_TOTAL}
-        pageSize={MOCK_PATIENTS_PAGE_SIZE}
-        onPageChange={setPage}
-        entityLabel="patient"
-      />
-
+      <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="patient" />
     </div>
   );
 }

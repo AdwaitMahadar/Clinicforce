@@ -4,26 +4,49 @@
  * Full-page fallback for appointment detail.
  * Shown on direct URL access / hard refresh of /appointments/view/[id].
  * During normal in-app navigation the intercepting modal takes over.
- *
- * ROUTING NOTE:
- * Detail routes use /view/[id] (not /[id]) so the intercepting route
- * @modal/(.)appointments/view/[id] never conflicts with static segments
- * like /appointments/dashboard or /appointments/new.
  */
 
 import { notFound } from "next/navigation";
-import { getMockAppointmentDetail } from "@/mock/appointments/detail";
+import { format } from "date-fns";
+import { getAppointmentDetail } from "@/lib/actions/appointments";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
+import type { AppointmentDetail } from "@/types/appointment";
 
 interface AppointmentDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+function fmtTime(v: Date | string | null | undefined): string {
+  if (!v) return "";
+  try { return format(new Date(v as string), "HH:mm"); } catch { return ""; }
+}
+
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
   const { id } = await params;
-  const appointment = getMockAppointmentDetail(id);
+  const result = await getAppointmentDetail(id);
 
-  if (!appointment) notFound();
+  if (!result.success) notFound();
+
+  const r = result.data;
+  const appointment: AppointmentDetail = {
+    id:              r.id,
+    patientName:     "", // resolved via join in queries; panel displays it
+    patientInitials: "",
+    doctorName:      "",
+    title:           r.title,
+    // Cast from DB enum subset → mock wider type
+    type:            r.type as AppointmentDetail["type"],
+    status:          r.status as AppointmentDetail["status"],
+    date:            r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+    duration:        Number(r.duration ?? 30),
+    scheduledStartTime: fmtTime(r.scheduledStartTime),
+    scheduledEndTime:   fmtTime(r.scheduledEndTime),
+    actualCheckIn:     fmtTime(r.actualCheckIn),
+    actualCheckOut:    fmtTime(r.actualCheckOut),
+    notes:             r.notes ?? "",
+    // TODO: Implement when audit_log table is built.
+    activityLog:       [],
+  };
 
   return (
     <div className="p-8 h-full flex flex-col">

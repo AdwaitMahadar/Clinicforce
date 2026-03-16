@@ -24,7 +24,7 @@ import type { FormFieldDescriptor, FormSection } from "@/components/common/Detai
 import { StatusBadge } from "@/components/common/StatusBadge";
 import type { AppStatus } from "@/components/common/StatusBadge";
 import { EventLog } from "@/components/common/EventLog";
-import type { AppointmentDetail } from "@/mock/appointments/detail";
+import type { AppointmentDetail } from "@/types/appointment";
 import {
   appointmentSchema,
   APPOINTMENT_TYPES,
@@ -34,6 +34,11 @@ import {
   APPOINTMENT_DURATIONS,
   type AppointmentFormValues,
 } from "@/lib/validators/appointment";
+import {
+  updateAppointment,
+  deleteAppointment,
+} from "@/lib/actions/appointments";
+
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
 
@@ -396,21 +401,43 @@ export function AppointmentDetailPanel({
 
   const handleSubmit = async (values: AppointmentFormValues) => {
     if (isCreate) {
-      console.log("Appointment created:", values);
+      // Note: form currently uses patientName/doctorName text fields (display values).
+      // The createAppointment action requires patientId/doctorId UUIDs.
+      // Picker wiring (dropdown → UUID) is a follow-up task.
+      // For now we log intent and show a toast so the UI flow is functional.
+      console.log("[appointments] createAppointment payload (needs picker UUIDs):", values);
       toast.success("Appointment scheduled successfully.");
       onClose?.();
     } else {
-      console.log("Appointment updated:", values);
-      toast.success("Appointment updated successfully.");
+      const result = await updateAppointment({
+        id:                 appointment!.id,
+        title:              values.title,
+        type:               values.type,
+        status:             values.status,
+        date:               values.date,
+        duration:           Number(values.duration),
+        scheduledStartTime: values.scheduledStartTime || undefined,
+        scheduledEndTime:   values.scheduledEndTime   || undefined,
+        actualCheckIn:      values.actualCheckIn      || undefined,
+        actualCheckOut:     values.actualCheckOut     || undefined,
+        notes:              values.notes || undefined,
+      });
+      if (result.success) {
+        toast.success("Appointment updated successfully.");
+      } else {
+        toast.error(result.error ?? "Failed to update appointment.");
+      }
     }
-    await new Promise((r) => setTimeout(r, 600));
   };
 
   const handleDelete = useCallback(async () => {
-    console.log("Appointment deleted:", appointment!.id);
-    await new Promise((r) => setTimeout(r, 600));
-    toast.success("Appointment cancelled.");
-    onClose?.();
+    const result = await deleteAppointment(appointment!.id);
+    if (result.success) {
+      toast.success("Appointment cancelled.");
+      onClose?.();
+    } else {
+      toast.error(result.error ?? "Failed to cancel appointment.");
+    }
   }, [appointment, onClose]);
 
   // Header subtitle

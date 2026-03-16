@@ -325,7 +325,11 @@ lab test      → purple
 therapy       → blue-purple
 ```
 
-**View toggle:** Month / Week / Day buttons in the PageHeader actions area control which view is shown. This is a local UI state — store in `useState`, not in the URL.
+**View toggle:** Month / Week / Day buttons in the PageHeader actions area control which view is shown. Store this in the URL via `nuqs` (`useQueryState("view", parseAsString.withDefault("month"))`) so the selected view survives refresh and is shareable.
+
+**Rule — what goes in the URL vs useState:**
+- URL via `nuqs`: anything that affects what data is fetched or what the user sees — search, filters, pagination, selected date, calendar view mode
+- `useState`: pure UI state with no data or shareability implications — e.g. whether a dropdown is open, whether a panel is expanded
 
 ---
 
@@ -378,8 +382,9 @@ Avoid heavy shadows. Use borders instead of box-shadows for card separation. The
 
 - All data fetching uses **Next.js Server Actions** or **Route Handlers**.
 - **Server-side pagination, filtering, and sorting** for all list views. The client never holds a full dataset.
-- Every list view passes `page`, `pageSize`, `search`, `sort`, and any entity-specific filters as URL search params so that the state is shareable and survives refresh.
-- Use `nuqs` library to manage URL search params as typed state. This replaces manual `URLSearchParams` manipulation.
+- Every list view passes `page`, `pageSize`, `search`, `sort`, and any entity-specific filters as URL search params so that the state is shareable and survives refresh. The appointments calendar also stores the selected date and view mode (month/week/day) in the URL.
+- Use `nuqs` to manage all URL search params as typed state. Filter/search/pagination components are `"use client"` and use `useQueryState` to read and write params. Dashboard `page.tsx` files are async Server Components that read `searchParams` directly and pass them to server actions — no `useEffect`, no client-side refetching, no intermediate client shell components.
+- Always reset `page` to `1` when search or any filter changes.
 - Always show `<Skeleton />` rows in the DataTable while data is loading. Never show an empty state during initial load.
 
 ---

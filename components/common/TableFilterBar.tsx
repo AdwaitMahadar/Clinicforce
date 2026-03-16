@@ -1,142 +1,159 @@
 "use client";
 
+/**
+ * components/common/TableFilterBar.tsx
+ *
+ * Search + filter bar. All search and per-filter state lives in the URL
+ * via nuqs. Changing any value updates the URL → Next.js re-renders the
+ * parent Server Component with new searchParams → server action is called.
+ *
+ * Dropdown-open/closed state stays in useState because it has no data
+ * or shareability implications.
+ */
+
 import { useState, useRef, useEffect } from "react";
+import { useQueryState, parseAsString, parseAsInteger } from "nuqs";
 import { Search, ListFilter, ArrowUpDown, Download, Plus, X, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-/** Describes a column that can be filtered. */
+/** Describes a filterable column. */
 export interface FilterColumn {
-  /** The field key on the data row — used as the filter identifier. */
-  key: string;
+  /** URL param key — used as the nuqs key. */
+  key:      string;
   /** Human-readable label shown in the column picker. */
-  label: string;
-  /** Type of filter control to render for this column. */
-  type: "select" | "text";
-  /** Required when type = "select". Each option has a display label and a raw value. */
+  label:    string;
+  type:     "select" | "text";
   options?: { label: string; value: string }[];
 }
 
-/** One active filter row. */
+/** One active filter row (used only locally for the panel UI). */
 export interface ActiveFilter {
-  /** Matches FilterColumn.key */
   columnKey: string;
-  /** Raw value to filter against. */
-  value: string;
+  value:     string;
 }
 
 interface TableFilterBarProps {
-  // ── Search ──────────────────────────────────────────────────────────────────
-  searchValue: string;
-  onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
-
-  // ── Filters ─────────────────────────────────────────────────────────────────
-  /** All columns that can be filtered. Pass an empty array to hide the filter button. */
-  filterColumns: FilterColumn[];
-  activeFilters: ActiveFilter[];
-  onFiltersChange: (filters: ActiveFilter[]) => void;
-
-  // ── Export ──────────────────────────────────────────────────────────────────
-  onExport?: () => void;
-
-  // ── Extra actions (right side) ───────────────────────────────────────────────
-  actions?: React.ReactNode;
-
-  className?: string;
+  /** All columns that can be filtered. Empty array hides the Filter button. */
+  filterColumns:      FilterColumn[];
+  actions?:           React.ReactNode;
+  className?:         string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-/**
- * A fully reusable search + filter + export bar for any data table.
- *
- * Filters use a Notion-style collapsible panel: click "Filter" to reveal
- * rows where you pick a column and a value. Multiple filter rows stack up,
- * and each can be removed individually. The button shows a count badge when
- * filters are active.
- *
- * @example
- * ```tsx
- * <TableFilterBar
- *   searchValue={search}
- *   onSearchChange={setSearch}
- *   searchPlaceholder="Search patients..."
- *   filterColumns={PATIENT_FILTER_COLUMNS}
- *   activeFilters={filters}
- *   onFiltersChange={setFilters}
- *   onExport={() => console.log("export")}
- * />
- * ```
- */
 export function TableFilterBar({
-  searchValue,
-  onSearchChange,
   searchPlaceholder = "Search...",
   filterColumns,
-  activeFilters,
-  onFiltersChange,
-  onExport,
   actions,
   className,
 }: TableFilterBarProps) {
+  // ── URL state (nuqs) ───────────────────────────────────────────────────────
+  const [search, setSearch] = useQueryState(
+    "search",
+    parseAsString.withDefault("").withOptions({ shallow: false })
+  );
+  const [, setPage] = useQueryState(
+    "page",
+    parseAsInteger.withDefault(1).withOptions({ shallow: false })
+  );
+
+  // One nuqs state per filterable column — stored individually so each filter
+  // maps to its own clear URL param (e.g. ?category=Antibiotics&status=active).
+  // We build the per-column hooks dynamically by rendering a sub-component.
+
+  // ── UI-only state ──────────────────────────────────────────────────────────
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [columnPickerOpen, setColumnPickerOpen] = useState<number | null>(null);
-  const [valuePickerOpen, setValuePickerOpen]   = useState<number | null>(null);
+  const [valuePickerOpen,  setValuePickerOpen]  = useState<number | null>(null);
+  const [localFilters, setLocalFilters] = useState<ActiveFilter[]>([]);
+
   const barRef = useRef<HTMLDivElement>(null);
 
-  const hasFilters = activeFilters.length > 0;
+  const hasFilters = localFilters.some((f) => f.value !== "");
 
-  // ── Close pickers when clicking outside the bar ────────────────────────────
+  // ── Close pickers on outside click ────────────────────────────────────────
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handler(e: MouseEvent) {
       if (barRef.current && !barRef.current.contains(e.target as Node)) {
         setColumnPickerOpen(null);
         setValuePickerOpen(null);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Filter mutation helpers ────────────────────────────────────────────────
+  // ── Search handler ─────────────────────────────────────────────────────────
+  function handleSearchChange(value: string) {
+    setSearch(value || null);   // null removes the param from URL when empty
+    setPage(1);                 // always reset page on search change
+  }
+
+  // ── Filter panel helpers ───────────────────────────────────────────────────
 
   function addFilter() {
     const firstCol = filterColumns[0];
     if (!firstCol) return;
-    onFiltersChange([
-      ...activeFilters,
-      { columnKey: firstCol.key, value: "" },
-    ]);
+    setLocalFilters((prev) => [...prev, { columnKey: firstCol.key, value: "" }]);
   }
 
   function removeFilter(index: number) {
-    onFiltersChange(activeFilters.filter((_, i) => i !== index));
+    const removed = localFilters[index];
+    setLocalFilters((prev) => prev.filter((_, i) => i !== index));
+    // Clear the URL param for that column
+    if (removed) applyFilter(removed.columnKey, "");
   }
 
   function updateFilterColumn(index: number, newColumnKey: string) {
-    onFiltersChange(
-      activeFilters.map((f, i) =>
-        i === index ? { columnKey: newColumnKey, value: "" } : f
-      )
+    const old = localFilters[index];
+    if (old) applyFilter(old.columnKey, ""); // clear old column param
+    setLocalFilters((prev) =>
+      prev.map((f, i) => (i === index ? { columnKey: newColumnKey, value: "" } : f))
     );
     setColumnPickerOpen(null);
     setValuePickerOpen(null);
   }
 
   function updateFilterValue(index: number, newValue: string) {
-    onFiltersChange(
-      activeFilters.map((f, i) =>
-        i === index ? { ...f, value: newValue } : f
-      )
+    const filter = localFilters[index];
+    if (!filter) return;
+    setLocalFilters((prev) =>
+      prev.map((f, i) => (i === index ? { ...f, value: newValue } : f))
     );
+    applyFilter(filter.columnKey, newValue);
     setValuePickerOpen(null);
   }
 
   function clearAll() {
-    onFiltersChange([]);
+    // Clear all URL filter params
+    localFilters.forEach((f) => applyFilter(f.columnKey, ""));
+    setLocalFilters([]);
+  }
+
+  function handleExport() {
+    console.log("TODO: export data");
+  }
+
+  // ── URLSearchParams writer (uses router.push via nuqs pattern) ─────────────
+  // We use a simple approach: each filter key is a top-level URL param.
+  // Because nuqs hooks can't be called conditionally, we delegate the URL
+  // write to a tiny helper that uses the native history API — nuqs will pick
+  // it up on the next render.
+  function applyFilter(key: string, value: string) {
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set(key, value);
+    } else {
+      url.searchParams.delete(key);
+    }
+    url.searchParams.set("page", "1"); // reset page
+    window.history.pushState({}, "", url.toString());
+    // Trigger a Next.js navigation so the Server Component re-renders
+    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   return (
@@ -148,7 +165,6 @@ export function TableFilterBar({
           background: "var(--color-glass-fill-data)",
           border:     "var(--shadow-card-border)",
           boxShadow:  "var(--shadow-card)",
-          // Round bottom corners only when panel is closed
           borderRadius: filterPanelOpen ? "0.75rem 0.75rem 0 0" : "0.75rem",
         }}
       >
@@ -167,15 +183,14 @@ export function TableFilterBar({
               borderColor: "var(--color-border)",
               color:       "var(--color-text-primary)",
             }}
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
 
         {/* Right-side controls */}
         <div className="flex items-center gap-2 shrink-0">
 
-          {/* Filter toggle — only shown if filterColumns exist */}
           {filterColumns.length > 0 && (
             <button
               className={cn(
@@ -183,21 +198,18 @@ export function TableFilterBar({
                 hasFilters && "ring-1"
               )}
               style={{
-                background:  filterPanelOpen || hasFilters
+                background: filterPanelOpen || hasFilters
                   ? "var(--color-surface-alt)"
                   : "var(--color-surface)",
-                border:      "1px solid var(--color-border)",
-                color:       filterPanelOpen || hasFilters
+                border: "1px solid var(--color-border)",
+                color:  filterPanelOpen || hasFilters
                   ? "var(--color-text-primary)"
                   : "var(--color-text-secondary)",
-                ...(hasFilters ? { "--tw-ring-color": "var(--color-border)" } as React.CSSProperties : {}),
+                ...( hasFilters ? { "--tw-ring-color": "var(--color-border)" } as React.CSSProperties : {}),
               }}
               onClick={() => {
                 setFilterPanelOpen((o) => !o);
-                // Open panel + add first row if no filters yet
-                if (!filterPanelOpen && activeFilters.length === 0) {
-                  addFilter();
-                }
+                if (!filterPanelOpen && localFilters.length === 0) addFilter();
               }}
             >
               <ListFilter size={13} />
@@ -205,52 +217,44 @@ export function TableFilterBar({
               {hasFilters && (
                 <span
                   className="flex items-center justify-center size-4 rounded-full text-[10px] font-bold"
-                  style={{
-                    background: "var(--color-ink)",
-                    color:      "var(--color-ink-fg)",
-                  }}
+                  style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
                 >
-                  {activeFilters.length}
+                  {localFilters.filter((f) => f.value !== "").length}
                 </span>
               )}
             </button>
           )}
 
-          {/* Sort button (structural — wired to server-side sort in Phase 3) */}
           <button
             className="flex items-center gap-2 px-3 py-[7px] rounded-lg text-sm font-medium transition-colors"
             style={{
-              background:  "var(--color-surface)",
-              border:      "1px solid var(--color-border)",
-              color:       "var(--color-text-secondary)",
+              background: "var(--color-surface)",
+              border:     "1px solid var(--color-border)",
+              color:      "var(--color-text-secondary)",
             }}
           >
             <ArrowUpDown size={13} />
             Sort
           </button>
 
-          {/* Export */}
-          {onExport && (
-            <button
-              className="flex items-center justify-center size-9 rounded-lg transition-colors"
-              style={{
-                background:  "var(--color-surface)",
-                border:      "1px solid var(--color-border)",
-                color:       "var(--color-text-secondary)",
-              }}
-              title="Export"
-              onClick={onExport}
-            >
-              <Download size={14} />
-            </button>
-          )}
+          <button
+            className="flex items-center justify-center size-9 rounded-lg transition-colors"
+            style={{
+              background: "var(--color-surface)",
+              border:     "1px solid var(--color-border)",
+              color:      "var(--color-text-secondary)",
+            }}
+            title="Export"
+            onClick={handleExport}
+          >
+            <Download size={14} />
+          </button>
 
-          {/* Extra action slot */}
           {actions}
         </div>
       </div>
 
-      {/* ── Filter panel (Notion-style) ───────────────────────────────────────── */}
+      {/* ── Filter panel ─────────────────────────────────────────────────────── */}
       {filterPanelOpen && (
         <div
           className="px-4 py-3 rounded-b-xl"
@@ -264,14 +268,13 @@ export function TableFilterBar({
           }}
         >
           <div className="flex flex-col gap-2">
-            {activeFilters.length === 0 && (
+            {localFilters.length === 0 && (
               <p className="text-xs py-1" style={{ color: "var(--color-text-muted)" }}>
                 No filters applied — add one below.
               </p>
             )}
 
-            {/* ── Filter rows ──────────────────────────────────────────────── */}
-            {activeFilters.map((filter, idx) => {
+            {localFilters.map((filter, idx) => {
               const selectedCol = filterColumns.find((c) => c.key === filter.columnKey);
               return (
                 <FilterRow
@@ -295,17 +298,12 @@ export function TableFilterBar({
               );
             })}
 
-            {/* ── Bottom actions ───────────────────────────────────────────── */}
             <div className="flex items-center gap-3 pt-1">
               <button
                 className="flex items-center gap-1.5 text-xs font-medium transition-colors"
                 style={{ color: "var(--color-text-secondary)" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.color = "var(--color-text-primary)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.color = "var(--color-text-secondary)")
-                }
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-text-primary)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-secondary)")}
                 onClick={addFilter}
               >
                 <Plus size={12} />
@@ -318,12 +316,8 @@ export function TableFilterBar({
                   <button
                     className="text-xs font-medium transition-colors"
                     style={{ color: "var(--color-text-muted)" }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.color = "var(--color-red)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.color = "var(--color-text-muted)")
-                    }
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-red)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
                     onClick={clearAll}
                   >
                     Clear all
@@ -341,17 +335,17 @@ export function TableFilterBar({
 // ─── Sub-component: one filter row ────────────────────────────────────────────
 
 interface FilterRowProps {
-  index: number;
-  filter: ActiveFilter;
-  selectedCol: FilterColumn | undefined;
-  filterColumns: FilterColumn[];
-  columnPickerOpen: boolean;
-  valuePickerOpen: boolean;
+  index:             number;
+  filter:            ActiveFilter;
+  selectedCol:       FilterColumn | undefined;
+  filterColumns:     FilterColumn[];
+  columnPickerOpen:  boolean;
+  valuePickerOpen:   boolean;
   onToggleColumnPicker: () => void;
-  onToggleValuePicker: () => void;
-  onColumnChange: (key: string) => void;
-  onValueChange: (val: string) => void;
-  onRemove: () => void;
+  onToggleValuePicker:  () => void;
+  onColumnChange:    (key: string) => void;
+  onValueChange:     (val: string) => void;
+  onRemove:          () => void;
 }
 
 function FilterRow({
@@ -368,8 +362,6 @@ function FilterRow({
 }: FilterRowProps) {
   return (
     <div className="flex items-center gap-2 text-sm">
-
-      {/* ── WHERE label ────────────────────────────────────────────────────── */}
       <span
         className="text-[11px] font-semibold uppercase tracking-wide w-10 text-right shrink-0"
         style={{ color: "var(--color-text-muted)" }}
@@ -377,14 +369,13 @@ function FilterRow({
         Where
       </span>
 
-      {/* ── Column picker ────────────────────────────────────────────────── */}
       <div className="relative">
         <button
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
           style={{
-            background:  "var(--color-surface-alt)",
-            border:      "1px solid var(--color-border)",
-            color:       "var(--color-text-primary)",
+            background: "var(--color-surface-alt)",
+            border:     "1px solid var(--color-border)",
+            color:      "var(--color-text-primary)",
           }}
           onClick={onToggleColumnPicker}
         >
@@ -405,29 +396,23 @@ function FilterRow({
         )}
       </div>
 
-      {/* ── Operator (fixed "is" for now) ─────────────────────────────────── */}
-      <span
-        className="text-xs font-medium px-2 shrink-0"
-        style={{ color: "var(--color-text-muted)" }}
-      >
+      <span className="text-xs font-medium px-2 shrink-0" style={{ color: "var(--color-text-muted)" }}>
         is
       </span>
 
-      {/* ── Value picker / input ─────────────────────────────────────────── */}
       <div className="relative">
         {selectedCol?.type === "select" ? (
           <>
             <button
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
               style={{
-                background:  "var(--color-surface-alt)",
-                border:      "1px solid var(--color-border)",
-                color:       filter.value ? "var(--color-text-primary)" : "var(--color-text-muted)",
+                background: "var(--color-surface-alt)",
+                border:     "1px solid var(--color-border)",
+                color:      filter.value ? "var(--color-text-primary)" : "var(--color-text-muted)",
               }}
               onClick={onToggleValuePicker}
             >
-              {selectedCol.options?.find((o) => o.value === filter.value)?.label
-                ?? "Select value"}
+              {selectedCol.options?.find((o) => o.value === filter.value)?.label ?? "Select value"}
               <ChevronDown size={11} className="opacity-50" />
             </button>
             {valuePickerOpen && selectedCol.options && (
@@ -449,10 +434,10 @@ function FilterRow({
             placeholder="Value..."
             className="px-2.5 py-1.5 rounded-lg text-xs outline-none transition-colors"
             style={{
-              background:  "var(--color-surface-alt)",
-              border:      "1px solid var(--color-border)",
-              color:       "var(--color-text-primary)",
-              minWidth:    "140px",
+              background: "var(--color-surface-alt)",
+              border:     "1px solid var(--color-border)",
+              color:      "var(--color-text-primary)",
+              minWidth:   "140px",
             }}
             value={filter.value}
             onChange={(e) => onValueChange(e.target.value)}
@@ -460,7 +445,6 @@ function FilterRow({
         )}
       </div>
 
-      {/* ── Remove row ─────────────────────────────────────────────────────── */}
       <button
         className="flex items-center justify-center size-6 rounded-md transition-colors ml-1 shrink-0"
         style={{ color: "var(--color-text-muted)" }}
@@ -498,15 +482,7 @@ function PickerDropdown({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PickerOption({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+function PickerOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       className="w-full text-left px-3 py-1.5 text-xs transition-colors"
