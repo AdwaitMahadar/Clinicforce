@@ -64,17 +64,29 @@ app/
   (app)/                    ← Authenticated app (AppShell layout)
     layout.tsx              ← AppShell: TopNav + SideNav + main content
     home/dashboard/         ← Clinic overview
+    home/reports/           ← Clinic reports
     appointments/dashboard/ ← Appointments calendar (Month/Week/Day views)
+    appointments/_components/ ← Appointment specific components
+    appointments/new/       ← New appointment page
+    appointments/reports/   ← Appointments reports
     appointments/view/[id]/ ← Full-page appointment detail (direct URL fallback)
     patients/dashboard/     ← Patient records table
+    patients/_components/   ← Patient specific components
+    patients/new/           ← New patient page
+    patients/reports/       ← Patients reports
     patients/view/[id]/     ← Full-page patient detail
     medicines/dashboard/    ← Medicine library table
+    medicines/_components/  ← Medicine specific components
+    medicines/new/          ← New medicine page
+    medicines/reports/      ← Medicines reports
     medicines/view/[id]/    ← Full-page medicine detail
     @modal/                 ← Intercepting route modals (parallel route)
       (.)appointments/view/[id]/  ← Appointment detail modal
       (.)appointments/new/        ← New appointment modal
       (.)medicines/view/[id]/     ← Medicine detail modal
       (.)medicines/new/           ← New medicine modal
+      (.)patients/view/[id]/      ← Patient detail modal
+      (.)patients/new/            ← New patient modal
   (auth)/
     login/page.tsx
 
@@ -102,6 +114,8 @@ mock/                       ← Mock data for UI development
 - `TimeGridView.tsx` — FullCalendar timeGridWeek/timeGridDay wrapper
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
+- `DetailForm.tsx` — Standard form wrapper for detail panels
+- `ModalShell.tsx` — Intercepting modal wrapper component
 
 ---
 
@@ -139,7 +153,7 @@ Detail records open as **intercepting route modals** (`@modal` parallel routes).
 - See `docs/01-PRD.md` for the full permission matrix
 
 ### Appointments
-- Status enum: `pending | completed | cancelled | no-show`
+- Status enum: `scheduled | completed | cancelled | no-show`
 - Type enum: `general | follow-up | emergency`
 - Tracks both scheduled time and actual check-in/check-out for audit
 
@@ -172,6 +186,17 @@ Full token list and component specs → `docs/06-UI-Design-System.md`
 
 ---
 
+## Documentation Sync Rule
+
+Whenever you make a code change that affects a schema, component, enum, 
+business rule, auth flow, or any other documented pattern — you MUST use 
+the `sync-docs-and-skills` skill before closing the task.
+
+This applies to every change, no matter how small. A one-line enum change 
+can affect multiple skills simultaneously.
+
+Skill location: `skills/sync-docs-and-skills/SKILL.md`
+
 ## Data Fetching Rules
 
 - All data fetching via **Next.js Server Actions** or Route Handlers — no direct DB calls from client components
@@ -185,16 +210,16 @@ Full token list and component specs → `docs/06-UI-Design-System.md`
 
 **Built:**
 - Full app shell (TopNav, SideNav, AppShell, PageHeader) with matrix navigation
+- Home dashboard (metrics/overview)
 - Patients dashboard with DataTable, TableFilterBar (Notion-style), TablePagination
 - Appointments dashboard with Month, Week, and Day calendar views
+- Medicines dashboard
 - All shared components in `components/common/`
 - Design system: CSS variables, typography, colour tokens fully centralised in `globals.css`
+- Intercepting modal routes for detail views
 
 **Not yet built (planned):**
-- Home dashboard (metrics/overview)
-- Medicines dashboard
 - All Reports views
-- Intercepting modal routes for detail views
 - Server actions and real DB integration (currently using mock data)
 - Authentication / Better-Auth integration
 - Document upload flow (S3/Minio)

@@ -279,6 +279,16 @@ The row containing the search input, filter dropdowns, and export button. Appear
 />
 ```
 
+### `<DetailForm />` — Entity Detail Form
+**Location:** `components/common/DetailForm.tsx`
+
+A generic field-driven form panel wired to React Hook Form and Zod, supporting both flat and multi-column sectioned layouts.
+
+### `<ModalShell />` — Intercepting Modal Wrapper
+**Location:** `components/common/ModalShell.tsx`
+
+A universal modal shell used for intercepting route modals, providing a blurred backdrop, entry animations, and escape/click-outside dismissal.
+
 ---
 
 ## 6. Calendar Components

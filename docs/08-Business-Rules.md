@@ -79,15 +79,15 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - The `doctorId` must reference an active user with the role `doctor`. You cannot assign an inactive doctor or a non-doctor user to an appointment.
 - You cannot create an appointment for an inactive patient.
 - Duration must be between **15 and 480 minutes** (8 hours maximum).
-- Default status on creation is `pending`.
+- Default status on creation is `scheduled`.
 - `createdBy` is set to the authenticated user's ID at creation and is immutable.
 
 ### Status Transitions
 In the MVP, all status transitions are permitted freely. Any status can be changed to any other status without restriction.
 
-Valid statuses: `pending` | `completed` | `cancelled` | `no-show`
+Valid statuses: `scheduled` | `completed` | `cancelled` | `no-show`
 
-Future versions may enforce transition logic (e.g. preventing a `completed` appointment from returning to `pending`), but this is explicitly out of scope for MVP.
+Future versions may enforce transition logic (e.g. preventing a `completed` appointment from returning to `scheduled`), but this is explicitly out of scope for MVP.
 
 ### Editing
 - All roles can edit appointments.

@@ -1,0 +1,54 @@
+---
+name: api-and-validation
+description: Use this skill whenever writing server actions, defining API route handlers, creating or modifying Zod schemas, or implementing request/response contracts between the client and server. This skill enforces the exact sequence of validation, session/role checking, and data-fetching patterns across the Clinicforce backend.
+---
+
+# API and Validation Skill
+
+This skill documents the rigorous pattern used for all server actions and API route handlers in Clinicforce. You MUST follow this blueprint exactly to ensure security, correct multi-tenant data isolation, and robust validation.
+
+## 🔗 The Server Action Anatomy
+
+Every server action in Clinicforce follows a strict procedural sequence to ensure robust security and data isolation:
+
+1. **Session & Auth Check**: First, verify the user session (`getSession()`). This provides the immutable `clinicId` and `role`. Do not trust client-provided IDs for this.
+2. **RBAC Verification**: Call `requireRole(session, [allowedRoles])` using the `role` from the session. Reject unauthorized requests immediately.
+3. **Input Validation**: Validate incoming payloads against the shared Zod schema from `lib/validators/`. Do not define custom inline schemas.
+4. **Data Operations & Isolation**: Execute the Drizzle ORM query. **Crucial**: Every DB operation must be scoped with a `WHERE clinic_id = session.clinicId`.
+
+### Error Handling Pattern
+Standardize errors by returning a unified response shape or throwing specific exceptions (like 401/403 for Auth/RBAC gaps) that the client can cleanly handle with Sonner toasts.
+
+## 🛡️ Zod Validation Conventions
+
+Zod schemas are the **single source of truth** for all validation, shared identically between the client (React Hook Form) and the server (API/Actions).
+
+- All Zod schemas MUST live in `lib/validators/`.
+- Every schema exports the main `z.object()` and the inferred type (e.g. `export type MedicineFormValues = z.infer<typeof medicineSchema>;`).
+- You may use *drizzle-zod* schemas as base insert/select models, but extend them generously with specific error messages, custom transforms, and rigorous `.refine()` logic (e.g. enforcing "email OR phone must exist").
+- Ensure schemas use explicit error messaging like `.min(2, "Name must be at least 2 characters")`.
+
+## 📌 API Contracts and Requirements
+
+For full action contracts per entity — exact input shapes, output shapes, and which actions belong to which pages — always read `docs/04-API-Specification.md` before implementing. Do not guess at shapes or infer them from the page specs.
+
+The general pattern for every action follows the anatomy above:
+- **List actions**: Accept `clinicId` (from session), `page`, `pageSize`, `search`, `sort`, and entity-specific filters. Always return a paginated shape with `{ data, total }`.
+- **Get actions**: Accept `id` + `clinicId`. Return a fully joined aggregate including nested `eventLog` and `documents` where applicable.
+- **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.
+- **Update actions**: Accept `id` + validated Zod payload. Scope the UPDATE with `clinic_id` to prevent cross-tenant writes.
+- **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
+
+## ❌ DO NOT
+
+- **Do not** write server actions without retrieving and enforcing the `session`.
+- **Do not** accept `clinicId` from the client. ALWAYS pull `clinicId` from the server session.
+- **Do not** forget to scope every database query dynamically with `.where(eq(table.clinicId, session.clinicId))`.
+- **Do not** build validation schemas directly inside component files or route handler files. Define them exclusively inside `lib/validators/`.
+- **Do not** manage authorization logic through UI-hiding flags exclusively. Action functions MUST do their own RBAC assertions.
+
+## 📚 References
+- `docs/04-API-Specification.md` - Complete contract boundaries for the server API.
+- `lib/validators/` - Home directory for all Zod implementations.
+- `docs/07-Page-Specifications.md` - Backend contract requirements per page.
+- `CLAUDE.md` - Core project and multi-tenancy rules.

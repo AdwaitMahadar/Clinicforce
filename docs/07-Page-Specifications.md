@@ -67,7 +67,7 @@ High-level clinic overview — metrics, recent activity, quick-action shortcuts.
 
 ## 2. Home Reports — `/home/reports`
 
-> **Status:** Not yet built. Placeholder only — Phase 3.
+> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
 
 ---
 
@@ -210,7 +210,7 @@ Both needed to populate the patient and doctor pickers in the form:
 
 ## 6. Appointments Reports — `/appointments/reports`
 
-> **Status:** Placeholder only — Phase 3.
+> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
 
 ---
 
@@ -395,7 +395,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 ## 10. Patients Reports — `/patients/reports`
 
-> **Status:** Placeholder only — Phase 3.
+> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
 
 ---
 
@@ -532,7 +532,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 ## 14. Medicines Reports — `/medicines/reports`
 
-> **Status:** Placeholder only — Phase 3.
+> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
 
 ---
 
@@ -620,24 +620,47 @@ All gaps have been reviewed and resolved as follows:
 
 ---
 
-## 18. URL Reference Summary
+## 18. Shared Components & Intercepting Modals
+
+The application provides intercepting routes to display forms seamlessly over the dashboard, backed by shared detail components:
+
+- **`appointments/_components/`, `patients/_components/`, `medicines/_components/`**:
+  > **Status:** UI built.
+  Contain `AppointmentDetailPanel`, `PatientDetailPanel`, and `MedicineDetailPanel`. They encapsulate the core form interfaces and are shared by both the full-page routes and modal intercepts.
+
+- **`@modal/(.)patients/view/[id]/`, `@modal/(.)patients/new/`**:
+  > **Status:** UI built.
+  Intercepting routes that utilize `ModalShell` to render the view and creation flows for patients over the current dashboard.
+
+- **`@modal/(.)appointments/view/[id]/`, `@modal/(.)medicines/view/[id]/`**:
+  > **Status:** UI built.
+  Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`.
+
+---
+
+## 19. URL Reference Summary
 
 | Route | Page | Component | Action(s) |
 |---|---|---|---|
 | `/home/dashboard` | Home overview | — | `getHomeStats`, `getRecentAppointments`, `getRecentPatients` |
+| `/home/reports` | Home Reports | Placeholder | `—` |
 | `/appointments/dashboard` | Calendar view | `MonthView`, `TimeGridView` | `getAppointments` |
 | `/appointments/new` | New appt form | `AppointmentDetailPanel mode="create"` | `createAppointment`, `getActivePatients`, `getActiveDoctors` |
+| `/appointments/reports` | Appt Reports | Placeholder | `—` |
 | `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `updateAppointment`, `deleteAppointment` |
 | `/patients/dashboard` | Patient list | `DataTable` | `getPatients` |
 | `/patients/new` | New patient form | `PatientDetailPanel mode="create"` | `createPatient` |
+| `/patients/reports` | Patient Reports | Placeholder | `—` |
 | `/patients/view/[id]` | Patient detail | `PatientDetailPanel mode="view"` | `getPatientDetail`, `updatePatient`, `getViewPresignedUrl` |
 | `/medicines/dashboard` | Medicine list | `DataTable` | `getMedicines` |
 | `/medicines/new` | New medicine form | `MedicineDetailPanel mode="create"` | `createMedicine` |
+| `/medicines/reports` | Medicine Reports | Placeholder | `—` |
 | `/medicines/view/[id]` | Medicine detail | `MedicineDetailPanel mode="edit"` | `getMedicineDetail`, `updateMedicine`, `deactivateMedicine` |
+| `/@modal/(.)*` | Intercepting Modals | `ModalShell` + Detail Panels | All edit / new actions |
 
 ---
 
-## 19. Pre-Backend Checklist
+## 20. Pre-Backend Checklist
 
 Before writing your first server action, complete the following in order.
 Every item here is a hard prerequisite — skipping any will cause type errors or migrations later.
