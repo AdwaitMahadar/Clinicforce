@@ -1,0 +1,262 @@
+"use server";
+
+/**
+ * lib/actions/patients.ts
+ *
+ * Server actions for the patients entity.
+ * Anatomy: getSession → requireRole → safeParse → DB.
+ * Always return { success: true, data } or { success: false, error }.
+ * Never throw.
+ *
+ * RBAC (docs/08-Business-Rules.md §3, §8):
+ *   View   : all roles
+ *   Create : all roles
+ *   Edit   : doctor, admin
+ */
+
+import { z } from "zod";
+import { and, eq } from "drizzle-orm";
+import { getSession } from "@/lib/auth/session";
+import { requireRole } from "@/lib/auth/rbac";
+import { db } from "@/lib/db";
+import { patients } from "@/lib/db/schema";
+import {
+  getPatients as queryGetPatients,
+  getPatientById,
+  getActivePatients as queryGetActivePatients,
+} from "@/lib/db/queries/patients";
+import {
+  createPatientSchema,
+  updatePatientSchema,
+} from "@/lib/validators/patient";
+
+// ─── Input schemas for list/filter params ─────────────────────────────────────
+
+const getPatientsInputSchema = z.object({
+  search:   z.string().optional(),
+  status:   z.enum(["active", "inactive"]).optional(),
+  doctorId: z.string().uuid().optional(),
+  page:     z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(10),
+  sortBy:   z.enum(["lastName", "lastVisit"]).optional().default("lastName"),
+  sortDir:  z.enum(["asc", "desc"]).optional().default("asc"),
+});
+
+const idSchema = z.string().uuid("Invalid ID");
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Treat empty/blank strings as null for nullable DB columns. */
+const n = (v?: string | null): string | null =>
+  v && v.trim() ? v.trim() : null;
+
+/**
+ * Generates a unique patient chartId in the 10000–99999 range for the clinic.
+ * Algorithm (docs/08-Business-Rules.md §1):
+ *   1. Pick a random integer in range.
+ *   2. Check uniqueness within the clinic.
+ *   3. Retry up to 10 times on collision.
+ *   4. After 10 failures, throw (caught by caller → returns { success: false }).
+ */
+async function generatePatientChartId(clinicId: string): Promise<number> {
+  const MAX_ATTEMPTS = 10;
+
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    // 10000–99999 inclusive
+    const candidate = Math.floor(Math.random() * 90000) + 10000;
+
+    const existing = await db
+      .select({ id: patients.id })
+      .from(patients)
+      .where(
+        and(
+          eq(patients.clinicId, clinicId),
+          eq(patients.chartId, candidate)
+        )
+      )
+      .limit(1);
+
+    if (existing.length === 0) return candidate;
+  }
+
+  throw new Error(
+    `Failed to generate a unique patient chartId for clinic ${clinicId} after ${MAX_ATTEMPTS} attempts.`
+  );
+}
+
+// ─── getPatients ──────────────────────────────────────────────────────────────
+
+export async function getPatients(input: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = getPatientsInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid filter parameters." };
+    }
+
+    const { clinicId } = session.user;
+    const result = await queryGetPatients(clinicId, parsed.data);
+    return { success: true as const, data: result };
+  } catch (err) {
+    console.error("[getPatients]", err);
+    return { success: false as const, error: "Failed to fetch patients." };
+  }
+}
+
+// ─── getPatientDetail ─────────────────────────────────────────────────────────
+
+export async function getPatientDetail(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    const { clinicId } = session.user;
+    const patient = await getPatientById(clinicId, parsed.data);
+
+    if (!patient) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    return {
+      success: true as const,
+      data: {
+        ...patient,
+        // TODO: Implement when audit_log table is built.
+        activityLog: [] as never[],
+      },
+    };
+  } catch (err) {
+    console.error("[getPatientDetail]", err);
+    return { success: false as const, error: "Failed to fetch patient." };
+  }
+}
+
+// ─── createPatient ────────────────────────────────────────────────────────────
+
+export async function createPatient(input: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = createPatientSchema.safeParse(input);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input.";
+      return { success: false as const, error: message };
+    }
+
+    const { clinicId, id: userId } = session.user;
+
+    // Generate a unique chartId using the docs/08-Business-Rules §1 algorithm
+    let chartId: number;
+    try {
+      chartId = await generatePatientChartId(clinicId);
+    } catch {
+      return {
+        success: false as const,
+        error: "Failed to generate chart ID. Please try again.",
+      };
+    }
+
+    const v = parsed.data;
+
+    const [created] = await db
+      .insert(patients)
+      .values({
+        clinicId,
+        chartId,
+        firstName: v.firstName.trim(),
+        lastName:  v.lastName.trim(),
+        email:     n(v.email),
+        phone:     n(v.phone),
+        dateOfBirth: n(v.dateOfBirth),
+        gender:    v.gender,
+        address:   n(v.address),
+        bloodGroup: v.bloodGroup ?? null,
+        allergies: n(v.allergies),
+        emergencyContactName:  n(v.emergencyContactName),
+        emergencyContactPhone: n(v.emergencyContactPhone),
+        notes:     n(v.notes),
+        isActive:  true,
+        createdBy: userId,
+      })
+      .returning({ id: patients.id });
+
+    return { success: true as const, data: { id: created.id } };
+  } catch (err) {
+    console.error("[createPatient]", err);
+    return { success: false as const, error: "Failed to create patient." };
+  }
+}
+
+// ─── updatePatient ────────────────────────────────────────────────────────────
+
+export async function updatePatient(input: unknown) {
+  try {
+    const session = await getSession();
+    // Staff cannot edit patient records (docs/08-Business-Rules §3)
+    requireRole(session, ["admin", "doctor"]);
+
+    const parsed = updatePatientSchema.safeParse(input);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Invalid input.";
+      return { success: false as const, error: message };
+    }
+
+    const { clinicId } = session.user;
+    const { id, ...fields } = parsed.data;
+
+    // Verify ownership
+    const existing = await getPatientById(clinicId, id);
+    if (!existing) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    await db
+      .update(patients)
+      .set({
+        ...(fields.firstName !== undefined && { firstName: fields.firstName.trim() }),
+        ...(fields.lastName  !== undefined && { lastName:  fields.lastName.trim()  }),
+        ...(fields.email     !== undefined && { email:     n(fields.email)         }),
+        ...(fields.phone     !== undefined && { phone:     n(fields.phone)         }),
+        ...(fields.dateOfBirth !== undefined && { dateOfBirth: n(fields.dateOfBirth) }),
+        ...(fields.gender    !== undefined && { gender:    fields.gender            }),
+        ...(fields.address   !== undefined && { address:   n(fields.address)        }),
+        ...(fields.bloodGroup !== undefined && { bloodGroup: fields.bloodGroup ?? null }),
+        ...(fields.allergies !== undefined && { allergies: n(fields.allergies)      }),
+        ...(fields.emergencyContactName  !== undefined && { emergencyContactName:  n(fields.emergencyContactName)  }),
+        ...(fields.emergencyContactPhone !== undefined && { emergencyContactPhone: n(fields.emergencyContactPhone) }),
+        ...(fields.notes     !== undefined && { notes:     n(fields.notes)          }),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)));
+
+    return { success: true as const, data: { id } };
+  } catch (err) {
+    console.error("[updatePatient]", err);
+    return { success: false as const, error: "Failed to update patient." };
+  }
+}
+
+// ─── getActivePatients ────────────────────────────────────────────────────────
+
+/** Returns active patients for the appointment form patient picker. */
+export async function getActivePatients() {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const { clinicId } = session.user;
+    const data = await queryGetActivePatients(clinicId);
+    return { success: true as const, data };
+  } catch (err) {
+    console.error("[getActivePatients]", err);
+    return { success: false as const, error: "Failed to fetch active patients." };
+  }
+}
