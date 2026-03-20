@@ -23,8 +23,7 @@ export type AppointmentType =
   | "therapy";
 
 export type AppointmentStatus =
-  | "confirmed"
-  | "pending"
+  | "scheduled"
   | "cancelled"
   | "completed"
   | "no-show";

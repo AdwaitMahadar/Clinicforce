@@ -40,11 +40,12 @@ interface PatientDetailPanelProps {
 
 // ─── Appointment status styles ────────────────────────────────────────────────
 
+/** Matches `StatusBadge` appointment colours (`components/common/StatusBadge.tsx`). */
 const APPT_STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  scheduled: { bg: "var(--color-blue-bg)",   text: "var(--color-blue)",   border: "var(--color-blue-bg)"   },
-  completed:  { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-bg)"  },
-  cancelled:  { bg: "var(--color-red-bg)",    text: "var(--color-red)",    border: "var(--color-red-bg)"    },
-  "no-show":  { bg: "var(--color-amber-bg)",  text: "var(--color-amber)",  border: "var(--color-amber-bg)"  },
+  scheduled: { bg: "var(--color-amber-bg)",   text: "var(--color-amber)",   border: "var(--color-amber-border)"   },
+  completed: { bg: "var(--color-blue-bg)",    text: "var(--color-blue)",    border: "var(--color-blue-border)"    },
+  cancelled: { bg: "var(--color-red-bg)",    text: "var(--color-red)",     border: "var(--color-red-border)"     },
+  "no-show": { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)" },
 };
 
 // ─── File type icon ───────────────────────────────────────────────────────────

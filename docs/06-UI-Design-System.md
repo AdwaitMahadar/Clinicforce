@@ -181,7 +181,7 @@ One component handles all badge/pill use cases in the app via a `variant` prop. 
 ```ts
 type BadgeVariant =
   | 'chartId'           // 8821 style — muted background, monospace font
-  | 'appointmentStatus' // confirmed | pending | cancelled | no-show | rescheduled
+  | 'appointmentStatus' // scheduled | completed | cancelled | no-show
   | 'patientStatus'     // active | inactive | critical
   | 'appointmentType'   // general | follow-up | emergency
 ```
@@ -189,11 +189,10 @@ type BadgeVariant =
 **Colour mapping:**
 ```ts
 // Appointment Status
-confirmed    → green background, green text
-pending      → amber background, amber text
+scheduled    → amber background, amber text
+completed    → blue background, blue text
 cancelled    → red background, red text
-no-show      → red background, red text
-rescheduled  → grey background, grey text
+no-show      → purple background, purple text
 
 // Patient Status
 active       → green background, green text
@@ -207,7 +206,7 @@ chartId      → subtle grey background, monospace font, e.g. #PT-8821
 
 **Usage:**
 ```tsx
-<Badge variant="appointmentStatus" value="confirmed" />
+<Badge variant="appointmentStatus" value="scheduled" />
 <Badge variant="patientStatus" value="critical" />
 <Badge variant="chartId" value={patient.chartId} entityType="patient" />
 ```

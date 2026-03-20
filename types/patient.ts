@@ -6,6 +6,7 @@
  */
 
 import type { LogEvent } from "@/components/common";
+import type { AppointmentStatus } from "@/types/appointment";
 
 // ─── Dashboard row (list view) ────────────────────────────────────────────────
 
@@ -25,8 +26,8 @@ export interface PatientRow {
 
 // ─── Detail record (single patient view panel) ────────────────────────────────
 
-export type PatientGender    = "Male" | "Female" | "Other" | "Prefer not to say";
-export type AppointmentStatus = "scheduled" | "completed" | "cancelled" | "no-show";
+export type PatientGender = "Male" | "Female" | "Other" | "Prefer not to say";
+export type { AppointmentStatus };
 
 export interface PatientAppointment {
   id:     string;

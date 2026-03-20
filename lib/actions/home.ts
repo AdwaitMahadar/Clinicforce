@@ -62,7 +62,7 @@ export async function getHomeStats() {
           )
         ),
 
-      // Appointments with status = 'scheduled' (pending/upcoming)
+      // Appointments with status = 'scheduled' (upcoming / not yet completed or cancelled)
       db
         .select({ count: sql<number>`COUNT(*)::int` })
         .from(appointments)
@@ -104,7 +104,7 @@ export async function getHomeStats() {
       data: {
         totalPatients:         totalPatientsResult[0]?.count ?? 0,
         appointmentsToday:     appointmentsTodayResult[0]?.count ?? 0,
-        appointmentsPending:   appointmentsScheduledResult[0]?.count ?? 0,
+        appointmentsScheduled: appointmentsScheduledResult[0]?.count ?? 0,
         appointmentsCompleted: appointmentsCompletedResult[0]?.count ?? 0,
         newPatientsThisMonth:  newPatientsResult[0]?.count ?? 0,
       },

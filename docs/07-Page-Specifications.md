@@ -42,7 +42,7 @@ High-level clinic overview — metrics, recent activity, quick-action shortcuts.
   {
     totalPatients:          number;   // COUNT patients WHERE is_active = true
     appointmentsToday:      number;   // COUNT appointments WHERE date::date = today AND is_active = true
-    appointmentsPending:    number;   // COUNT appointments WHERE status = 'pending' AND is_active = true
+    appointmentsScheduled:  number;   // COUNT appointments WHERE status = 'scheduled' AND is_active = true
     appointmentsCompleted:  number;   // COUNT appointments WHERE status = 'completed' last 30 days
     newPatientsThisMonth:   number;   // COUNT patients created in current calendar month
   }
@@ -105,7 +105,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     doctorName:  string;   // JOIN users
     date:        string;   // ISO timestamp (scheduled start)
     duration:    number;   // minutes
-    status:      "pending" | "completed" | "cancelled" | "no-show";
+    status:      "scheduled" | "completed" | "cancelled" | "no-show";
     type:        "general" | "follow-up" | "emergency" | ...;
     notes:       string | null;
   }
@@ -194,7 +194,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   - `doctorId` → active user with role `doctor`
   - `patientId` → active patient
   - Duration 15–480 minutes
-  - Default `status = 'pending'`
+  - Default `status = 'scheduled'`
   - `createdBy` = `session.userId` (immutable after creation)
   - `clinicId` = `session.clinicId` (immutable after creation)
 - **Returns:** Created appointment `{ id }` (client then navigates to detail view)

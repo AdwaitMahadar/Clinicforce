@@ -53,7 +53,7 @@ Docs are complete architectural records.
 
 After completing all edits, **scan all skills** using a simple keyword search to check for cross-references. 
 
-*Example:* If you changed the `appointment` status enum from `pending` to `scheduled` in the database, you must check `skills/business-rules/SKILL.md` and `skills/schema-and-data/SKILL.md` and `skills/ui-and-components/SKILL.md` to ensure no stray references to `pending` were left behind.
+*Example:* If you add or rename a value in the `appointment_status` enum, check `skills/business-rules/SKILL.md`, `skills/schema-and-data/SKILL.md`, and `skills/ui-and-components/SKILL.md` so `StatusBadge`, validators, and docs stay aligned.
 
 ## ❌ DO NOT
 

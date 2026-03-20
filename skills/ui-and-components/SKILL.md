@@ -34,7 +34,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<DataTable />` - Universal table (always server-side pagination, pass `isLoading` for skeletons).
 *   `<SearchFilterBar />` / `<TableFilterBar />` - Notion-style search and filter row.
 *   `<TablePagination />` - Reusable pagination footer.
-*   `<Badge />` / `<StatusBadge />` - Unified badge for statuses, types, and chart IDs.
+*   `<Badge />` / `<StatusBadge />` - Unified badge for statuses, types, and chart IDs. Appointment statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `components/common/StatusBadge.tsx`).
 *   `<PatientAvatar />` / `<InitialsBadge />` - Deterministic initials avatar.
 *   `<PageHeader />` - Title block for *every* page.
 *   `<EventLog />` - Activity log list.

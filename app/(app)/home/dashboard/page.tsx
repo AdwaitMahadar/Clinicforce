@@ -34,7 +34,7 @@ export default async function HomeDashboardPage() {
   const statCards = [
     { label: "Total Patients",     value: stats?.totalPatients?.toLocaleString() ?? "—", delta: "", positive: true,  icon: Users        },
     { label: "Appointments Today", value: String(stats?.appointmentsToday        ?? "—"), delta: "", positive: true,  icon: CalendarDays  },
-    { label: "Pending",            value: String(stats?.appointmentsPending       ?? "—"), delta: "", positive: false, icon: ClipboardList },
+    { label: "Scheduled",          value: String(stats?.appointmentsScheduled     ?? "—"), delta: "", positive: false, icon: ClipboardList },
     { label: "New This Month",     value: String(stats?.newPatientsThisMonth      ?? "—"), delta: "", positive: true,  icon: TrendingUp    },
   ];
 

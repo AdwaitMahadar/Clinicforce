@@ -22,7 +22,6 @@ import { format, parseISO } from "date-fns";
 import { DetailForm } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor, FormSection } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import type { AppStatus } from "@/components/common/StatusBadge";
 import { EventLog } from "@/components/common/EventLog";
 import type { AppointmentDetail } from "@/types/appointment";
 import {
@@ -516,7 +515,7 @@ export function AppointmentDetailPanel({
                 {isCreate ? "New Appointment" : appointment!.title}
               </h3>
               {!isCreate && (
-                <StatusBadge status={appointment!.status as AppStatus} />
+                <StatusBadge status={appointment!.status} />
               )}
             </div>
             <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
