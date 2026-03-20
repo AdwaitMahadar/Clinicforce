@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { DataTable, InitialsBadge, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
 import type { PatientRow } from "@/types/patient";
@@ -68,11 +69,14 @@ interface PatientsTableProps {
 }
 
 export function PatientsTable({ data }: PatientsTableProps) {
+  const router = useRouter();
+
   return (
     <DataTable
       columns={patientColumns}
       data={data}
       enableSorting
+      onRowClick={(row) => router.push(`/patients/view/${row.id}`)}
       emptyState={
         <div className="flex flex-col items-center gap-2 py-10">
           <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>

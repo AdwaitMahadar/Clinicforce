@@ -132,6 +132,8 @@ Routes follow `/{entity}/{view}` — all static segments. Root `/` redirects to 
 
 Detail records open as **intercepting route modals** (`@modal` parallel routes). Every entity also has a full-page fallback for direct URL / refresh access.
 
+Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). The new-patient form keeps **Save / Cancel inside the `<form>`** and, after `createPatient` succeeds, **closes the modal** (`router.back()` + `router.refresh()`), or **pushes to `/patients/dashboard`** from the full-page new route — list refreshed via `revalidatePath` + refresh.
+
 **CRITICAL — `/view/[id]` routing pattern:** Detail routes MUST use `/view/[id]` (e.g. `/appointments/view/abc-123`), never a bare `/[id]` (e.g. `/appointments/abc-123`). A bare `[id]` is a dynamic segment that matches ANY string — including `dashboard`, `new`, and `reports` — causing the `@modal` interceptor to match nav-bar clicks and freeze the page. The `/view/` sub-segment creates a separate namespace that can never conflict with static nav segments.
 
 ---

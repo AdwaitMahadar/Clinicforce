@@ -231,6 +231,9 @@ Both needed to populate the patient and doctor pickers in the form:
 
 > **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
+### Interaction
+- **Row click:** Navigates to `/patients/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
+
 ### Server Actions Needed
 
 #### `getPatients({ search, filters, page, pageSize, sort })`
@@ -377,6 +380,11 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 | Emergency Contact Phone | — | `emergency_contact_phone` | text |
 | Initial Clinical Notes | — | `notes` | text |
 
+### Implementation notes
+- **Form:** Submit and cancel controls must live inside the same `<form>` as the fields so **Save** triggers `onSubmit` (native submit buttons outside a form do not submit it).
+- **Gender:** The select is populated from `PATIENT_GENDERS` in `lib/validators/patient.ts` (`male` | `female` | `other`).
+- **After create:** On success, `createPatient` calls `revalidatePath("/patients/dashboard")` after insert. The client then **closes the modal** (`router.back()` via `onClose`) when opened from the dashboard, or **`router.push('/patients/dashboard')`** from the full-page route, and **`router.refresh()`** so the table shows the new row without losing dashboard URL state (search/filters/pagination) in the modal case.
+
 ### Server Actions Needed
 
 #### `createPatient(data)`
@@ -388,7 +396,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
   - Sets `createdBy = session.userId` (immutable)
   - Sets `clinicId = session.clinicId` (immutable)
   - Sets `is_active = true`
-- **Returns:** `{ id }` — client navigates to `/patients/view/${id}`
+- **Returns:** `{ id }` — after success, modal context uses `router.back()` + `router.refresh()`; full-page `/patients/new` uses `router.push('/patients/dashboard')` + `router.refresh()`. `revalidatePath` runs in the action.
 - **RBAC:** All roles.
 
 ---

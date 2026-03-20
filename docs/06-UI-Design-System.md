@@ -241,7 +241,7 @@ Used at the top of every dashboard and reports page. Accepts slots for title, su
 ```
 
 ### `<DataTable />` — Universal Data Table
-**Location:** `components/clinic/DataTable.tsx`
+**Location:** `components/common/DataTable.tsx`
 
 Built on **TanStack Table v8**. Used for all list views (Patients, Appointments, Medicines, Users). Accepts column definitions and data as props.
 

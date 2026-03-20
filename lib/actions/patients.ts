@@ -15,6 +15,7 @@
  */
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { requireRole } from "@/lib/auth/rbac";
@@ -187,6 +188,8 @@ export async function createPatient(input: unknown) {
         createdBy: userId,
       })
       .returning({ id: patients.id });
+
+    revalidatePath("/patients/dashboard");
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {

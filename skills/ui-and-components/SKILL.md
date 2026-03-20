@@ -64,8 +64,8 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/new` & `/view/[id]`: 3-column detail layout (Primary Form | Notes & Docs | Activity Log).
     *   `/reports`: Placeholder view.
 *   **Patients**: 
-    *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status). 
-    *   `/new` & `/view/[id]`: 3-column detail layout (Personal Info | Tabbed Docs/Appts | Notes & Log).
+    *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).
+    *   `/new` & `/view/[id]`: 3-column detail layout (Personal Info | Tabbed Docs/Appts | Notes & Log). After successful `createPatient`, modal closes via `back` + `refresh`; full-page new route pushes to `dashboard`. New-patient form submit controls stay inside `<form>`.
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
     *   `/dashboard`: DataTable (Search by name, filter by category/form); row click → `/medicines/view/[id]` (intercepting modal).

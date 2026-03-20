@@ -18,6 +18,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   User, FileText, Phone, Mail, HeartPulse, AlertTriangle,
   CalendarDays, File, FileSpreadsheet, Image, Download, Plus, X,
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { InitialsBadge, StatusBadge, EventLog } from "@/components/common";
 import type { PatientDetail, PatientDocument } from "@/types/patient";
 import { createPatient } from "@/lib/actions/patients";
+import { PATIENT_GENDERS } from "@/lib/validators/patient";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -89,8 +91,26 @@ function Field({
 
 // ─── Editable input field (create mode) ──────────────────────────────────────
 
+const GENDER_OPTION_LABEL: Record<(typeof PATIENT_GENDERS)[number], string> = {
+  male:   "Male",
+  female: "Female",
+  other:  "Other",
+};
+
+const PATIENT_GENDER_SELECT_OPTIONS = PATIENT_GENDERS.map((value) => ({
+  value,
+  label: GENDER_OPTION_LABEL[value],
+}));
+
 function InputField({
-  label, name, placeholder = "", type = "text", required = false, className = "", as,
+  label,
+  name,
+  placeholder = "",
+  type = "text",
+  required = false,
+  className = "",
+  as,
+  selectOptions,
 }: {
   label: string;
   name: string;
@@ -99,6 +119,8 @@ function InputField({
   required?: boolean;
   className?: string;
   as?: "textarea" | "select";
+  /** When `as="select"`, pass options (e.g. gender from `PATIENT_GENDERS`). */
+  selectOptions?: { value: string; label: string }[];
 }) {
   const sharedStyle: React.CSSProperties = {
     background:  "var(--color-surface)",
@@ -121,9 +143,13 @@ function InputField({
           style={sharedStyle}
         />
       ) : as === "select" ? (
-        // placeholder — real options wired in Phase 3
         <select name={name} className="w-full px-3 py-2 rounded-lg text-sm transition-colors focus:ring-1 appearance-none" style={sharedStyle}>
           <option value="">Select…</option>
+          {(selectOptions ?? []).map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
       ) : (
         <input
@@ -152,6 +178,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPanelProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"documents" | "appointments">("documents");
   const handleClose = useCallback(() => onClose?.(), [onClose]);
 
@@ -165,7 +192,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
       email:                get("email"),
       phone:                get("phone"),
       dateOfBirth:          get("dateOfBirth"),
-      gender:               (get("gender") as "male" | "female" | "other") ?? "other",
+      gender:               get("gender") as "male" | "female" | "other",
       address:              get("address"),
       bloodGroup:           get("bloodGroup") as "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | undefined,
       allergies:            get("allergies"),
@@ -175,11 +202,18 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
     });
     if (result.success) {
       toast.success("Patient registered successfully.");
-      onClose?.();
+      // Modal: close with history back so the underlying dashboard URL (filters, page) stays intact.
+      // Full-page /patients/new: navigate to the list.
+      if (onClose) {
+        onClose();
+      } else {
+        router.push("/patients/dashboard");
+      }
+      router.refresh();
     } else {
       toast.error(result.error ?? "Failed to register patient.");
     }
-  }, [onClose]);
+  }, [router, onClose]);
 
   // ── CREATE MODE ──────────────────────────────────────────────────────────────
   if (mode === "create") {
@@ -211,84 +245,95 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
           )}
         </div>
 
-        {/* Scrollable form body */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <form className="max-w-3xl mx-auto space-y-6" onSubmit={handleCreateSubmit}>
-
-            {/* ── Personal Information ── */}
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2 mb-4"
-                style={{ color: "var(--color-text-secondary)" }}>
-                <User size={14} /> Personal Information
-              </h3>
-              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                <InputField label="First Name" name="firstName" placeholder="Michael" required />
-                <InputField label="Last Name"  name="lastName"  placeholder="Ross"    required />
-                <InputField label="Address" name="address" placeholder="123 Maple Avenue, Springfield, IL 62704" className="col-span-2" />
-                <InputField label="Date of Birth" name="dateOfBirth" type="date" required />
-                <InputField label="Gender" name="gender" as="select" required />
-                <InputField label="Phone" name="phone" placeholder="(555) 123-4567" type="tel" className="col-span-2" required />
-                <InputField label="Email" name="email" placeholder="patient@example.com" type="email" className="col-span-2" required />
-              </div>
-            </div>
-
-            {/* ── Medical Context ── */}
-            <SectionHeader icon={HeartPulse} title="Medical Context" />
-            <div className="grid grid-cols-2 gap-x-5 gap-y-4 mt-4">
-              <InputField label="Blood Group" name="bloodGroup" placeholder="O+" />
-              <InputField label="Allergies"   name="allergies"  placeholder="e.g. Penicillin, Peanuts (or leave blank)" />
-            </div>
-
-            {/* ── Emergency Contact ── */}
-            <SectionHeader icon={AlertTriangle} title="Emergency Contact" />
-            <div className="grid grid-cols-2 gap-x-5 gap-y-4 mt-4">
-              <InputField label="Contact Name"  name="emergencyContactName"  placeholder="Sarah Ross (Wife)" />
-              <InputField label="Contact Phone" name="emergencyContactPhone" placeholder="(555) 987-6543" type="tel" />
-            </div>
-
-            {/* ── Clinical Notes ── */}
-            <SectionHeader icon={FileText} title="Clinical Notes" />
-            <div className="mt-4">
-              <InputField
-                label="Initial Notes"
-                name="notes"
-                as="textarea"
-                placeholder="Add any initial clinical notes, referral reasons, or relevant background…"
-                className="col-span-2"
-              />
-            </div>
-
-          </form>
-        </div>
-
-        {/* Footer actions */}
-        <div
-          className="flex items-center justify-end gap-3 px-8 py-4 flex-shrink-0"
-          style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-glass-fill)" }}
+        <form
+          onSubmit={handleCreateSubmit}
+          className="flex flex-col flex-1 min-h-0"
         >
-          {onClose && (
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                background: "var(--color-surface)",
-                border:     "1px solid var(--color-border)",
-                color:      "var(--color-text-secondary)",
-              }}
-            >
-              Cancel
-            </button>
-          )}
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
-            style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+          {/* Scrollable form body */}
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-3xl mx-auto space-y-6">
+
+              {/* ── Personal Information ── */}
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2 mb-4"
+                  style={{ color: "var(--color-text-secondary)" }}>
+                  <User size={14} /> Personal Information
+                </h3>
+                <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                  <InputField label="First Name" name="firstName" placeholder="Michael" required />
+                  <InputField label="Last Name"  name="lastName"  placeholder="Ross"    required />
+                  <InputField label="Address" name="address" placeholder="123 Maple Avenue, Springfield, IL 62704" className="col-span-2" />
+                  <InputField label="Date of Birth" name="dateOfBirth" type="date" required />
+                  <InputField
+                    label="Gender"
+                    name="gender"
+                    as="select"
+                    required
+                    selectOptions={PATIENT_GENDER_SELECT_OPTIONS}
+                  />
+                  <InputField label="Phone" name="phone" placeholder="(555) 123-4567" type="tel" className="col-span-2" required />
+                  <InputField label="Email" name="email" placeholder="patient@example.com" type="email" className="col-span-2" required />
+                </div>
+              </div>
+
+              {/* ── Medical Context ── */}
+              <SectionHeader icon={HeartPulse} title="Medical Context" />
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4 mt-4">
+                <InputField label="Blood Group" name="bloodGroup" placeholder="O+" />
+                <InputField label="Allergies"   name="allergies"  placeholder="e.g. Penicillin, Peanuts (or leave blank)" />
+              </div>
+
+              {/* ── Emergency Contact ── */}
+              <SectionHeader icon={AlertTriangle} title="Emergency Contact" />
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4 mt-4">
+                <InputField label="Contact Name"  name="emergencyContactName"  placeholder="Sarah Ross (Wife)" />
+                <InputField label="Contact Phone" name="emergencyContactPhone" placeholder="(555) 987-6543" type="tel" />
+              </div>
+
+              {/* ── Clinical Notes ── */}
+              <SectionHeader icon={FileText} title="Clinical Notes" />
+              <div className="mt-4">
+                <InputField
+                  label="Initial Notes"
+                  name="notes"
+                  as="textarea"
+                  placeholder="Add any initial clinical notes, referral reasons, or relevant background…"
+                  className="col-span-2"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Footer actions — must stay inside <form> so Save submits */}
+          <div
+            className="flex items-center justify-end gap-3 px-8 py-4 flex-shrink-0"
+            style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-glass-fill)" }}
           >
-            <Save size={15} />
-            Save Patient
-          </button>
-        </div>
+            {onClose && (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  background: "var(--color-surface)",
+                  border:     "1px solid var(--color-border)",
+                  color:      "var(--color-text-secondary)",
+                }}
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+              style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+            >
+              <Save size={15} />
+              Save Patient
+            </button>
+          </div>
+        </form>
       </div>
     );
   }
