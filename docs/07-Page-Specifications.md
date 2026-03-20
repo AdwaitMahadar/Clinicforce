@@ -415,6 +415,9 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 > **SKU removed.** The `sku` field was present in early mock data but is not part of the DB schema and has been fully removed from the UI, types, and mock data.
 
+### Interaction
+- **Row click:** Navigates to `/medicines/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
+
 ### Server Actions Needed
 
 #### `getMedicines({ search, filters, page, pageSize, sort })`

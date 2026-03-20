@@ -68,7 +68,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/new` & `/view/[id]`: 3-column detail layout (Personal Info | Tabbed Docs/Appts | Notes & Log).
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
-    *   `/dashboard`: DataTable (Search by name, filter by category/form).
+    *   `/dashboard`: DataTable (Search by name, filter by category/form); row click → `/medicines/view/[id]` (intercepting modal).
     *   `/new` & `/view/[id]`: 2-column detail layout (Form | Activity Log).
     *   `/reports`: Placeholder view.
 
