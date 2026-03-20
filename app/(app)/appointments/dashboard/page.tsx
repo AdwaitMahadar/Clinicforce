@@ -17,6 +17,7 @@ import {
 } from "date-fns";
 import { getAppointments } from "@/lib/actions/appointments";
 import { VALID_APPOINTMENT_DISPLAY_TYPES } from "@/lib/appointment-calendar-styles";
+import type { AppointmentCalendarRow } from "@/lib/db/queries/appointments";
 import { AppointmentCalendarClient } from "../_components/AppointmentCalendarClient";
 import type { AppointmentEvent } from "@/types/appointment";
 
@@ -53,9 +54,8 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
     rangeEnd:   rangeEnd.toISOString(),
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const events: AppointmentEvent[] = result.success
-    ? (result.data as any[]).map((a: any): AppointmentEvent => {
+    ? result.data.map((a: AppointmentCalendarRow): AppointmentEvent => {
         const start = a.date ? new Date(a.date) : new Date();
         const durationMs = Number(a.duration ?? 30) * 60 * 1000;
         const end = new Date(start.getTime() + durationMs);

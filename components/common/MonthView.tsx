@@ -21,7 +21,6 @@ const MAX_EVENTS_VISIBLE = 3;
 interface MonthViewProps {
   appointments: AppointmentEvent[];
   currentDate: Date;
-  onDateChange: (date: Date) => void;
   onDayClick?: (date: Date) => void;
   onEventClick?: (appointment: AppointmentEvent) => void;
 }
@@ -29,7 +28,6 @@ interface MonthViewProps {
 export function MonthView({
   appointments,
   currentDate,
-  onDateChange,
   onDayClick,
   onEventClick,
 }: MonthViewProps) {

@@ -251,7 +251,6 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
           <MonthView
             appointments={initialEvents}
             currentDate={currentDate}
-            onDateChange={handleDateChange}
             onEventClick={handleEventClick}
           />
         )}

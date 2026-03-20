@@ -21,7 +21,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   User, FileText, Phone, Mail, HeartPulse, AlertTriangle,
-  CalendarDays, File, FileSpreadsheet, Image, Download, Plus, X,
+  CalendarDays, File, FileSpreadsheet, Image as ImageIcon, Download, Plus, X,
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,7 +55,7 @@ function DocIcon({ type }: { type: PatientDocument["type"] }) {
     pdf:   { icon: <FileText size={18} />,        bg: "#fee2e2", color: "#ef4444" },
     doc:   { icon: <File size={18} />,            bg: "#eff6ff", color: "#3b82f6" },
     xls:   { icon: <FileSpreadsheet size={18} />, bg: "#ecfdf5", color: "#10b981" },
-    img:   { icon: <Image size={18} />,           bg: "#f5f3ff", color: "#8b5cf6" },
+    img:   { icon: <ImageIcon size={18} aria-hidden />, bg: "#f5f3ff", color: "#8b5cf6" },
     other: { icon: <File size={18} />,            bg: "#f4f4f5", color: "#71717a" },
   };
   const s = styles[type] ?? styles.other;

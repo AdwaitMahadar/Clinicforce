@@ -4,10 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
-  CalendarDays,
-  Users,
-  Pill,
   BarChart2,
   LayoutDashboard,
   PanelLeftClose,
@@ -16,13 +12,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-
-const TOP_NAV_ITEMS = [
-  { href: "/home/dashboard",         label: "Home",         icon: Home },
-  { href: "/appointments/dashboard", label: "Appointments", icon: CalendarDays },
-  { href: "/patients/dashboard",     label: "Patients",     icon: Users },
-  { href: "/medicines/dashboard",    label: "Medicines",    icon: Pill },
-];
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },

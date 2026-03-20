@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 /** Shape of a single event in the log. */
 export interface LogEvent {
   /** Short heading — what happened. */
