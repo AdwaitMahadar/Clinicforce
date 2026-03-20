@@ -13,8 +13,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { clinics } from "./clinics";
 import { users } from "./auth";
+import { PATIENT_GENDERS } from "@/lib/constants/patient";
 
-export const genderEnum = pgEnum("gender", ["male", "female", "other"]);
+/** Must match `lib/constants/patient.ts` — single source for Zod + types. */
+export const genderEnum = pgEnum("gender", [...PATIENT_GENDERS]);
 
 /**
  * patients — Individual medical records for clinic clients.

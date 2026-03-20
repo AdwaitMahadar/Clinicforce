@@ -145,7 +145,7 @@ export interface DetailFormProps<TValues extends FieldValues> {
   /** The Zod schema for the form — import from lib/validators/ */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   schema: $ZodType<TValues, any>;
-  /** Initial field values — usually the record fetched from the DB / mock */
+  /** Initial field values — usually the record fetched from the DB */
   defaultValues: DefaultValues<TValues>;
 
   /**

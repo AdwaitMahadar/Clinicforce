@@ -12,19 +12,14 @@ import {
 import { clinics } from "./clinics";
 import { users } from "./auth";
 import { patients } from "./patients";
+import { APPOINTMENT_STATUSES, APPOINTMENT_TYPES } from "@/lib/constants/appointment";
 
+/** Must match `lib/constants/appointment.ts` — single source for Zod + types. */
 export const appointmentStatusEnum = pgEnum("appointment_status", [
-  "scheduled",
-  "completed",
-  "cancelled",
-  "no-show",
+  ...APPOINTMENT_STATUSES,
 ]);
 
-export const appointmentTypeEnum = pgEnum("appointment_type", [
-  "general",
-  "follow-up",
-  "emergency",
-]);
+export const appointmentTypeEnum = pgEnum("appointment_type", [...APPOINTMENT_TYPES]);
 
 /**
  * appointments — Records of clinical consultations or procedures.

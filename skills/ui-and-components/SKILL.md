@@ -40,7 +40,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<EventLog />` - Activity log list.
 *   `<DetailForm />` - Generic field-driven form panel supporting flat and sectioned modes.
 *   `<ModalShell />` - Universal modal envelope used for intercepting route modals.
-*   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />`.
+*   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).
 
 **Layouts (`components/layout/`)**
 *   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`.

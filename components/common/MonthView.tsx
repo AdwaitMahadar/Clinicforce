@@ -12,18 +12,18 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 
-import type { MockAppointment, AppointmentType } from "@/mock/appointments/dashboard";
-import { TYPE_COLORS } from "@/mock/appointments/dashboard";
+import type { AppointmentEvent, AppointmentType } from "@/types/appointment";
+import { TYPE_COLORS } from "@/lib/appointment-calendar-styles";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MAX_EVENTS_VISIBLE = 3;
 
 interface MonthViewProps {
-  appointments: MockAppointment[];
+  appointments: AppointmentEvent[];
   currentDate: Date;
   onDateChange: (date: Date) => void;
   onDayClick?: (date: Date) => void;
-  onEventClick?: (appointment: MockAppointment) => void;
+  onEventClick?: (appointment: AppointmentEvent) => void;
 }
 
 export function MonthView({
@@ -41,7 +41,7 @@ export function MonthView({
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   // Group appointments by date string for fast lookup
-  const apptsByDate: Record<string, MockAppointment[]> = {};
+  const apptsByDate: Record<string, AppointmentEvent[]> = {};
   for (const appt of appointments) {
     const dateKey = appt.start.slice(0, 10); // "YYYY-MM-DD"
     if (!apptsByDate[dateKey]) apptsByDate[dateKey] = [];

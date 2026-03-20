@@ -1,7 +1,7 @@
 import { Clock, User } from "lucide-react";
 import type { EventContentArg } from "@fullcalendar/core";
-import type { AppointmentType } from "@/mock/appointments/dashboard";
-import { TYPE_COLORS, TYPE_LABELS } from "@/mock/appointments/dashboard";
+import type { AppointmentType } from "@/types/appointment";
+import { TYPE_COLORS, TYPE_LABELS } from "@/lib/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
 
 interface AppointmentEventCardProps {
@@ -60,8 +60,12 @@ export function AppointmentEventCard({ eventInfo }: AppointmentEventCardProps) {
           </span>
           {!isCompact && (
             <span
-              className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0"
-              style={{ background: colors.solid + "22", color: colors.solid }}
+              className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0 border"
+              style={{
+                background: colors.bg,
+                color:      colors.text,
+                borderColor: colors.border,
+              }}
             >
               {label}
             </span>

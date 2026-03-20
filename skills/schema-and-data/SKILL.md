@@ -54,12 +54,13 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
   - Key fields: `name`, `category`, `brand`, `form`
   - Notes: Reference library only.
 
+## Shared enums (`lib/constants/`)
+
+PostgreSQL `pgEnum` definitions in `lib/db/schema/` pull value arrays from `lib/constants/` (same lists as Zod `z.enum()`). **Do not** redefine the same enum literals in schema, validators, and `types/` separately.
+
 ## Zod Validation
 
-Every table has corresponding Zod schemas generated using `drizzle-zod`.
-- **Insert Schemas**: Use these for validation during Create/Update server actions.
-- **Select Schemas**: Use these for typing responses from the database.
-- Zod schemas live in `lib/validators/`. Do not define them inline.
+Create/Update server actions validate payloads with Zod schemas in `lib/validators/` (see `skills/api-and-validation/SKILL.md`). Enum fields use `z.enum()` with imports from `lib/constants/`. Do not define validation schemas inline in components or actions.
 
 ## ❌ DO NOT
 

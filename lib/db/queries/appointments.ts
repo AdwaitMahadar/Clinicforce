@@ -16,10 +16,11 @@ import type { DocumentSummary } from "./documents";
 // ─── Return Types ─────────────────────────────────────────────────────────────
 
 /**
- * Compact appointment event shape returned to the calendar views.
+ * Compact appointment row from `getAppointments` (DB layer).
+ * Differs from `@/types/appointment` `AppointmentEvent` (UI: ISO start/end strings).
  * Matches the output contract in docs/07-Page-Specifications.md §3.
  */
-export interface AppointmentEvent {
+export interface AppointmentCalendarRow {
   id: string;
   title: string;
   patientName: string;
@@ -34,10 +35,11 @@ export interface AppointmentEvent {
 }
 
 /**
- * Full appointment detail shape returned by getAppointmentById.
+ * Full appointment record from `getAppointmentById` (DB layer).
+ * Differs from `@/types/appointment` `AppointmentDetail` (UI strings, initials, activity).
  * Matches the output contract in docs/07-Page-Specifications.md §4.
  */
-export interface AppointmentDetail {
+export interface AppointmentDetailRecord {
   id: string;
   title: string;
   description: string | null;
@@ -75,7 +77,7 @@ export interface AppointmentDetail {
 export async function getAppointments(
   clinicId: string,
   { rangeStart, rangeEnd }: { rangeStart: Date; rangeEnd: Date }
-): Promise<AppointmentEvent[]> {
+): Promise<AppointmentCalendarRow[]> {
   const rows = await db
     .select({
       id: appointments.id,
@@ -130,7 +132,7 @@ export async function getAppointments(
 export async function getAppointmentById(
   clinicId: string,
   id: string
-): Promise<AppointmentDetail | null> {
+): Promise<AppointmentDetailRecord | null> {
   const rows = await db
     .select({
       id: appointments.id,

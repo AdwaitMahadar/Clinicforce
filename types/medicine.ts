@@ -1,8 +1,7 @@
 /**
  * types/medicine.ts
  *
- * Canonical medicine types derived from the server action return shapes.
- * Replaces @/mock/medicines/dashboard and @/mock/medicines/detail.
+ * Canonical medicine types derived from server action return shapes (UI layer).
  */
 
 import type { LogEvent } from "@/components/common";

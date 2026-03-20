@@ -11,29 +11,10 @@
  */
 
 import { z } from "zod";
+import { MEDICINE_CATEGORIES, MEDICINE_FORMS } from "@/lib/constants/medicine";
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
-export const MEDICINE_CATEGORIES = [
-  "Antibiotics",
-  "Painkillers",
-  "Diabetes Care",
-  "Antihistamines",
-  "Vitamins",
-  "Cardiovascular",
-  "Antifungals",
-  "Antivirals",
-] as const;
-
-export const MEDICINE_FORMS = [
-  "Tablet",
-  "Syrup",
-  "Capsule",
-  "Injection",
-  "Cream",
-  "Drops",
-  "Powder",
-] as const;
+// Re-export for call sites that import enums from validators (forms, panels).
+export { MEDICINE_CATEGORIES, MEDICINE_FORMS };
 
 // ─── Create Schema ────────────────────────────────────────────────────────────
 // Used for the New Medicine form. Excludes all system-managed fields.

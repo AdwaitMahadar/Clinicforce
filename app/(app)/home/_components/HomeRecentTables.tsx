@@ -2,16 +2,9 @@
 
 import { DataTable, InitialsBadge, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
+import type { HomeRecentAppointmentRow } from "@/types/home";
 
-export interface AppointmentRow {
-  id:          string;
-  time:        string;
-  patientName: string;
-  visitType:   string;
-  status:      string;
-}
-
-const appointmentColumns: ColumnDef<AppointmentRow>[] = [
+const appointmentColumns: ColumnDef<HomeRecentAppointmentRow>[] = [
   {
     accessorKey: "time",
     header: "Time",
@@ -50,7 +43,7 @@ const appointmentColumns: ColumnDef<AppointmentRow>[] = [
 ];
 
 interface HomeRecentTablesProps {
-  data: AppointmentRow[];
+  data: HomeRecentAppointmentRow[];
 }
 
 export function HomeRecentTables({ data }: HomeRecentTablesProps) {

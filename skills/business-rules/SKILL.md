@@ -9,6 +9,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 
 ## 🗂️ Core Enums & Statuses
 
+- **Canonical lists:** Appointment status/type and patient gender values are defined once in `lib/constants/` and reused by Zod and Drizzle — do not duplicate literals elsewhere.
 - **User Roles:** `admin`, `doctor`, `staff`. (There is no default role; it must be explicitly set on creation).
 - **Patient Status:** Evaluated purely by the `is_active` boolean field (maps to active or inactive).
 - **Appointment Statuses:** `scheduled`, `completed`, `cancelled`, `no-show`. (Default on creation is `scheduled`. In MVP, any transition between statuses is freely permitted).

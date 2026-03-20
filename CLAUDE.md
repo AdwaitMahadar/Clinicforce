@@ -96,11 +96,13 @@ components/
   common/                   ← Domain components (see below)
 
 lib/
+  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`
   db/                       ← Drizzle schema + query functions
   validators/               ← Zod schemas (shared between forms and server actions)
   auth/                     ← Better-Auth config
+  appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
 
-mock/                       ← Mock data for UI development
+types/                      ← UI/view-model TypeScript types (patient, appointment, medicine, home)
 ```
 
 **`components/common/` inventory (what's built):**
@@ -222,8 +224,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 
 **Not yet built (planned):**
 - All Reports views
-- Server actions and real DB integration (currently using mock data)
-- Authentication / Better-Auth integration
+- Authentication / Better-Auth integration (session may be stubbed in dev)
 - Document upload flow (S3/Minio)
 
 > For build order and phase breakdown → `docs/10-Development-Phases.md`

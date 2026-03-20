@@ -11,21 +11,10 @@
  */
 
 import { z } from "zod";
+import { PATIENT_GENDERS, PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
 
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
-export const PATIENT_GENDERS = ["male", "female", "other"] as const;
-
-export const PATIENT_BLOOD_GROUPS = [
-  "A+",
-  "A-",
-  "B+",
-  "B-",
-  "AB+",
-  "AB-",
-  "O+",
-  "O-",
-] as const;
+// Re-export for call sites that import enums from validators (forms, panels).
+export { PATIENT_GENDERS, PATIENT_BLOOD_GROUPS };
 
 // ─── Create Schema ────────────────────────────────────────────────────────────
 // Used for the New Patient form. Excludes all system-managed fields.

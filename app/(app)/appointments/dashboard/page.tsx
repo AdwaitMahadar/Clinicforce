@@ -16,14 +16,9 @@ import {
   isValid,
 } from "date-fns";
 import { getAppointments } from "@/lib/actions/appointments";
+import { VALID_APPOINTMENT_DISPLAY_TYPES } from "@/lib/appointment-calendar-styles";
 import { AppointmentCalendarClient } from "../_components/AppointmentCalendarClient";
 import type { AppointmentEvent } from "@/types/appointment";
-
-// Valid appointment types — must match TYPE_COLORS keys in mock/appointments/dashboard
-const VALID_TYPES = new Set([
-  "general", "follow-up", "emergency", "vaccination", "checkup",
-  "dental", "surgery", "lab-test", "therapy",
-]);
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -64,7 +59,7 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
         const start = a.date ? new Date(a.date) : new Date();
         const durationMs = Number(a.duration ?? 30) * 60 * 1000;
         const end = new Date(start.getTime() + durationMs);
-        const apptType = (VALID_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];
+        const apptType = (VALID_APPOINTMENT_DISPLAY_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];
         return {
           id:          a.id,
           patientName: a.patientName ?? "",

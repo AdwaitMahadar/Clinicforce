@@ -17,7 +17,7 @@ import {
   EventLog,
 } from "@/components/common";
 import { HomeRecentTables } from "../_components/HomeRecentTables";
-import type { AppointmentRow } from "../_components/HomeRecentTables";
+import type { HomeRecentAppointmentRow } from "@/types/home";
 import { getHomeStats, getRecentAppointments } from "@/lib/actions/home";
 
 
@@ -38,7 +38,7 @@ export default async function HomeDashboardPage() {
     { label: "New This Month",     value: String(stats?.newPatientsThisMonth      ?? "—"), delta: "", positive: true,  icon: TrendingUp    },
   ];
 
-  const appointmentRows: AppointmentRow[] = apptsResult.success
+  const appointmentRows: HomeRecentAppointmentRow[] = apptsResult.success
     ? apptsResult.data.map((a) => ({
         id:          a.id,
         time:        a.date

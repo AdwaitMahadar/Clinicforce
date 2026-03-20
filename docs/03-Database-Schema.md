@@ -2,6 +2,10 @@
 
 This document defines the PostgreSQL schema used by Clinicforce. We use **Drizzle ORM** for schema definition and migrations.
 
+### Enum source of truth
+
+`pgEnum` value lists for **appointments** (`appointment_status`, `appointment_type`) and **patients** (`gender`) are built from the same `as const` arrays in `lib/constants/` that power Zod `z.enum()` and TypeScript types. When adding or renaming an enum value, update the constant module first, then run migrations.
+
 ## 1. SaaS & Multi-tenancy
 We use a **Column-based isolation** strategy. Almost every table includes a `clinic_id` to ensure data remains isolated between different clinics in a SaaS environment.
 

@@ -36,7 +36,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
     doctorId:           r.doctorId,
     doctorName:         r.doctorName,
     title:              r.title,
-    // Cast from DB enum subset → mock wider type
+    // Cast from DB enum subset → UI display type union
     type:            r.type as AppointmentDetail["type"],
     status:          r.status as AppointmentDetail["status"],
     date:            r.date ? new Date(r.date).toISOString().slice(0, 10) : "",

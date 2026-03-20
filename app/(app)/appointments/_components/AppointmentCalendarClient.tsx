@@ -34,18 +34,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthView }    from "@/components/common/MonthView";
 import { TimeGridView } from "@/components/common/TimeGridView";
 import type { AppointmentEvent } from "@/types/appointment";
-// MockAppointment shape — matches what MonthView/TimeGridView expect.
-// Defined locally to avoid importing from @/mock/ in app code.
-interface CalendarEvent {
-  id:          string;
-  patientName: string;
-  doctorName:  string;
-  type:        AppointmentEvent["type"];
-  status:      AppointmentEvent["status"];
-  start:       string;
-  end:         string;
-  notes?:      string;
-}
 
 export type CalendarView = "month" | "week" | "day";
 
@@ -200,21 +188,6 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
     try { return parseISO(dateStr); } catch { return new Date(); }
   }, [dateStr]);
 
-  // Map AppointmentEvent → CalendarEvent (shape MonthView/TimeGridView expect)
-  const events: CalendarEvent[] = useMemo(
-    () => initialEvents.map((e) => ({
-      id:          e.id,
-      patientName: e.patientName,
-      doctorName:  e.doctorName,
-      type:        e.type as CalendarEvent["type"],
-      status:      e.status as CalendarEvent["status"],
-      start:       e.start,
-      end:         e.end,
-      notes:       e.notes,
-    })),
-    [initialEvents]
-  );
-
   const subtitle = useMemo(() => {
     if (calView === "month") return `${format(currentDate, "MMMM yyyy")} — Monthly schedule overview`;
     if (calView === "week")  return `Week of ${format(currentDate, "MMM d, yyyy")}`;
@@ -234,7 +207,7 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
     setDateStr(new Date().toISOString().slice(0, 10));
   }
 
-  function handleEventClick(appt: CalendarEvent) {
+  function handleEventClick(appt: AppointmentEvent) {
     router.push(`/appointments/view/${appt.id}`);
   }
 
@@ -276,7 +249,7 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
       >
         {calView === "month" && (
           <MonthView
-            appointments={events}
+            appointments={initialEvents}
             currentDate={currentDate}
             onDateChange={handleDateChange}
             onEventClick={handleEventClick}
@@ -284,7 +257,7 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
         )}
         {(calView === "week" || calView === "day") && (
           <TimeGridView
-            appointments={events}
+            appointments={initialEvents}
             view={calView}
             currentDate={currentDate}
             onDateChange={handleDateChange}

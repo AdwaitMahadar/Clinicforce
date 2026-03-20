@@ -9,39 +9,23 @@
  * Rule: Never define validation inline in a component. Always import from here.
  * Rule: Never include clinicId, createdBy, createdAt, updatedAt, or id in create schemas.
  *
- * Enums MUST match the DB pgEnum values exactly:
- *   - appointmentTypeEnum:   general | follow-up | emergency
- *   - appointmentStatusEnum: scheduled | completed | cancelled | no-show
+ * Enum string lists live in `lib/constants/appointment.ts` (shared with DB + types).
  */
 
 import { z } from "zod";
+import {
+  APPOINTMENT_TYPES,
+  APPOINTMENT_STATUSES,
+  APPOINTMENT_TYPE_LABELS,
+  APPOINTMENT_STATUS_LABELS,
+} from "@/lib/constants/appointment";
 
-// ─── Enums (must match DB pgEnum values in lib/db/schema/appointments.ts) ─────
-
-export const APPOINTMENT_TYPES = [
-  "general",
-  "follow-up",
-  "emergency",
-] as const;
-
-export const APPOINTMENT_TYPE_LABELS: Record<typeof APPOINTMENT_TYPES[number], string> = {
-  "general":   "General",
-  "follow-up": "Follow-up",
-  "emergency": "Emergency",
-};
-
-export const APPOINTMENT_STATUSES = [
-  "scheduled",
-  "completed",
-  "cancelled",
-  "no-show",
-] as const;
-
-export const APPOINTMENT_STATUS_LABELS: Record<typeof APPOINTMENT_STATUSES[number], string> = {
-  "scheduled": "Scheduled",
-  "completed": "Completed",
-  "cancelled": "Cancelled",
-  "no-show":   "No Show",
+// Re-export for call sites that import enums from validators (forms, panels).
+export {
+  APPOINTMENT_TYPES,
+  APPOINTMENT_STATUSES,
+  APPOINTMENT_TYPE_LABELS,
+  APPOINTMENT_STATUS_LABELS,
 };
 
 /** Common duration presets for the UI dropdown (numeric values — for use with createAppointmentSchema). */

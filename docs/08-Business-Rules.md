@@ -85,7 +85,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 ### Status Transitions
 In the MVP, all status transitions are permitted freely. Any status can be changed to any other status without restriction.
 
-Valid statuses: `scheduled` | `completed` | `cancelled` | `no-show`
+Valid statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `lib/constants/appointment.ts` — single source with DB + Zod)
 
 Future versions may enforce transition logic (e.g. preventing a `completed` appointment from returning to `scheduled`), but this is explicitly out of scope for MVP.
 

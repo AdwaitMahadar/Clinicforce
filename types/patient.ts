@@ -1,8 +1,7 @@
 /**
  * types/patient.ts
  *
- * Canonical patient types derived from the server action return shapes.
- * Replaces @/mock/patients/dashboard and @/mock/patients/detail.
+ * Canonical patient types derived from server action return shapes (UI layer).
  */
 
 import type { LogEvent } from "@/components/common";

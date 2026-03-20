@@ -6,16 +6,16 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventContentArg } from "@fullcalendar/core";
 import { useRef } from "react";
-import type { MockAppointment } from "@/mock/appointments/dashboard";
-import { TYPE_COLORS } from "@/mock/appointments/dashboard";
+import type { AppointmentEvent } from "@/types/appointment";
+import { TYPE_COLORS } from "@/lib/appointment-calendar-styles";
 import { AppointmentEventCard } from "./AppointmentEventCard";
 
 interface TimeGridViewProps {
-  appointments: MockAppointment[];
+  appointments: AppointmentEvent[];
   view: "week" | "day";
   currentDate: Date;
   onDateChange: (date: Date) => void;
-  onEventClick?: (appointment: MockAppointment) => void;
+  onEventClick?: (appointment: AppointmentEvent) => void;
 }
 
 /**
@@ -32,13 +32,13 @@ export function TimeGridView({
 }: TimeGridViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
 
-  // Convert MockAppointments → FullCalendar EventInput array
+  // Convert AppointmentEvent → FullCalendar EventInput array
   const events = appointments.map((a) => ({
     id:    a.id,
     title: a.patientName,
     start: a.start,
     end:   a.end,
-    color: TYPE_COLORS[a.type]?.solid ?? "#2563EB",
+    color: TYPE_COLORS[a.type]?.solid ?? "var(--color-blue)",
     extendedProps: {
       patientName: a.patientName,
       doctorName:  a.doctorName,

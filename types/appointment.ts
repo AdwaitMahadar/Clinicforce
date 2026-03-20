@@ -1,20 +1,19 @@
 /**
  * types/appointment.ts
  *
- * Canonical appointment types derived from the server action return shapes.
- * Replaces @/mock/appointments/dashboard and @/mock/appointments/detail.
+ * Canonical appointment types for UI and server-action payloads.
+ * Calendar type styling lives in `lib/appointment-calendar-styles.ts`.
  *
- * NOTE: TYPE_COLORS and TYPE_LABELS remain in @/mock/appointments/dashboard
- * because they are UI-only configuration (not data) and are shared with
- * components/common/. Moving them is out of scope for this task.
+ * `AppointmentStatus` and DB appointment types are derived from `lib/constants/appointment.ts`
+ * (no Zod) so client bundles stay lean and values stay aligned with validators + DB.
  */
 
-// ─── Calendar event (list/calendar view) ──────────────────────────────────────
+import type { AppointmentDbType, AppointmentStatus } from "@/lib/constants/appointment";
 
-export type AppointmentType =
-  | "general"
-  | "follow-up"
-  | "emergency"
+export type { AppointmentStatus };
+
+/** Extra calendar-only type labels (not in DB `appointment_type` enum). */
+export type AppointmentCalendarExtra =
   | "vaccination"
   | "checkup"
   | "dental"
@@ -22,11 +21,8 @@ export type AppointmentType =
   | "lab-test"
   | "therapy";
 
-export type AppointmentStatus =
-  | "scheduled"
-  | "cancelled"
-  | "completed"
-  | "no-show";
+/** Display superset for calendar chips — DB types + calendar-only labels. */
+export type AppointmentType = AppointmentDbType | AppointmentCalendarExtra;
 
 /** The shape passed as props to MonthView / TimeGridView. */
 export interface AppointmentEvent {

@@ -746,6 +746,6 @@ Build actions entity by entity, testing each before moving on:
    - [ ] `getRecentPatients`
 
 ### Step 6 — Wire UI to Actions
-For each entity, replace the `MOCK_` imports in page files with calls to the real server actions. The mock types in `mock/` served as the contract — your server action return types should match them exactly so component code needs minimal changes.
+Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.
 
 **Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers.

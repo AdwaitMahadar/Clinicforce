@@ -1,14 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { AppointmentStatus } from "@/lib/constants/appointment";
 
 /** Extend this union when new statuses are added to the product. */
 export type AppStatus =
-  // ── Appointment statuses (must match DB `appointment_status` enum) ─
-  | "scheduled"
-  | "cancelled"
-  | "completed"
-  | "no-show"
-  // ── Patient statuses ─────────────────────────────────────────
+  | AppointmentStatus
   | "active"
   | "inactive";
 

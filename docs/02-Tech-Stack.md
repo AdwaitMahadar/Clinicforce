@@ -16,6 +16,7 @@ This document outlines the enterprise-grade technical foundation for the Clinicf
     *   *Integration:* Drizzle-adapter.
 *   **Validation:** [Zod](https://zod.dev/)
     *   Used for form validation, API request parsing, and shared schema definitions with Drizzle.
+    *   **Shared enums:** String lists that must match PostgreSQL enums and UI types live in `lib/constants/` (`as const`, no Zod). Validators import them for `z.enum()`; Drizzle `pgEnum()` uses the same arrays — avoids drift between DB, Zod, and `types/`.
 *   **File Storage:** S3 Compatible Storage
     *   *Local:* [Minio](https://min.io/) (via Docker Compose)
     *   *Client SDK:* AWS SDK v3 (S3 Client)
