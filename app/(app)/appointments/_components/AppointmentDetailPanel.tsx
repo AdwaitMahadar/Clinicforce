@@ -14,7 +14,7 @@
  * Create mode: 2 sections only (no rightSlot, Section 2 expands to fill).
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, FileText, ImageIcon, Plus, Upload } from "lucide-react";
@@ -26,65 +26,26 @@ import type { AppStatus } from "@/components/common/StatusBadge";
 import { EventLog } from "@/components/common/EventLog";
 import type { AppointmentDetail } from "@/types/appointment";
 import {
-  appointmentSchema,
+  createAppointmentSchema,
+  updateAppointmentSchema,
   APPOINTMENT_TYPES,
   APPOINTMENT_TYPE_LABELS,
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_DURATIONS,
-  type AppointmentFormValues,
+  type CreateAppointmentInput,
+  type UpdateAppointmentInput,
 } from "@/lib/validators/appointment";
 import {
+  createAppointment,
   updateAppointment,
   deleteAppointment,
+  getActivePatients,
+  getActiveDoctors,
 } from "@/lib/actions/appointments";
 
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
-
-function InitialsAvatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-  return (
-    <div
-      className="size-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-      style={{ background: "var(--color-blue-bg)", color: "var(--color-blue)" }}
-    >
-      {initials || "?"}
-    </div>
-  );
-}
-
-/** Shared avatar + plain-input control for Patient Name / Doctor Name */
-function AvatarTextControl({
-  field,
-  placeholder,
-}: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  field: any;
-  placeholder: string;
-}) {
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-2 rounded-md border"
-      style={{
-        background:   "var(--color-surface-alt)",
-        borderColor:  "var(--color-border)",
-      }}
-    >
-      <InitialsAvatar name={field.value || "?"} />
-      <input
-        {...field}
-        placeholder={placeholder}
-        className="bg-transparent border-none p-0 text-sm font-medium w-full focus:outline-none"
-        style={{ color: "var(--color-text-primary)" }}
-      />
-    </div>
-  );
-}
 
 /** Rich clinical-notes editor (mini toolbar + textarea) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -169,6 +130,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
 // ─── Col 3: Documents + Activity Log (read-only, outside the form) ────────────
 
 function AppointmentSidePanel({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for document list wiring
   appointment,
   logEvents,
 }: {
@@ -260,87 +222,91 @@ function AppointmentSidePanel({
 
 // ─── Blank defaults for create mode ──────────────────────────────────────────
 
-const EMPTY_VALUES: AppointmentFormValues = {
+const EMPTY_VALUES: CreateAppointmentInput = {
   title:              "",
-  patientName:        "",
-  doctorName:         "",
+  patientId:          "",
+  doctorId:           "",
   type:               "general",
   status:             "scheduled",
   date:               new Date().toISOString().slice(0, 10),
-  duration:           "30",
+  duration:           30,
   scheduledStartTime: "",
   scheduledEndTime:   "",
   actualCheckIn:      "",
   actualCheckOut:     "",
+  description:        "",
   notes:              "",
 };
 
-// ─── Field definitions ────────────────────────────────────────────────────────
+// ─── Field definitions (primary fields built with dynamic picker options) ──────
 
-const PRIMARY_FIELDS: FormFieldDescriptor<AppointmentFormValues>[] = [
-  {
-    name: "patientName",
-    label: "Patient Name",
-    type: "custom",
-    colSpan: 2,
-    renderControl: (field) => (
-      <AvatarTextControl field={field} placeholder="e.g. Michael Ross" />
-    ),
-  },
-  {
-    name: "doctorName",
-    label: "Assigned Doctor",
-    type: "custom",
-    colSpan: 2,
-    renderControl: (field) => (
-      <AvatarTextControl field={field} placeholder="e.g. Dr. Sarah Jenkins" />
-    ),
-  },
-  {
-    name: "title",
-    label: "Appointment Title",
-    type: "text",
-    colSpan: 2,
-    placeholder: "e.g. Annual Physical Examination",
-  },
-  {
-    name: "type",
-    label: "Type",
-    type: "select",
-    colSpan: 2,
-    options: APPOINTMENT_TYPES.map((t) => ({ label: APPOINTMENT_TYPE_LABELS[t], value: t })),
-  },
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    colSpan: 2,
-    options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
-  },
-  {
-    name: "date",
-    label: "Date",
-    type: "date",
-    colSpan: 1,
-  },
-  {
-    name: "duration",
-    label: "Duration",
-    type: "select",
-    colSpan: 1,
-    options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
-  },
-  {
-    name: "notes",
-    label: "Description",
-    type: "textarea",
-    colSpan: 2,
-    rows: 5,
-    placeholder: "Add visit details or reason for appointment...",
-  },
-];
+function buildPrimaryFields(
+  patientOptions: { label: string; value: string }[],
+  doctorOptions: { label: string; value: string }[]
+): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
+  return [
+    {
+      name:        "patientId",
+      label:       "Patient",
+      type:        "select",
+      colSpan:     2,
+      placeholder: "Select a patient...",
+      options:     patientOptions,
+    },
+    {
+      name:        "doctorId",
+      label:       "Assigned Doctor",
+      type:        "select",
+      colSpan:     2,
+      placeholder: "Select a doctor...",
+      options:     doctorOptions,
+    },
+    {
+      name:        "title",
+      label:       "Appointment Title",
+      type:        "text",
+      colSpan:      2,
+      placeholder:  "e.g. Annual Physical Examination",
+    },
+    {
+      name:    "type",
+      label:   "Type",
+      type:    "select",
+      colSpan: 2,
+      options: APPOINTMENT_TYPES.map((t) => ({ label: APPOINTMENT_TYPE_LABELS[t], value: t })),
+    },
+    {
+      name:    "status",
+      label:   "Status",
+      type:    "select",
+      colSpan: 2,
+      options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
+    },
+    {
+      name:     "date",
+      label:    "Date",
+      type:     "date",
+      colSpan:  1,
+    },
+    {
+      name:    "duration",
+      label:   "Duration",
+      type:    "select",
+      colSpan: 1,
+      options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
+    },
+    {
+      name:        "notes",
+      label:       "Description",
+      type:        "textarea",
+      colSpan:     2,
+      rows:        5,
+      placeholder: "Add visit details or reason for appointment...",
+    },
+  ];
+}
 
-const TIMELINE_FIELDS: FormFieldDescriptor<AppointmentFormValues>[] = [
+const TIMELINE_FIELDS: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
   { name: "scheduledStartTime", label: "Scheduled Start", type: "time", colSpan: 1 },
   { name: "scheduledEndTime",   label: "Scheduled End",   type: "time", colSpan: 1 },
   { name: "actualCheckIn",      label: "Actual Check-in",  type: "time", colSpan: 1 },
@@ -380,47 +346,90 @@ export function AppointmentDetailPanel({
   const isCreate = mode === "create";
   const router   = useRouter();
 
-  const defaultValues: AppointmentFormValues = isCreate
+  const [patientOptions, setPatientOptions] = useState<{ label: string; value: string }[]>([]);
+  const [doctorOptions, setDoctorOptions] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    void Promise.all([getActivePatients(), getActiveDoctors()]).then(
+      ([patientsRes, doctorsRes]) => {
+        if (patientsRes.success && patientsRes.data) {
+          setPatientOptions(
+            patientsRes.data.map((p) => ({
+              label: `${p.firstName} ${p.lastName} (#PT-${p.chartId})`,
+              value: p.id,
+            }))
+          );
+        }
+        if (doctorsRes.success && doctorsRes.data) {
+          setDoctorOptions(
+            doctorsRes.data.map((d) => ({
+              label: [d.firstName, d.lastName].filter(Boolean).join(" ") || d.name,
+              value: d.id,
+            }))
+          );
+        }
+      }
+    );
+  }, []);
+
+  const defaultValues: CreateAppointmentInput | UpdateAppointmentInput = isCreate
     ? EMPTY_VALUES
     : {
+        id:                 appointment!.id,
         title:              appointment!.title,
-        patientName:        appointment!.patientName,
-        doctorName:         appointment!.doctorName,
-        // Cast: mock data uses wider AppointmentType enum; legacy schema uses DB-aligned subset.
-        // These fields become patientId/doctorId and use DB enums in Step 6 (server wiring).
-        type:               appointment!.type as AppointmentFormValues["type"],
-        status:             appointment!.status as AppointmentFormValues["status"],
-        date:               appointment!.date,
-        duration:           String(appointment!.duration),
-        scheduledStartTime: appointment!.scheduledStartTime,
-        scheduledEndTime:   appointment!.scheduledEndTime,
-        actualCheckIn:      appointment!.actualCheckIn,
-        actualCheckOut:     appointment!.actualCheckOut,
-        notes:              appointment!.notes,
+        patientId:          appointment!.patientId,
+        doctorId:           appointment!.doctorId,
+        type:               appointment!.type as UpdateAppointmentInput["type"],
+        status:             appointment!.status as UpdateAppointmentInput["status"],
+        date:               appointment!.date.slice(0, 10),
+        duration:           appointment!.duration,
+        scheduledStartTime: appointment!.scheduledStartTime ?? "",
+        scheduledEndTime:   appointment!.scheduledEndTime   ?? "",
+        actualCheckIn:      appointment!.actualCheckIn      ?? "",
+        actualCheckOut:     appointment!.actualCheckOut     ?? "",
+        description:         appointment!.description ?? "",
+        notes:              appointment!.notes ?? "",
       };
 
-  const handleSubmit = async (values: AppointmentFormValues) => {
+  const handleSubmit = async (values: CreateAppointmentInput | UpdateAppointmentInput) => {
     if (isCreate) {
-      // Note: form currently uses patientName/doctorName text fields (display values).
-      // The createAppointment action requires patientId/doctorId UUIDs.
-      // Picker wiring (dropdown → UUID) is a follow-up task.
-      // For now we log intent and show a toast so the UI flow is functional.
-      console.log("[appointments] createAppointment payload (needs picker UUIDs):", values);
-      toast.success("Appointment scheduled successfully.");
-      onClose?.();
+      const v = values as CreateAppointmentInput;
+      const dateStr = `${v.date}T${v.scheduledStartTime || "00:00"}:00`;
+      const result = await createAppointment({
+        ...v,
+        date:     dateStr,
+        duration: typeof v.duration === "string" ? Number(v.duration) : v.duration,
+        description: v.description ?? "",
+        notes:    v.notes ?? "",
+      });
+      if (result.success) {
+        toast.success("Appointment scheduled successfully.");
+        onClose?.();
+      } else {
+        toast.error(result.error ?? "Failed to create appointment.");
+      }
     } else {
+      const v = values as UpdateAppointmentInput;
+      const dateValue = v.date
+        ? `${v.date}T${v.scheduledStartTime || "00:00"}:00`
+        : undefined;
       const result = await updateAppointment({
-        id:                 appointment!.id,
-        title:              values.title,
-        type:               values.type,
-        status:             values.status,
-        date:               values.date,
-        duration:           Number(values.duration),
-        scheduledStartTime: values.scheduledStartTime || undefined,
-        scheduledEndTime:   values.scheduledEndTime   || undefined,
-        actualCheckIn:      values.actualCheckIn      || undefined,
-        actualCheckOut:     values.actualCheckOut     || undefined,
-        notes:              values.notes || undefined,
+        id:                 v.id!,
+        title:              v.title,
+        patientId:          v.patientId,
+        doctorId:           v.doctorId,
+        type:               v.type,
+        status:             v.status,
+        date:               dateValue,
+        duration:           v.duration !== undefined
+          ? (typeof v.duration === "string" ? Number(v.duration) : v.duration)
+          : undefined,
+        scheduledStartTime: v.scheduledStartTime || undefined,
+        scheduledEndTime:   v.scheduledEndTime   || undefined,
+        actualCheckIn:      v.actualCheckIn      || undefined,
+        actualCheckOut:     v.actualCheckOut     || undefined,
+        description:        v.description || undefined,
+        notes:              v.notes || undefined,
       });
       if (result.success) {
         toast.success("Appointment updated successfully.");
@@ -467,12 +476,12 @@ export function AppointmentDetailPanel({
 
   // Section config — Section 2 width is "auto" (flex-1) so it naturally
   // expands to fill space when Col 3 is absent (create mode).
-  const sections: FormSection<AppointmentFormValues>[] = [
+  const sections: FormSection<CreateAppointmentInput | UpdateAppointmentInput>[] = [
     {
       title:       "Primary Information",
       width:       "30%",
       borderRight: true,
-      fields:      PRIMARY_FIELDS,
+      fields:      buildPrimaryFields(patientOptions, doctorOptions),
     },
     {
       title:       "Timeline & Notes",
@@ -519,8 +528,8 @@ export function AppointmentDetailPanel({
       </div>
 
       {/* ── Body + Footer — delegated to DetailForm ────────────────── */}
-      <DetailForm<AppointmentFormValues>
-        schema={appointmentSchema}
+      <DetailForm<CreateAppointmentInput | UpdateAppointmentInput>
+        schema={isCreate ? createAppointmentSchema : updateAppointmentSchema}
         defaultValues={defaultValues}
         sections={sections}
         rightSlot={

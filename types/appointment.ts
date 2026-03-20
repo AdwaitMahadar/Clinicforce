@@ -56,8 +56,10 @@ export interface AppointmentActivityEntry {
 
 export interface AppointmentDetail {
   id:                 string;
+  patientId:           string;
   patientName:        string;
   patientInitials:    string;
+  doctorId:           string;
   doctorName:         string;
   title:              string;
   type:               AppointmentType;
@@ -70,6 +72,7 @@ export interface AppointmentDetail {
   scheduledEndTime:   string;
   actualCheckIn:      string;
   actualCheckOut:     string;
+  description?:       string;
   notes:              string;
   activityLog:        AppointmentActivityEntry[];
 }

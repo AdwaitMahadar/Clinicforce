@@ -55,9 +55,8 @@ export const APPOINTMENT_DURATION_PRESETS = [
 ] as const;
 
 /**
- * @deprecated Use APPOINTMENT_DURATION_PRESETS instead.
- * String values kept for compatibility with DetailForm SelectOption (which requires string values)
- * and the legacy appointmentSchema. Migrate to numeric APPOINTMENT_DURATION_PRESETS in Step 6.
+ * String values for select dropdowns (DetailForm SelectOption requires string values).
+ * createAppointmentSchema uses z.coerce.number() so these are coerced to numbers on submit.
  */
 export const APPOINTMENT_DURATIONS = [
   { label: "15 min",  value: "15"  },
@@ -78,9 +77,9 @@ export const createAppointmentSchema = z.object({
     .min(2, "Title must be at least 2 characters")
     .max(255, "Title must be under 255 characters"),
 
-  patientId: z.string().uuid("Please select a valid patient"),
+  patientId: z.string().min(1, "Please select a patient").uuid("Please select a valid patient"),
 
-  doctorId: z.string().uuid("Please select a valid doctor"),
+  doctorId: z.string().min(1, "Please select a doctor").uuid("Please select a valid doctor"),
 
   type: z.enum(APPOINTMENT_TYPES, {
     error: "Please select an appointment type",
@@ -96,8 +95,10 @@ export const createAppointmentSchema = z.object({
   /**
    * Duration in minutes. Must be between 15 and 480 (8 hours).
    * Aligns with the DB integer column `duration`.
+   * Uses z.coerce to accept string from select dropdown.
    */
   duration: z
+    .coerce
     .number({ error: "Duration must be a number" })
     .int("Duration must be a whole number")
     .min(15, "Duration must be at least 15 minutes")
@@ -143,6 +144,7 @@ export const updateAppointmentSchema = z.object({
   date: z.string().optional(),
 
   duration: z
+    .coerce
     .number({ error: "Duration must be a number" })
     .int("Duration must be a whole number")
     .min(15, "Duration must be at least 15 minutes")
@@ -166,32 +168,4 @@ export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 /** Import this type for the update appointment form values. */
 export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
 
-// ─── Legacy aliases (for backward compatibility with existing form usages) ────
-// TODO: Migrate AppointmentDetailPanel in Step 6 when UI is wired to server
-// actions. At that point, patientName/doctorName become patientId/doctorId
-// (UUIDs from picker selects), and duration becomes a number.
-
-/**
- * @deprecated Legacy form schema used by AppointmentDetailPanel.
- * Uses string-based patientName/doctorName and string duration fields
- * to match current mock-data-backed UI. Will be replaced by
- * createAppointmentSchema / updateAppointmentSchema in Step 6.
- */
-export const appointmentSchema = z.object({
-  title:              z.string().min(2, "Title must be at least 2 characters").max(255),
-  patientName:        z.string().min(2, "Patient name is required"),
-  doctorName:         z.string().min(2, "Doctor name is required"),
-  type:               z.enum(APPOINTMENT_TYPES, { error: "Please select an appointment type" }),
-  status:             z.enum(APPOINTMENT_STATUSES, { error: "Please select a status" }),
-  date:               z.string().min(1, "Date is required"),
-  /** String-encoded duration for legacy select dropdown; validated 15–480 on the server. */
-  duration:           z.string().min(1, "Duration is required"),
-  scheduledStartTime: z.string().optional().default(""),
-  scheduledEndTime:   z.string().optional().default(""),
-  actualCheckIn:      z.string().optional().default(""),
-  actualCheckOut:     z.string().optional().default(""),
-  notes:              z.string().optional().default(""),
-});
-
-/** @deprecated Use CreateAppointmentInput or UpdateAppointmentInput instead. */
-export type AppointmentFormValues = z.infer<typeof appointmentSchema>;
+// ─── Legacy schema (kept for reference; AppointmentDetailPanel now uses create/update schemas) ───

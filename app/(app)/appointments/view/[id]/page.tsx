@@ -29,11 +29,13 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
 
   const r = result.data;
   const appointment: AppointmentDetail = {
-    id:              r.id,
-    patientName:     "", // resolved via join in queries; panel displays it
-    patientInitials: "",
-    doctorName:      "",
-    title:           r.title,
+    id:                 r.id,
+    patientId:          r.patientId,
+    patientName:        r.patientName,
+    patientInitials:    r.patientName.slice(0, 2).toUpperCase(),
+    doctorId:           r.doctorId,
+    doctorName:         r.doctorName,
+    title:              r.title,
     // Cast from DB enum subset → mock wider type
     type:            r.type as AppointmentDetail["type"],
     status:          r.status as AppointmentDetail["status"],
@@ -43,6 +45,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
     scheduledEndTime:   fmtTime(r.scheduledEndTime),
     actualCheckIn:     fmtTime(r.actualCheckIn),
     actualCheckOut:    fmtTime(r.actualCheckOut),
+    description:       r.description ?? "",
     notes:             r.notes ?? "",
     // TODO: Implement when audit_log table is built.
     activityLog:       [],

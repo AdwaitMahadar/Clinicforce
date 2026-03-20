@@ -165,7 +165,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **RBAC:** All roles.
 
 #### `updateAppointment(id, data)`
-- **Input:** `id`, `AppointmentFormValues` (from `lib/validators/appointment.ts`), `clinicId` from session
+- **Input:** `id`, `UpdateAppointmentInput` (from `lib/validators/appointment.ts`), `clinicId` from session
 - **Validates:** Zod schema in `lib/validators/appointment.ts`
 - **Enforces:**
   - `doctorId` must be an active user with role `doctor`
@@ -183,12 +183,12 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ## 5. New Appointment Modal / Page — `/appointments/new`
 
-> **Status:** UI built (modal + full-page fallback). Server actions pending.
+> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` and `getActiveDoctors`.
 
-### Server Actions Needed
+### Server Actions
 
 #### `createAppointment(data)`
-- **Input:** `AppointmentFormValues` (from `lib/validators/appointment.ts`), `clinicId` from session
+- **Input:** `CreateAppointmentInput` (from `lib/validators/appointment.ts`), `clinicId` from session
 - **Validates:** Zod schema in `lib/validators/appointment.ts`
 - **Enforces:**
   - `doctorId` → active user with role `doctor`
@@ -736,3 +736,5 @@ Build actions entity by entity, testing each before moving on:
 
 ### Step 6 — Wire UI to Actions
 For each entity, replace the `MOCK_` imports in page files with calls to the real server actions. The mock types in `mock/` served as the contract — your server action return types should match them exactly so component code needs minimal changes.
+
+**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers.
