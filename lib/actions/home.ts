@@ -14,7 +14,7 @@
 import { z } from "zod";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
-import { requireRole } from "@/lib/auth/rbac";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { appointments, patients, users } from "@/lib/db/schema";
 
@@ -110,6 +110,7 @@ export async function getHomeStats() {
       },
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getHomeStats]", err);
     return { success: false as const, error: "Failed to load home stats." };
   }
@@ -168,6 +169,7 @@ export async function getRecentAppointments(limit: unknown = 5) {
       })),
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getRecentAppointments]", err);
     return {
       success: false as const,
@@ -216,6 +218,7 @@ export async function getRecentPatients(limit: unknown = 5) {
       })),
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getRecentPatients]", err);
     return {
       success: false as const,

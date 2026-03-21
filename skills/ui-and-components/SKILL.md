@@ -56,6 +56,11 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
 
 ## 📄 Per-Page Requirements (Summary)
 
+*   **Login (`/login`):**
+    *   Split 50/50 layout — left brand panel (hidden mobile), right form panel.
+    *   Client component. React Hook Form + Zod. Sonner toasts on error.
+    *   `signIn.email()` from `lib/auth/client.ts`. Redirects to `?returnUrl` or `/home/dashboard` on success.
+    *   No OAuth buttons. No "Request access" link. `rememberMe` checkbox wired to form.
 *   **Home**: 
     *   `/dashboard`: High-level stats, recent appointments, recent patients.
     *   `/reports`: Placeholder view.

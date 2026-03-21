@@ -17,7 +17,36 @@ Every server action in Clinicforce follows a strict procedural sequence to ensur
 4. **Data Operations & Isolation**: Execute the Drizzle ORM query. **Crucial**: Every DB operation must be scoped with a `WHERE clinic_id = session.clinicId`.
 
 ### Error Handling Pattern
-Standardize errors by returning a unified response shape or throwing specific exceptions (like 401/403 for Auth/RBAC gaps) that the client can cleanly handle with Sonner toasts.
+
+Every server action wraps its logic in a `try/catch` and returns a typed result — it never throws to the caller:
+
+```typescript
+"use server";
+import { getSession } from "@/lib/auth/session";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
+
+export async function someAction(input: unknown) {
+  try {
+    const session = await getSession();          // throws UNAUTHORIZED if no session
+    requireRole(session, ["admin", "doctor"]);   // throws ForbiddenError if wrong role
+    const { clinicId } = session.user;
+
+    const parsed = someSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false as const, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+    }
+
+    const result = await db.select().from(someTable).where(eq(someTable.clinicId, clinicId));
+    return { success: true as const, data: result };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[someAction]", err);
+    return { success: false as const, error: "Failed to perform action." };
+  }
+}
+```
+
+**Response shape is always `{ success: true, data }` or `{ success: false, error }`** — callers check `result.success` before using `result.data`.
 
 ## 🛡️ Zod Validation Conventions
 

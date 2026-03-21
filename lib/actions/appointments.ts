@@ -16,7 +16,7 @@
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
-import { requireRole } from "@/lib/auth/rbac";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { appointments, patients, users } from "@/lib/db/schema";
 import {
@@ -72,6 +72,7 @@ export async function getAppointments(input: unknown) {
     const data = await queryGetAppointments(clinicId, { rangeStart, rangeEnd });
     return { success: true as const, data };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getAppointments]", err);
     return { success: false as const, error: "Failed to fetch appointments." };
   }
@@ -105,6 +106,7 @@ export async function getAppointmentDetail(id: unknown) {
       },
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getAppointmentDetail]", err);
     return { success: false as const, error: "Failed to fetch appointment." };
   }
@@ -184,6 +186,7 @@ export async function createAppointment(input: unknown) {
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[createAppointment]", err);
     return { success: false as const, error: "Failed to create appointment." };
   }
@@ -271,6 +274,7 @@ export async function updateAppointment(input: unknown) {
 
     return { success: true as const, data: { id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[updateAppointment]", err);
     return { success: false as const, error: "Failed to update appointment." };
   }
@@ -281,8 +285,7 @@ export async function updateAppointment(input: unknown) {
 export async function deleteAppointment(id: unknown) {
   try {
     const session = await getSession();
-    // Only admin + doctor can soft-delete (docs/08-Business-Rules §4)
-    requireRole(session, ["admin", "doctor"]);
+    requireRole(session, ["admin", "doctor", "staff"]);
 
     const parsed = idSchema.safeParse(id);
     if (!parsed.success) {
@@ -308,6 +311,7 @@ export async function deleteAppointment(id: unknown) {
 
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[deleteAppointment]", err);
     return { success: false as const, error: "Failed to cancel appointment." };
   }
@@ -325,6 +329,7 @@ export async function getActiveDoctors() {
     const data = await queryGetActiveDoctors(clinicId);
     return { success: true as const, data };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getActiveDoctors]", err);
     return { success: false as const, error: "Failed to fetch active doctors." };
   }
@@ -342,6 +347,7 @@ export async function getActivePatients() {
     const data = await queryGetActivePatients(clinicId);
     return { success: true as const, data };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getActivePatients]", err);
     return { success: false as const, error: "Failed to fetch active patients." };
   }

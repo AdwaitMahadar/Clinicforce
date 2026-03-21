@@ -690,60 +690,49 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [ ] `lib/validators/medicine.ts` — exists ✓. Already includes `category` and `form`.
 
 ### Step 2 — Auth / Session Helper
-- [ ] Ensure `lib/auth/session.ts` exports a working `getSession()` function that returns `{ userId, clinicId, role }`
-- [ ] This is the only source of `clinicId` and `userId` in all server actions — never trust these from the client
+- [x] `lib/auth/session.ts` exports a real `getSession()` backed by Better-Auth — returns `{ id, clinicId, type, firstName, lastName, email }`. Throws `UNAUTHORIZED` if no session, `CLINIC_MISMATCH` if subdomain and user clinic differ.
+- [x] Subdomain middleware (`middleware.ts`) resolves `clinicId` via `/api/clinic` and forwards it as `x-clinic-id` header.
 
 ### Step 3 — RBAC Helper
-- [ ] Create `lib/auth/rbac.ts` with a single helper:
-  ```ts
-  export function requireRole(
-    session: AppSession,
-    allowed: Array<"admin" | "doctor" | "staff">
-  ): void
-  // Throws an Unauthorized error if session.role is not in the allowed array
-  // Call this at the top of every server action before any DB work
-  ```
+- [x] `lib/auth/rbac.ts` — `ForbiddenError` class + `requireRole(session, allowed[])`. Throws `ForbiddenError` if `session.user.type` is not in `allowed`. All server actions call this before any DB work.
 
 ### Step 4 — Shared Supporting Actions (no UI dependency)
-Build these utility actions first — they are dependencies of the main page actions and have no UI yet:
-
-- [ ] `getActivePatients()` → used by appointment create/edit form patient picker
-- [ ] `getActiveDoctors()` → used by appointment create/edit form doctor picker
-- [ ] `appendActivityLog()` → internal helper called from other actions (not a public action)
+- [x] `getActivePatients()` — patients action file
+- [x] `getActiveDoctors()` — appointments action file
+- [ ] `appendActivityLog()` — pending (audit_log table not yet built)
 
 ### Step 5 — Page Actions (build in this order)
-Build actions entity by entity, testing each before moving on:
 
-1. **Medicines** — simplest entity, no relations to other business tables
-   - [ ] `getMedicines` (list with filters)
-   - [ ] `getMedicineDetail`
-   - [ ] `createMedicine`
-   - [ ] `updateMedicine`
-   - [ ] `deactivateMedicine`
+1. **Medicines**
+   - [x] `getMedicines`
+   - [x] `getMedicineDetail`
+   - [x] `createMedicine`
+   - [x] `updateMedicine` — roles: `["admin", "doctor"]`
+   - [x] `deactivateMedicine` — roles: `["admin", "doctor"]`
 
-2. **Patients** — depends on appointments for "last visit" derived field
-   - [ ] `getPatients` (list with filters + last visit subquery)
-   - [ ] `getPatientDetail`
-   - [ ] `createPatient` (include ChartId generation algorithm)
-   - [ ] `updatePatient`
+2. **Patients**
+   - [x] `getPatients`
+   - [x] `getPatientDetail`
+   - [x] `createPatient`
+   - [x] `updatePatient` — roles: `["admin", "doctor", "staff"]`
 
-3. **Appointments** — depends on patients and users (doctors)
-   - [ ] `getAppointments` (calendar range query)
-   - [ ] `getAppointmentDetail`
-   - [ ] `createAppointment`
-   - [ ] `updateAppointment`
-   - [ ] `deleteAppointment` (soft)
+3. **Appointments**
+   - [x] `getAppointments`
+   - [x] `getAppointmentDetail`
+   - [x] `createAppointment`
+   - [x] `updateAppointment`
+   - [x] `deleteAppointment` (soft) — roles: `["admin", "doctor", "staff"]`
 
-4. **Documents** — depends on patients and appointments
-   - [ ] `getUploadPresignedUrl`
-   - [ ] `confirmDocumentUpload`
-   - [ ] `getViewPresignedUrl`
-   - [ ] `deleteDocument`
+4. **Documents**
+   - [x] `getUploadPresignedUrl`
+   - [x] `confirmDocumentUpload`
+   - [x] `getViewPresignedUrl`
+   - [x] `deleteDocument` — roles: `["admin", "doctor"]`
 
-5. **Home Dashboard** — depends on all of the above
-   - [ ] `getHomeStats`
-   - [ ] `getRecentAppointments`
-   - [ ] `getRecentPatients`
+5. **Home Dashboard**
+   - [x] `getHomeStats`
+   - [x] `getRecentAppointments`
+   - [x] `getRecentPatients`
 
 ### Step 6 — Wire UI to Actions
 Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.

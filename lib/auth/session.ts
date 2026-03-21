@@ -1,3 +1,9 @@
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+
 export interface AppSession {
   user: {
     id: string;
@@ -10,15 +16,48 @@ export interface AppSession {
 }
 
 export async function getSession(): Promise<AppSession> {
-  // TODO: Replace with real Better Auth session when auth is implemented
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  // Better-Auth session only contains base fields; fetch extended user fields
+  const dbUser = await db
+    .select({
+      id: users.id,
+      clinicId: users.clinicId,
+      type: users.type,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (!dbUser[0]) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  // Validate user belongs to the clinic derived from the request subdomain
+  const headersList = await headers();
+  const subdomainClinicId = headersList.get("x-clinic-id");
+
+  if (subdomainClinicId && dbUser[0].clinicId !== subdomainClinicId) {
+    throw new Error("CLINIC_MISMATCH");
+  }
+
   return {
     user: {
-      id: "yn5d3vkdpzxzmare7bac8baj",
-      clinicId: "3ba05aa6-b010-44a5-a556-dcc793c49792",
-      type: "admin" as const,
-      firstName: "Dev",
-      lastName: "User",
-      email: "dev@clinicforce.com",
+      id: dbUser[0].id,
+      clinicId: dbUser[0].clinicId!,
+      type: dbUser[0].type as "admin" | "doctor" | "staff",
+      firstName: dbUser[0].firstName ?? "",
+      lastName: dbUser[0].lastName ?? "",
+      email: dbUser[0].email,
     },
   };
 }

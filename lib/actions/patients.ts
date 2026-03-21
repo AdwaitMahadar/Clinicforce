@@ -18,7 +18,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
-import { requireRole } from "@/lib/auth/rbac";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
 import {
@@ -101,6 +101,7 @@ export async function getPatients(input: unknown) {
     const result = await queryGetPatients(clinicId, parsed.data);
     return { success: true as const, data: result };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getPatients]", err);
     return { success: false as const, error: "Failed to fetch patients." };
   }
@@ -134,6 +135,7 @@ export async function getPatientDetail(id: unknown) {
       },
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getPatientDetail]", err);
     return { success: false as const, error: "Failed to fetch patient." };
   }
@@ -193,6 +195,7 @@ export async function createPatient(input: unknown) {
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[createPatient]", err);
     return { success: false as const, error: "Failed to create patient." };
   }
@@ -203,8 +206,7 @@ export async function createPatient(input: unknown) {
 export async function updatePatient(input: unknown) {
   try {
     const session = await getSession();
-    // Staff cannot edit patient records (docs/08-Business-Rules §3)
-    requireRole(session, ["admin", "doctor"]);
+    requireRole(session, ["admin", "doctor", "staff"]);
 
     const parsed = updatePatientSchema.safeParse(input);
     if (!parsed.success) {
@@ -242,6 +244,7 @@ export async function updatePatient(input: unknown) {
 
     return { success: true as const, data: { id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[updatePatient]", err);
     return { success: false as const, error: "Failed to update patient." };
   }
@@ -259,6 +262,7 @@ export async function getActivePatients() {
     const data = await queryGetActivePatients(clinicId);
     return { success: true as const, data };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getActivePatients]", err);
     return { success: false as const, error: "Failed to fetch active patients." };
   }

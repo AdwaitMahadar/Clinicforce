@@ -40,7 +40,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSession } from "@/lib/auth/session";
-import { requireRole } from "@/lib/auth/rbac";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { getDocumentById } from "@/lib/db/queries/documents";
@@ -164,6 +164,7 @@ export async function getUploadPresignedUrl(input: unknown) {
 
     return { success: true as const, data: { uploadUrl, fileKey } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getUploadPresignedUrl]", err);
     return {
       success: false as const,
@@ -216,6 +217,7 @@ export async function confirmDocumentUpload(input: unknown) {
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[confirmDocumentUpload]", err);
     return {
       success: false as const,
@@ -256,6 +258,7 @@ export async function getViewPresignedUrl(documentId: unknown) {
 
     return { success: true as const, data: { url } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getViewPresignedUrl]", err);
     return {
       success: false as const,
@@ -311,6 +314,7 @@ export async function deleteDocument(documentId: unknown) {
 
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[deleteDocument]", err);
     return { success: false as const, error: "Failed to delete document." };
   }

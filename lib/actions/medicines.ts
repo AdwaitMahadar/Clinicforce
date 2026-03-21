@@ -17,7 +17,7 @@
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
-import { requireRole } from "@/lib/auth/rbac";
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { medicines } from "@/lib/db/schema";
 import {
@@ -68,6 +68,7 @@ export async function getMedicines(input: unknown) {
     const result = await queryGetMedicines(clinicId, parsed.data);
     return { success: true as const, data: result };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getMedicines]", err);
     return { success: false as const, error: "Failed to fetch medicines." };
   }
@@ -101,6 +102,7 @@ export async function getMedicineDetail(id: unknown) {
       },
     };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getMedicineDetail]", err);
     return { success: false as const, error: "Failed to fetch medicine." };
   }
@@ -142,6 +144,7 @@ export async function createMedicine(input: unknown) {
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[createMedicine]", err);
     return { success: false as const, error: "Failed to create medicine." };
   }
@@ -191,6 +194,7 @@ export async function updateMedicine(input: unknown) {
 
     return { success: true as const, data: { id } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[updateMedicine]", err);
     return { success: false as const, error: "Failed to update medicine." };
   }
@@ -224,6 +228,7 @@ export async function deactivateMedicine(id: unknown) {
 
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[deactivateMedicine]", err);
     return { success: false as const, error: "Failed to deactivate medicine." };
   }

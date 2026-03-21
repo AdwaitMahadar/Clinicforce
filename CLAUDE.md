@@ -221,10 +221,12 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - All shared components in `components/common/`
 - Design system: CSS variables, typography, colour tokens fully centralised in `globals.css`
 - Intercepting modal routes for detail views
+- Authentication: Better-Auth integration, real `getSession()`, subdomain-aware middleware, `/api/auth/*` route handler, `/api/clinic` subdomain resolver
+- Login page (`app/(auth)/login/page.tsx`) — split 50/50 layout, React Hook Form + Zod, Sonner toasts, `returnUrl` redirect
+- RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
 
 **Not yet built (planned):**
 - All Reports views
-- Authentication / Better-Auth integration (session may be stubbed in dev)
 - Document upload flow (S3/Minio)
 
 > For build order and phase breakdown → `docs/10-Development-Phases.md`

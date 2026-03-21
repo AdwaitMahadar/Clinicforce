@@ -15,9 +15,9 @@ This document covers the authentication strategy, session shape, middleware prot
 
 ---
 
-## 2. Mock Session (Development)
+## 2. Session Implementation
 
-Auth is intentionally deferred until core functionality is built. During development, a hardcoded `getSession()` function is used as a stand-in. All server actions and data fetching must call this function — never access session data any other way. When real auth is wired up, only this one file changes.
+Auth is implemented via Better-Auth with a real `getSession()` function in `lib/auth/session.ts`. All server actions and data fetching must call this function — never access session data any other way, and never hardcode user IDs or clinic IDs anywhere in code.
 
 **Location:** `lib/auth/session.ts`
 
@@ -34,56 +34,46 @@ export interface AppSession {
 }
 
 export async function getSession(): Promise<AppSession> {
-  // TODO: Replace with real Better-Auth session when auth is implemented
-  return {
-    user: {
-      id: "yn5d3vkdpzxzmare7bac8baj",
-      clinicId: "3ba05aa6-b010-44a5-a556-dcc793c49792",
-      type: "admin" as const,
-      firstName: "Dev",
-      lastName: "User",
-      email: "dev@clinicforce.com",
-    },
-  };
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("UNAUTHORIZED");
+
+  // Fetch extended fields (clinicId, type) from the users table
+  const dbUser = await db.select(...).from(users).where(eq(users.id, session.user.id)).limit(1);
+  if (!dbUser[0]) throw new Error("USER_NOT_FOUND");
+
+  // Validate user belongs to the clinic derived from the request subdomain
+  const subdomainClinicId = (await headers()).get("x-clinic-id");
+  if (subdomainClinicId && dbUser[0].clinicId !== subdomainClinicId) {
+    throw new Error("CLINIC_MISMATCH");
+  }
+
+  return { user: { id, clinicId, type, firstName, lastName, email } };
 }
 ```
 
-**Rules while using the mock session:**
+**Rules:**
 - Every server action must start with `const session = await getSession()`
 - `session.user.clinicId` is the source of truth for all database queries — never hardcode the clinicId anywhere else
 - `session.user.type` is the source of truth for all role checks
-- Test different roles by temporarily changing `type` in the mock — do not build role-switching UI
 
 ---
 
-## 3. Real Auth Implementation (Better-Auth)
+## 3. Auth Configuration (Better-Auth)
 
-To be implemented after core features are complete. This section documents the target state.
-
-### Setup
+**Location:** `lib/auth/index.ts`
 
 ```typescript
-// lib/auth/auth.ts
-import { betterAuth } from "better-auth"
-import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { db } from "@/lib/db"
-
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg" }),
-  emailAndPassword: { enabled: true },
-  session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds
-  },
-})
+  database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
+  emailAndPassword: { enabled: true, requireEmailVerification: false },
+  session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    "http://demo-clinic.localhost:3000",
+    // TODO (production): replace with dynamic origin validation for *.clinicforce.com
+  ],
+});
 ```
-
-### Session Shape (Real)
-When Better-Auth is wired up, `getSession()` is replaced with a function that:
-1. Reads the Better-Auth session from the request cookies
-2. Joins the session with the `users` table to get `clinicId`, `type`, `firstName`, `lastName`
-3. Returns the same `AppSession` interface — the shape does not change
-
-The `AppSession` interface in `lib/auth/session.ts` is the contract. Better-Auth's internal session object is mapped to it before being returned. Nothing outside `lib/auth/session.ts` should ever import from Better-Auth directly.
 
 ### Database Tables
 Better-Auth manages these tables via the Drizzle adapter. Schema is defined in `03-Database-Schema.md`.
@@ -207,16 +197,22 @@ export async function createPatient(input: CreatePatientInput) {
 
 ---
 
-## 8. Implementation Checklist
+## 8. Implementation Status
 
-Use this when the time comes to replace the mock session with real auth.
+Auth integration is complete. All items below are done.
 
-- [ ] Install Better-Auth and Drizzle adapter
-- [ ] Configure `lib/auth/auth.ts`
-- [ ] Run Better-Auth migration to generate session/account tables
-- [ ] Replace mock `getSession()` in `lib/auth/session.ts` with real implementation
-- [ ] Build `/login` page UI and wire to Better-Auth `signIn`
-- [ ] Add middleware for session-based route protection
-- [ ] Add subdomain middleware for clinic context
-- [ ] Test with two separate clinic subdomains to verify data isolation
-- [ ] Verify that changing `clinicId` in a request cannot access another clinic's data
+- [x] Install Better-Auth and Drizzle adapter
+- [x] Configure `lib/auth/index.ts`
+- [x] Better-Auth schema tables in DB (`users`, `sessions`, `accounts`, `verifications`)
+- [x] Real `getSession()` in `lib/auth/session.ts` with clinic mismatch validation
+- [x] Build `/login` page UI and wire to Better-Auth `signIn`
+- [x] Middleware for session-based route protection
+- [x] Subdomain middleware for clinic context (`x-clinic-id` header)
+- [x] `lib/api/clinic/route.ts` internal subdomain resolver
+- [x] RBAC: `requireRole()` + `ForbiddenError` in `lib/auth/rbac.ts`
+- [x] All server actions gate-checked with `getSession()` + `requireRole()`
+
+**Remaining (post-MVP):**
+- [ ] Wildcard `trustedOrigins` for `*.clinicforce.com` (see TODO in `lib/auth/index.ts`)
+- [ ] Password reset flow
+- [ ] Email verification

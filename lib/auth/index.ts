@@ -24,7 +24,13 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,     // refresh if more than 1 day old
   },
 
-  trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
+  // TODO (production): trustedOrigins does not support wildcards. For multi-tenant
+  // production (*.clinicforce.com), replace this static array with a function that
+  // validates the request origin against the clinics table at runtime.
+  trustedOrigins: [
+    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+    "http://demo-clinic.localhost:3000",
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

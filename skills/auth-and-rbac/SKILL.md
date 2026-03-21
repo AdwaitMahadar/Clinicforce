@@ -9,13 +9,43 @@ This skill provides critical context for handling authentication, user sessions,
 
 ## 🚨 Authentication Strategy & Flow
 
-Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (using the PostgreSQL provider) and database-backed sessions (not JWT).
+Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provider) and database-backed sessions (not JWT). Auth is fully implemented — there is no mock session.
+
+### Infrastructure
+
+| File | Role |
+| :--- | :--- |
+| `lib/auth/index.ts` | Better-Auth config — email+password, 7-day sessions, `trustedOrigins` |
+| `lib/auth/session.ts` | `getSession()` — the ONLY way to get session data in server code |
+| `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
+| `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |
+| `app/api/auth/[...all]/route.ts` | Better-Auth catch-all route handler |
+| `app/api/clinic/route.ts` | Internal subdomain → clinicId resolver (used by middleware) |
+| `middleware.ts` | Extracts subdomain, resolves clinicId, guards protected routes, sets `x-clinic-id` header |
+| `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts |
+
+### Middleware Behaviour
+
+1. Public paths (`/login`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
+2. Subdomain is extracted from the `host` header (`demo-clinic.localhost:3000` → `demo-clinic`).
+3. Middleware fetches `/api/clinic?subdomain=<value>` to resolve `clinicId`.
+4. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
+5. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
 
 ### The `getSession()` Pattern
-Currently, authentication is mocked to accelerate core development. All server actions and data fetching MUST use the unified `getSession()` function from `lib/auth/session.ts`.
 
 ```typescript
-// The standard contract for getSession():
+import { getSession } from "@/lib/auth/session";
+
+// In any server action:
+const session = await getSession();
+// Throws "UNAUTHORIZED" if no session
+// Throws "CLINIC_MISMATCH" if user's clinicId ≠ subdomain's clinicId
+```
+
+The `AppSession` interface is the contract — never import from Better-Auth directly outside `lib/auth/`:
+
+```typescript
 export interface AppSession {
   user: {
     id: string;
@@ -28,51 +58,52 @@ export interface AppSession {
 }
 ```
 
-*   **Multi-tenancy context**: The user's `clinicId` is resolved via subdomains (e.g., `riverside.clinicforce.com`). The middleware attaches it to the request, and `getSession()` reads it alongside the user session.
-*   **Single source of truth**: `session.user.clinicId` is the ONLY acceptable source for database queries and filtering.
-*   **Role source of truth**: `session.user.type` is the ONLY acceptable source for checking a user's RBAC role.
+*   **`session.user.clinicId`** — ONLY acceptable source for DB query scoping.
+*   **`session.user.type`** — ONLY acceptable source for role checks.
 
 ## 🔐 RBAC Permission Matrix
 
-Clinicforce utilizes Role-Based Access Control with three roles: `admin`, `doctor`, and `staff`. Before writing any data manipulation code, check this matrix:
-
-| Feature | Staff (Receptionist) | Doctor | Admin |
+| Feature | Staff | Doctor | Admin |
 | :--- | :--- | :--- | :--- |
-| **Users Management** | - | - | Full CRUD |
+| **Users Management** | — | — | Full CRUD |
 | **Appointments** | Full CRUD | Full CRUD | Full CRUD |
-| **Patients** | View / Add / Edit | Full CRUD | Full CRUD |
-| **Documents** | View / Add | Full CRUD | Full CRUD |
-| **Medicines** | View / Add | Full CRUD | Full CRUD |
+| **Patients** | View / Create / Update | Full CRUD | Full CRUD |
+| **Documents** | View / Upload | Full CRUD | Full CRUD |
+| **Medicines** | View / Create | Update / Delete | Full CRUD |
 
-*(Note: "Full CRUD" includes Create, Read, Update, and Delete. Note that Staff cannot delete Patients, Documents, or Medicines, but they can delete/cancel Appointments)*
+Staff **can** cancel/delete appointments. Staff **cannot** delete patients, documents, or medicines.
 
-## 🛡️ Enforcement Rules
+### `requireRole()` Usage
 
-1.  **Server Actions MUST start with a generic session validation.**
-    ```typescript
-    const session = await getSession();
-    if (!session) throw new Error("Unauthorized");
-    ```
-2.  **Server Actions MUST independently enforce RBAC.**
-    Before executing database operations, the server action must explicitly check if `session.user.type` has the correct permission to perform the action according to the matrix.
-    ```typescript
-    if (session.user.type === "staff") {
-      throw new Error("Forbidden: Staff cannot delete patients");
-    }
-    ```
-3.  **UI hiding is for UX only.**
-    You should hide restricted buttons (like a "Delete" button) in the UI if the user's role lacks permission, but this is NOT a security measure. The server action must serve as the absolute boundary.
+```typescript
+import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
+
+export async function someAction(input: unknown) {
+  const session = await getSession();              // 1. Auth check
+  requireRole(session, ["admin", "doctor"]);       // 2. RBAC check — throws ForbiddenError
+  const { clinicId } = session.user;              // 3. Scope from session, never client
+
+  try {
+    // ... DB operation scoped with clinicId
+    return { success: true as const, data: result };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[someAction]", err);
+    return { success: false as const, error: "Failed to perform action." };
+  }
+}
+```
 
 ## ❌ DO NOT
 
-- **Do not** write custom auth session retrieval logic. Always call `getSession()` from `lib/auth/session.ts`.
-- **Do not** build UI for role-switching or clinic-switching. The session explicitly dictates both. To test different roles during local development, temporarily edit the hardcoded mock user in `getSession()`.
-- **Do not** rely solely on client-side routing or UI hiding to protect features. Server actions must strictly enforce the rules.
-- **Do not** allow unauthenticated access to any route inside the `app/(app)/` folder. Only the `app/(auth)/login` route is public.
-- **Do not** trust the client for the user's role or `clinicId`. Always pull them securely from the server session.
+- **Do not** write custom session retrieval logic. Always call `getSession()` from `lib/auth/session.ts`.
+- **Do not** edit the mock session or hardcode user/clinic IDs anywhere in code — those stubs are gone.
+- **Do not** rely solely on client-side routing or UI hiding to protect features. Server actions must enforce RBAC independently.
+- **Do not** allow unauthenticated access to any route inside `app/(app)/`. Only `app/(auth)/` routes are public.
+- **Do not** trust the client for `clinicId` or `type`. Always pull from `session.user`.
+- **Do not** call Better-Auth APIs directly from client components — use the exported helpers from `lib/auth/client.ts`.
 
 ## References
-For deeper implementation details, consult the canonical documentation:
-- `docs/05-Authentication.md` - Complete auth flow, Better-Auth target state, and subdomain routing mechanics.
-- `docs/01-PRD.md` - Core project requirements and complete scope constraints.
-- `CLAUDE.md` - General project constraints and rules.
+- `docs/05-Authentication.md` — Complete auth flow, session shape, middleware, and implementation status.
+- `docs/01-PRD.md` — Core project requirements and scope constraints.
+- `CLAUDE.md` — General project constraints and rules.
