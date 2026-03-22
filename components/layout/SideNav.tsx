@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart2,
   LayoutDashboard,
@@ -13,32 +13,90 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { navPillSpring, sidebarLogoSwapSpring } from "./nav-motion";
+import { signOut } from "@/lib/auth/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "reports",   label: "Reports",   icon: BarChart2 },
 ];
 
-interface SideNavProps {
-  /** User info from session — passed from server component */
-  userName?: string;
-  userRole?: string;
+function initialsFromDisplayName(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    const a = parts[0][0];
+    const b = parts[1][0];
+    if (a && b) return `${a}${b}`.toUpperCase();
+  }
+  return trimmed.slice(0, 2).toUpperCase();
 }
 
-export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: SideNavProps) {
+function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    void signOut().then(() => {
+      router.push("/login");
+      router.refresh();
+    });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="top" sideOffset={6}>
+        <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+interface SideNavProps {
+  /** Display name from session (layout) — full name or email fallback */
+  userDisplayName: string;
+  /** Label from `USER_TYPE_LABELS` (Administrator / Doctor / Staff) */
+  userTypeLabel: string;
+}
+
+export function SideNav({ userDisplayName, userTypeLabel }: SideNavProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
 
-  // Current entity segment: /patients/dashboard → "patients"
   const entitySegment = pathname.split("/")[1] ?? "home";
 
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = initialsFromDisplayName(userDisplayName);
+
+  const kebabTrigger = (
+    <button
+      type="button"
+      className="flex items-center justify-center size-8 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-black/5 transition-colors flex-shrink-0 mr-0.5"
+      aria-label="Open account menu"
+    >
+      <MoreVertical size={18} strokeWidth={2} />
+    </button>
+  );
+
+  const collapsedAvatarTrigger = (
+    <button
+      type="button"
+      className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
+      style={{ background: "var(--color-surface-alt)" }}
+      aria-label="Open account menu"
+    >
+      {initials}
+    </button>
+  );
 
   return (
     <aside
@@ -59,7 +117,6 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
           )}
           style={{ backdropFilter: "blur(8px)" }}
         >
-          {/* ── Expanded: logo + collapse button ── */}
           {!collapsed && (
             <div className="flex items-center gap-2 pl-1.5">
               <div
@@ -74,7 +131,6 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
             </div>
           )}
 
-          {/* ── Collapsed: logo at rest, expand button on hover ── */}
           {collapsed ? (
             <div className="relative size-9 flex items-center justify-center">
               <AnimatePresence mode="wait">
@@ -107,7 +163,6 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
               </AnimatePresence>
             </div>
           ) : (
-            /* ── Expanded collapse button ── */
             <button
               onClick={() => setCollapsed(true)}
               className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
@@ -119,7 +174,6 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
         </div>
       </div>
 
-      {/* ── Nav links ── */}
       <nav className="flex-1 px-3 mt-3 space-y-1 overflow-hidden hover:overflow-y-auto">
         {SIDEBAR_VIEWS.map(({ key, label, icon: Icon }) => {
           const href = `/${entitySegment}/${key}`;
@@ -137,7 +191,6 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                 collapsed && "justify-center px-0"
               )}
             >
-              {/* Sliding pill background */}
               {isActive && (
                 <motion.span
                   layoutId="side-nav-pill"
@@ -156,37 +209,34 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
         })}
       </nav>
 
-      {/* ── User profile ── */}
       <div className="p-3 mt-auto mb-2">
         <div
           className={cn(
-            "flex items-center gap-2.5 px-1.5 py-1 rounded-xl cursor-pointer transition-colors h-12",
-            "bg-white/40 border border-white/60 shadow-sm hover:bg-white/60",
-            collapsed && "justify-center"
+            "flex items-center gap-2.5 px-1.5 py-1 rounded-xl transition-colors h-12",
+            "bg-white/40 border border-white/60 shadow-sm",
+            collapsed ? "justify-center" : ""
           )}
           style={{ backdropFilter: "blur(8px)" }}
         >
-          {/* Avatar */}
-          <div
-            className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
-            style={{ background: "var(--color-surface-alt)" }}
-          >
-            {initials}
-          </div>
-
-          {!collapsed && (
+          {collapsed ? (
+            <AccountMenu trigger={collapsedAvatarTrigger} />
+          ) : (
             <>
-              <div className="overflow-hidden flex-1 pl-0.5">
+              <div
+                className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
+                style={{ background: "var(--color-surface-alt)" }}
+              >
+                {initials}
+              </div>
+              <div className="overflow-hidden flex-1 pl-0.5 min-w-0">
                 <p className="text-sm font-semibold truncate text-[var(--color-text-primary)] mb-0.5 leading-none">
-                  {userName}
+                  {userDisplayName}
                 </p>
                 <p className="text-[10px] text-[var(--color-text-muted)] truncate leading-none">
-                  {userRole}
+                  {userTypeLabel}
                 </p>
               </div>
-              <button className="flex items-center justify-center size-8 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-black/5 transition-colors flex-shrink-0 mr-0.5">
-                <MoreVertical size={18} strokeWidth={2} />
-              </button>
+              <AccountMenu trigger={kebabTrigger} />
             </>
           )}
         </div>

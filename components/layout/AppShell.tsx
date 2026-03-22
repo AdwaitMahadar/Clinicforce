@@ -5,13 +5,16 @@ interface AppShellProps {
   children: React.ReactNode;
   /** Rendered at the root of the shell — outside all overflow containers. Used for intercepting-route modals. */
   modal?: React.ReactNode;
+  /** From `getSession()` in `app/(app)/layout.tsx` — shown in the sidebar user block. */
+  userDisplayName: string;
+  userTypeLabel: string;
 }
 
-export function AppShell({ children, modal }: AppShellProps) {
+export function AppShell({ children, modal, userDisplayName, userTypeLabel }: AppShellProps) {
   return (
     <div className="flex h-screen w-full overflow-hidden relative">
       {/* Left sidebar */}
-      <SideNav />
+      <SideNav userDisplayName={userDisplayName} userTypeLabel={userTypeLabel} />
 
       {/* Right — top nav + floating main card */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">

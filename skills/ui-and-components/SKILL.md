@@ -45,7 +45,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).
 
 **Layouts (`components/layout/`)**
-*   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`.
+*   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`); account menu uses Better Auth `signOut` → `/login`.
 
 ## 🧭 Navigation & Routing Rules
 

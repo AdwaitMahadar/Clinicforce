@@ -135,20 +135,30 @@ All routes under `app/(app)/` are protected. Unauthenticated users are redirecte
 
 Protection is enforced in two places:
 1. **Middleware** — fast check before the page renders, redirects to `/login` if no session
-2. **Layout server component** — `app/(app)/layout.tsx` calls `getSession()` and redirects if null, as a safety net
+2. **Layout server component** — `app/(app)/layout.tsx` calls `getSession()` and redirects to `/login` on failure (e.g. invalid or missing session), as a safety net
 
 The `app/(auth)/` route group (login page) is public and must never call `getSession()`.
 
 ```typescript
-// app/(app)/layout.tsx
+// app/(app)/layout.tsx (illustrative)
 import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
+import { USER_TYPE_LABELS } from "@/lib/constants/user"
 
-export default async function AppLayout({ children }) {
-  const session = await getSession()
-  if (!session) redirect("/login")
-  // pass session to layout as needed
-  return <AppShell session={session}>{children}</AppShell>
+export default async function AppLayout({ children, modal }) {
+  try {
+    const session = await getSession()
+    const displayName =
+      [session.user.firstName, session.user.lastName].filter(Boolean).join(" ") || session.user.email
+    const userTypeLabel = USER_TYPE_LABELS[session.user.type]
+    return (
+      <AppShell modal={modal} userDisplayName={displayName} userTypeLabel={userTypeLabel}>
+        {children}
+      </AppShell>
+    )
+  } catch {
+    redirect("/login")
+  }
 }
 ```
 
