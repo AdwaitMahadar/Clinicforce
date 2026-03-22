@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { getClinicIdBySubdomain } from "@/lib/clinic/resolve-by-subdomain";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/api/clinic", "/_next", "/favicon.ico"];
 
@@ -29,17 +30,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Resolve clinicId from subdomain via internal API route
-  const clinicRes = await fetch(
-    `${request.nextUrl.origin}/api/clinic?subdomain=${subdomain}`,
-    { headers: { "x-internal": "1" } }
-  );
-
-  if (!clinicRes.ok) {
+  const clinicId = await getClinicIdBySubdomain(subdomain);
+  if (!clinicId) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
-  const { clinicId } = await clinicRes.json();
 
   // Check for a valid Better-Auth session cookie
   const sessionCookie = getSessionCookie(request);
@@ -64,4 +58,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  runtime: "nodejs",
 };

@@ -95,7 +95,7 @@ The subdomain is the `subdomain` column in the `clinics` table. This is already 
 ### How it works
 1. A request comes in to `riverside.clinicforce.com`
 2. Next.js middleware reads the hostname, extracts `riverside`
-3. Middleware looks up the clinic by subdomain in the database
+3. Middleware resolves the clinic with a direct Drizzle query on the `clinics` table (same logic as `GET /api/clinic`, shared in `lib/clinic/resolve-by-subdomain.ts`). Middleware runs on the **Node.js** runtime (`config.runtime: 'nodejs'`) so it can use the `pg` pool — no internal HTTP fetch per navigation.
 4. The `clinicId` is attached to the request (via a header or cookie)
 5. `getSession()` reads this alongside the user session to construct the full `AppSession`
 
@@ -208,7 +208,7 @@ Auth integration is complete. All items below are done.
 - [x] Build `/login` page UI and wire to Better-Auth `signIn`
 - [x] Middleware for session-based route protection
 - [x] Subdomain middleware for clinic context (`x-clinic-id` header)
-- [x] `lib/api/clinic/route.ts` internal subdomain resolver
+- [x] `app/api/clinic/route.ts` subdomain resolver (shared query with middleware via `lib/clinic/resolve-by-subdomain.ts`)
 - [x] RBAC: `requireRole()` + `ForbiddenError` in `lib/auth/rbac.ts`
 - [x] All server actions gate-checked with `getSession()` + `requireRole()`
 

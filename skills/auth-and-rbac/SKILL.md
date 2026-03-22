@@ -20,15 +20,16 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
 | `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |
 | `app/api/auth/[...all]/route.ts` | Better-Auth catch-all route handler |
-| `app/api/clinic/route.ts` | Internal subdomain → clinicId resolver (used by middleware) |
-| `middleware.ts` | Extracts subdomain, resolves clinicId, guards protected routes, sets `x-clinic-id` header |
+| `app/api/clinic/route.ts` | Subdomain → clinicId HTTP resolver (same query as middleware) |
+| `lib/clinic/resolve-by-subdomain.ts` | Shared Drizzle lookup for active clinic by subdomain |
+| `middleware.ts` | Node runtime; extracts subdomain, calls resolver, guards routes, sets `x-clinic-id` |
 | `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts |
 
 ### Middleware Behaviour
 
 1. Public paths (`/login`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
 2. Subdomain is extracted from the `host` header (`demo-clinic.localhost:3000` → `demo-clinic`).
-3. Middleware fetches `/api/clinic?subdomain=<value>` to resolve `clinicId`.
+3. Middleware calls `getClinicIdBySubdomain()` (Drizzle) to resolve `clinicId` — no internal HTTP round-trip.
 4. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
 5. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
 
