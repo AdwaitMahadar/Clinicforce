@@ -20,10 +20,15 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
 | `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |
 | `app/api/auth/[...all]/route.ts` | Better-Auth catch-all route handler |
-| `app/api/clinic/route.ts` | Subdomain → clinicId HTTP resolver (same query as middleware) |
+| `app/api/clinic/route.ts` | Optional `GET ?subdomain=` → `{ clinicId }` — same query as middleware; not used by in-app navigation |
 | `lib/clinic/resolve-by-subdomain.ts` | Shared Drizzle lookup for active clinic by subdomain |
-| `middleware.ts` | Node runtime; extracts subdomain, calls resolver, guards routes, sets `x-clinic-id` |
+| `middleware.ts` | Node runtime; extracts subdomain, calls resolver, guards routes, sets `x-clinic-id` + `x-subdomain` |
 | `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts |
+
+### Request pipeline
+
+- **Middleware** — Binds the request to a tenant (`Host` → subdomain → `clinicId`); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
+- **`getSession()`** — Loads user + `clinicSubdomain` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour
 

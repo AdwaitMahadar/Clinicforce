@@ -11,6 +11,7 @@ This document covers the document upload flow, presigned URL strategy, metadata 
 - **Production storage:** S3-compatible (drop-in replacement, no code changes)
 - **SDK:** AWS SDK v3 (`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`)
 - **Metadata:** Stored in the `documents` table after a successful upload
+- **Tenant slug on keys:** `session.user.clinicSubdomain` — loaded in `getSession()`; see `docs/05-Authentication.md` §4 for middleware vs session.
 
 ---
 

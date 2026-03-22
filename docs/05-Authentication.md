@@ -1,6 +1,6 @@
 # 05 — Authentication & Session Management
 
-This document covers the authentication strategy, session shape, middleware protection, and the mock session approach used during development.
+This document covers the authentication strategy, session shape, middleware, and tenant resolution.
 
 ---
 
@@ -107,34 +107,16 @@ For example: `riverside.clinicforce.com`, `downtown.clinicforce.com`
 
 The subdomain is the `subdomain` column in the `clinics` table. This is already in the schema.
 
-### How it works
-1. A request comes in to `riverside.clinicforce.com`
-2. Next.js middleware reads the hostname, extracts `riverside`
-3. Middleware resolves the clinic with a direct Drizzle query on the `clinics` table (same logic as `GET /api/clinic`, shared in `lib/clinic/resolve-by-subdomain.ts`). Middleware runs on the **Node.js** runtime (`config.runtime: 'nodejs'`) so it can use the `pg` pool — no internal HTTP fetch per navigation.
-4. The `clinicId` is attached to the request (via a header or cookie)
-5. `getSession()` reads this alongside the user session to construct the full `AppSession`
+### How it works (pipeline)
 
-### Middleware (target implementation)
+1. **Middleware** (`middleware.ts`, Node runtime): reads `Host` → subdomain → `getClinicIdBySubdomain()` (shared with `GET /api/clinic` in `lib/clinic/resolve-by-subdomain.ts`). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`.
+2. **`getSession()`**: loads the user from the DB (joined to `clinics` for `clinicSubdomain`). If **`x-clinic-id`** is present, it must equal `user.clinicId` or **`CLINIC_MISMATCH`** is thrown — so a user cannot use a session on another tenant’s host.
 
-```typescript
-// middleware.ts
-import { NextRequest, NextResponse } from "next/server"
+**Why two steps?** Middleware binds the **HTTP request** to a tenant before RSC/server actions run. The session binds the **user** to a clinic. Both are required; `clinicSubdomain` on the session is the DB slug (e.g. S3 paths), not a replacement for middleware resolution.
 
-export async function middleware(req: NextRequest) {
-  const hostname = req.headers.get("host") || ""
-  const subdomain = hostname.split(".")[0]
+### `GET /api/clinic?subdomain=`
 
-  // Skip for localhost and non-subdomain requests
-  if (subdomain === "localhost" || subdomain === "www") {
-    return NextResponse.next()
-  }
-
-  // Attach subdomain to request headers for use in getSession()
-  const response = NextResponse.next()
-  response.headers.set("x-clinic-subdomain", subdomain)
-  return response
-}
-```
+Optional JSON resolver: returns `{ clinicId }` for a subdomain (same DB query as middleware). The in-app UI does not need to call it for normal navigation; use it for tooling or external clients.
 
 ### Local Development
 Use `riverside.localhost:3000` — modern browsers resolve this correctly without any `/etc/hosts` changes.

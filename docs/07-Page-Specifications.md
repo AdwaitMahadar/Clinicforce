@@ -692,7 +692,7 @@ Create or complete validators in `lib/validators/`. These are the single source 
 
 ### Step 2 — Auth / Session Helper
 - [x] `lib/auth/session.ts` exports a real `getSession()` backed by Better-Auth — returns `{ id, clinicId, type, firstName, lastName, email }`. Throws `UNAUTHORIZED` if no session, `CLINIC_MISMATCH` if subdomain and user clinic differ.
-- [x] Subdomain middleware (`middleware.ts`) resolves `clinicId` via `/api/clinic` and forwards it as `x-clinic-id` header.
+- [x] Subdomain middleware (`middleware.ts`) resolves `clinicId` via `lib/clinic/resolve-by-subdomain.ts` (same query as `GET /api/clinic`) and forwards `x-clinic-id` / `x-subdomain`.
 
 ### Step 3 — RBAC Helper
 - [x] `lib/auth/rbac.ts` — `ForbiddenError` class + `requireRole(session, allowed[])`. Throws `ForbiddenError` if `session.user.type` is not in `allowed`. All server actions call this before any DB work.
