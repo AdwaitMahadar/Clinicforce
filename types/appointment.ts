@@ -9,6 +9,7 @@
  */
 
 import type { AppointmentDbType, AppointmentStatus } from "@/lib/constants/appointment";
+import type { PatientDocument } from "@/types/patient";
 
 export type { AppointmentStatus };
 
@@ -68,4 +69,6 @@ export interface AppointmentDetail {
   description?:       string;
   notes:              string;
   activityLog:        AppointmentActivityEntry[];
+  /** Documents linked via `appointment_id` (appointment detail panel). */
+  documents:          PatientDocument[];
 }

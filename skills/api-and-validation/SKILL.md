@@ -52,7 +52,7 @@ export async function someAction(input: unknown) {
 
 Zod schemas are the **single source of truth for validation rules**, shared identically between the client (React Hook Form) and the server (API/Actions).
 
-- All Zod schemas MUST live in `lib/validators/`.
+- All Zod schemas MUST live in `lib/validators/`. Document upload schemas: `lib/validators/document.ts` (`getUploadPresignedUrlSchema`, `confirmDocumentUploadSchema`, `uploadDocumentDialogSchema`).
 - **Enum string lists** (appointment status/type, patient gender/blood group, medicine category/form) MUST be imported from `lib/constants/` — never duplicate the same literals in validators. Constants are Zod-free so client `types/` can import them without pulling Zod; validators use them in `z.enum()`.
 - Every schema exports the main `z.object()` and the inferred type (e.g. `export type MedicineFormValues = z.infer<typeof medicineSchema>;`).
 - You may use *drizzle-zod* schemas as base insert/select models, but extend them generously with specific error messages, custom transforms, and rigorous `.refine()` logic (e.g. enforcing "email OR phone must exist").

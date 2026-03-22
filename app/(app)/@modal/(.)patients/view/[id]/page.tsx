@@ -59,21 +59,18 @@ export default async function InterceptedPatientModal({ params }: Props) {
         : "",
       status: a.status,
     })),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    documents: ((r as any).documents ?? []).map((d: any) => {
-      const ext = (d.fileName ?? "").split(".").pop()?.toLowerCase() ?? "";
-      const typeMap: Record<string, PatientDetail["documents"][0]["type"]> = {
-        pdf: "pdf", doc: "doc", docx: "doc", xls: "xls", xlsx: "xls",
-        jpg: "img", jpeg: "img", png: "img", webp: "img",
-      };
-      return {
-        id:         d.id,
-        name:       d.fileName ?? d.title,
-        type:       typeMap[ext] ?? "other",
-        size:       d.fileSize ? `${(d.fileSize / 1024 / 1024).toFixed(1)} MB` : "—",
-        uploadedAt: d.createdAt ? format(new Date(d.createdAt), "MMM d") : "—",
-      };
-    }),
+    documents: r.documents.map((d) => ({
+      id: d.id,
+      title: d.title,
+      fileName: d.fileName,
+      mimeType: d.mimeType,
+      fileSize: d.fileSize,
+      type: d.type,
+      uploadedAt:
+        d.uploadedAt instanceof Date
+          ? d.uploadedAt.toISOString()
+          : String(d.uploadedAt),
+    })),
     activityLog: [],
   };
 

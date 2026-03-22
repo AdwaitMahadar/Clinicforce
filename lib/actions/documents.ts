@@ -30,10 +30,9 @@
  * View URL TTL     : 60 minutes
  */
 
-import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
@@ -44,69 +43,16 @@ import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { getDocumentById } from "@/lib/db/queries/documents";
+import { s3Client, S3_BUCKET_NAME } from "@/lib/storage/s3-client";
+import { buildDocumentObjectKey } from "@/lib/storage/document-object-key";
+import {
+  getUploadPresignedUrlSchema,
+  confirmDocumentUploadSchema,
+  documentIdSchema,
+  DOCUMENT_ALLOWED_MIME_TYPES,
+} from "@/lib/validators/document";
 
-// ─── S3 client ────────────────────────────────────────────────────────────────
-
-const s3 = new S3Client({
-  endpoint:        process.env.S3_ENDPOINT,            // e.g. http://localhost:9000 for Minio
-  region:          process.env.S3_REGION ?? "us-east-1",
-  credentials: {
-    accessKeyId:     process.env.S3_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-  },
-  // Required for Minio path-style addressing
-  forcePathStyle: true,
-});
-
-const BUCKET = process.env.S3_BUCKET_NAME!;
-
-// File constraint constants (docs/08-Business-Rules §5)
-const ALLOWED_MIME_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-// ─── Input schemas ─────────────────────────────────────────────────────────────
-
-const documentTypeEnum = z.enum([
-  "prescription",
-  "lab-report",
-  "x-ray",
-  "scan",
-  "identification",
-  "insurance",
-  "consent-form",
-  "other",
-]);
-
-const assignedToTypeEnum = z.enum(["patient", "user"]);
-
-const getUploadPresignedUrlSchema = z.object({
-  fileName:       z.string().min(1, "File name is required"),
-  mimeType:       z.string().min(1, "MIME type is required"),
-  fileSize:       z.number().int().min(1, "File size must be positive"),
-  assignedToId:   z.string().min(1, "assignedToId is required"),
-  assignedToType: assignedToTypeEnum,
-  appointmentId:  z.string().uuid().optional(),
-});
-
-const confirmDocumentUploadSchema = z.object({
-  fileKey:        z.string().min(1, "fileKey is required"),
-  fileName:       z.string().min(1, "File name is required"),
-  fileSize:       z.number().int().min(1),
-  mimeType:       z.string().min(1),
-  title:          z.string().max(255).optional(),
-  type:           documentTypeEnum.default("other"),
-  assignedToId:   z.string().min(1, "assignedToId is required"),
-  assignedToType: assignedToTypeEnum,
-  appointmentId:  z.string().uuid().optional(),
-  description:    z.string().optional(),
-});
-
-const idSchema = z.string().uuid("Invalid ID");
 
 // ─── getUploadPresignedUrl ────────────────────────────────────────────────────
 
@@ -126,18 +72,17 @@ export async function getUploadPresignedUrl(input: unknown) {
       return { success: false as const, error: message };
     }
 
-    const { mimeType, fileSize, fileName } = parsed.data;
-    const { clinicId } = session.user;
+    const { mimeType, fileSize, fileName, assignedToId, assignedToType } =
+      parsed.data;
+    const { clinicSubdomain } = session.user;
 
-    // Validate MIME type
-    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    if (!DOCUMENT_ALLOWED_MIME_TYPES.has(mimeType)) {
       return {
         success: false as const,
         error: `File type not allowed. Accepted types: PDF, JPEG, PNG, WEBP.`,
       };
     }
 
-    // Validate file size
     if (fileSize > MAX_FILE_SIZE_BYTES) {
       return {
         success: false as const,
@@ -145,22 +90,21 @@ export async function getUploadPresignedUrl(input: unknown) {
       };
     }
 
-    // Derive extension from original filename
-    const ext = fileName.includes(".")
-      ? `.${fileName.split(".").pop()!.toLowerCase()}`
-      : "";
-
-    // Clinic-scoped S3 key — UUID ensures no collisions and no path traversal
-    const fileKey = `clinics/${clinicId}/documents/${crypto.randomUUID()}${ext}`;
+    const fileKey = buildDocumentObjectKey({
+      clinicSubdomain,
+      assignedToType,
+      assignedToId,
+      originalFileName: fileName,
+    });
 
     const command = new PutObjectCommand({
-      Bucket:      BUCKET,
-      Key:         fileKey,
-      ContentType: mimeType,
+      Bucket:        S3_BUCKET_NAME,
+      Key:           fileKey,
+      ContentType:   mimeType,
       ContentLength: fileSize,
     });
 
-    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 15 * 60 });
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 15 * 60 });
 
     return { success: true as const, data: { uploadUrl, fileKey } };
   } catch (err) {
@@ -194,7 +138,6 @@ export async function confirmDocumentUpload(input: unknown) {
     const { clinicId, id: userId } = session.user;
     const v = parsed.data;
 
-    // Derive a display title: use provided title or fall back to file name
     const title = (v.title?.trim()) || v.fileName;
 
     const [created] = await db
@@ -205,7 +148,7 @@ export async function confirmDocumentUpload(input: unknown) {
         description:    v.description?.trim() ?? null,
         type:           v.type,
         assignedToId:   v.assignedToId,
-        assignedToType: v.assignedToType,
+        assignedToType: "patient",
         appointmentId:  v.appointmentId ?? null,
         fileKey:        v.fileKey,
         fileName:       v.fileName,
@@ -214,6 +157,13 @@ export async function confirmDocumentUpload(input: unknown) {
         uploadedBy:     userId,
       })
       .returning({ id: documents.id });
+
+    revalidatePath("/patients", "layout");
+    revalidatePath(`/patients/view/${v.assignedToId}`);
+    revalidatePath("/appointments", "layout");
+    if (v.appointmentId) {
+      revalidatePath(`/appointments/view/${v.appointmentId}`);
+    }
 
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
@@ -237,7 +187,7 @@ export async function getViewPresignedUrl(documentId: unknown) {
     const session = await getSession();
     requireRole(session, ["admin", "doctor", "staff"]);
 
-    const parsed = idSchema.safeParse(documentId);
+    const parsed = documentIdSchema.safeParse(documentId);
     if (!parsed.success) {
       return { success: false as const, error: "Invalid document ID." };
     }
@@ -250,11 +200,11 @@ export async function getViewPresignedUrl(documentId: unknown) {
     }
 
     const command = new GetObjectCommand({
-      Bucket: BUCKET,
+      Bucket: S3_BUCKET_NAME,
       Key:    doc.fileKey,
     });
 
-    const url = await getSignedUrl(s3, command, { expiresIn: 60 * 60 });
+    const url = await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 });
 
     return { success: true as const, data: { url } };
   } catch (err) {
@@ -277,10 +227,9 @@ export async function getViewPresignedUrl(documentId: unknown) {
 export async function deleteDocument(documentId: unknown) {
   try {
     const session = await getSession();
-    // Staff cannot delete documents (docs/08-Business-Rules §5, §8)
     requireRole(session, ["admin", "doctor"]);
 
-    const parsed = idSchema.safeParse(documentId);
+    const parsed = documentIdSchema.safeParse(documentId);
     if (!parsed.success) {
       return { success: false as const, error: "Invalid document ID." };
     }
@@ -292,10 +241,9 @@ export async function deleteDocument(documentId: unknown) {
       return { success: false as const, error: "Document not found." };
     }
 
-    // Delete from S3 first — if this fails, DB row stays intact
     try {
-      await s3.send(
-        new DeleteObjectCommand({ Bucket: BUCKET, Key: doc.fileKey })
+      await s3Client.send(
+        new DeleteObjectCommand({ Bucket: S3_BUCKET_NAME, Key: doc.fileKey })
       );
     } catch (s3Err) {
       console.error("[deleteDocument] S3 deletion failed:", s3Err);
@@ -305,7 +253,6 @@ export async function deleteDocument(documentId: unknown) {
       };
     }
 
-    // S3 succeeded — now delete the DB record
     await db
       .delete(documents)
       .where(

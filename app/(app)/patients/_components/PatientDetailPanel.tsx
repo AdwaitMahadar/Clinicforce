@@ -21,12 +21,12 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   User, FileText, Phone, Mail, HeartPulse, AlertTriangle,
-  CalendarDays, File, FileSpreadsheet, Image as ImageIcon, Download, Plus, X,
+  CalendarDays, Plus, X,
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
-import { InitialsBadge, StatusBadge, EventLog } from "@/components/common";
-import type { PatientDetail, PatientDocument } from "@/types/patient";
+import { InitialsBadge, StatusBadge, EventLog, DocumentCard, UploadDocumentDialog } from "@/components/common";
+import type { PatientDetail } from "@/types/patient";
 import { createPatient } from "@/lib/actions/patients";
 import { PATIENT_GENDERS } from "@/lib/validators/patient";
 
@@ -47,24 +47,6 @@ const APPT_STATUS_STYLES: Record<string, { bg: string; text: string; border: str
   cancelled: { bg: "var(--color-red-bg)",    text: "var(--color-red)",     border: "var(--color-red-border)"     },
   "no-show": { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)" },
 };
-
-// ─── File type icon ───────────────────────────────────────────────────────────
-
-function DocIcon({ type }: { type: PatientDocument["type"] }) {
-  const styles = {
-    pdf:   { icon: <FileText size={18} />,        bg: "#fee2e2", color: "#ef4444" },
-    doc:   { icon: <File size={18} />,            bg: "#eff6ff", color: "#3b82f6" },
-    xls:   { icon: <FileSpreadsheet size={18} />, bg: "#ecfdf5", color: "#10b981" },
-    img:   { icon: <ImageIcon size={18} aria-hidden />, bg: "#f5f3ff", color: "#8b5cf6" },
-    other: { icon: <File size={18} />,            bg: "#f4f4f5", color: "#71717a" },
-  };
-  const s = styles[type] ?? styles.other;
-  return (
-    <div className="size-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: s.bg, color: s.color }}>
-      {s.icon}
-    </div>
-  );
-}
 
 // ─── Read-only field (view mode) ──────────────────────────────────────────────
 
@@ -181,6 +163,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPanelProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"documents" | "appointments">("documents");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const handleClose = useCallback(() => onClose?.(), [onClose]);
 
   const handleCreateSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
@@ -453,9 +436,11 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
               ))}
             </div>
             <button
+              type="button"
+              onClick={() => setUploadOpen(true)}
               className="size-7 flex items-center justify-center rounded-lg transition-colors"
               style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
-              title="Add new"
+              title="Upload document"
             >
               <Plus size={14} />
             </button>
@@ -469,23 +454,11 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
                 <p className="text-sm text-center py-10" style={{ color: "var(--color-text-muted)" }}>
                   No documents uploaded yet.
                 </p>
-              ) : patient.documents.map((doc) => (
-                <div key={doc.id}
-                  className="group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all"
-                  style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
-                  <DocIcon type={doc.type} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--color-text-primary)" }}>{doc.name}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                      {doc.size} · Uploaded {doc.uploadedAt}
-                    </p>
-                  </div>
-                  <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded"
-                    style={{ color: "var(--color-text-muted)" }}>
-                    <Download size={15} />
-                  </button>
-                </div>
-              ))
+              ) : (
+                patient.documents.map((doc) => (
+                  <DocumentCard key={doc.id} document={doc} />
+                ))
+              )
             )}
 
             {activeTab === "appointments" && (
@@ -541,6 +514,12 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         </div>
 
       </div>
+
+      <UploadDocumentDialog
+        patientId={patient.id}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+      />
     </div>
   );
 }

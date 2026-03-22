@@ -549,7 +549,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 ## 15. Cross-Cutting: Document Upload Flow
 
-Every detail panel for Patients and Appointments has a documents column with an upload button.
+Patient and appointment detail panels include a documents column with upload (`UploadDocumentDialog`) and list (`DocumentCard`).
 This flow spans multiple pages and is described here once.
 
 ### Steps
@@ -561,15 +561,16 @@ This flow spans multiple pages and is described here once.
 
 ### Server Actions Needed
 
-#### `getUploadPresignedUrl({ fileName, mimeType, fileSize })`
+#### `getUploadPresignedUrl({ fileName, mimeType, fileSize, assignedToType, assignedToId, appointmentId? })`
 - **Validates:** mime type in allowed set, file size ≤ 10MB
-- **Input:** `{ fileName, mimeType, fileSize, assignedToId, assignedToType, appointmentId? }`
+- **Input:** `fileName`, `mimeType`, `fileSize`, `assignedToType` (`patient` | `user`), `assignedToId`, optional `appointmentId`
+- **Key:** uses `session.user.clinicSubdomain` + `assignedToType` + `assignedToId` (see `docs/09-File-Upload-Flow.md` §7)
 - **Output:** `{ uploadUrl: string, fileKey: string }` — the `fileKey` is the S3 object key to be confirmed after upload
 - **RBAC:** All roles.
 
-#### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, assignedToType, appointmentId? })`
+#### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, appointmentId? })`
 - Creates the `documents` record in DB after the S3 upload confirms success
-- Sets `uploadedBy = session.userId`, `clinicId = session.clinicId`
+- Sets `assignedToType = 'patient'`, `uploadedBy = session.userId`, `clinicId = session.clinicId`; revalidates patient/appointment detail paths
 - **RBAC:** All roles.
 
 #### `getViewPresignedUrl(documentId)`

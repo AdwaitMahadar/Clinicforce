@@ -26,6 +26,7 @@ export interface AppSession {
   user: {
     id: string;
     clinicId: string;
+    clinicSubdomain: string; // from `clinics.subdomain` (same query as user)
     type: "admin" | "doctor" | "staff";
     firstName: string;
     lastName: string;
@@ -37,23 +38,37 @@ export async function getSession(): Promise<AppSession> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("UNAUTHORIZED");
 
-  // Fetch extended fields (clinicId, type) from the users table
-  const dbUser = await db.select(...).from(users).where(eq(users.id, session.user.id)).limit(1);
-  if (!dbUser[0]) throw new Error("USER_NOT_FOUND");
+  // Fetch user inner-joined to clinics — includes clinics.subdomain as clinicSubdomain
+  const row = await db
+    .select({
+      id: users.id,
+      clinicId: users.clinicId,
+      clinicSubdomain: clinics.subdomain,
+      type: users.type,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
+    .from(users)
+    .innerJoin(clinics, eq(users.clinicId, clinics.id))
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+  if (!row[0]) throw new Error("USER_NOT_FOUND");
 
   // Validate user belongs to the clinic derived from the request subdomain
   const subdomainClinicId = (await headers()).get("x-clinic-id");
-  if (subdomainClinicId && dbUser[0].clinicId !== subdomainClinicId) {
+  if (subdomainClinicId && row[0].clinicId !== subdomainClinicId) {
     throw new Error("CLINIC_MISMATCH");
   }
 
-  return { user: { id, clinicId, type, firstName, lastName, email } };
+  return { user: { id, clinicId, clinicSubdomain, type, firstName, lastName, email } };
 }
 ```
 
 **Rules:**
 - Every server action must start with `const session = await getSession()`
 - `session.user.clinicId` is the source of truth for all database queries — never hardcode the clinicId anywhere else
+- `session.user.clinicSubdomain` is loaded with the user (no extra clinic round-trip) and is the tenant slug for path-based features such as S3 object keys
 - `session.user.type` is the source of truth for all role checks
 
 ---

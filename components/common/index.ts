@@ -35,3 +35,9 @@ export { ModalShell }       from "./ModalShell";
 export type { ModalShellProps, ModalSize } from "./ModalShell";
 export { ModalCloseButton } from "./ModalCloseButton";
 
+// ─── Documents ────────────────────────────────────────────────────────────────
+export { DocumentCard } from "./DocumentCard";
+export type { DocumentCardProps } from "./DocumentCard";
+export { UploadDocumentDialog } from "./UploadDocumentDialog";
+export type { UploadDocumentDialogProps } from "./UploadDocumentDialog";
+

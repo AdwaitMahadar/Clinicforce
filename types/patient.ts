@@ -37,11 +37,16 @@ export interface PatientAppointment {
   status: AppointmentStatus;
 }
 
+/** Document list item for patient / appointment detail (matches DB + `DocumentCard`). */
 export interface PatientDocument {
-  id:         string;
-  name:       string;
-  type:       "pdf" | "doc" | "xls" | "img" | "other";
-  size:       string;
+  id: string;
+  title: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  /** DB `document_type` enum value */
+  type: string;
+  /** ISO timestamp */
   uploadedAt: string;
 }
 

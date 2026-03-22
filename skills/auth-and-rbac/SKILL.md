@@ -51,6 +51,7 @@ export interface AppSession {
   user: {
     id: string;
     clinicId: string;
+    clinicSubdomain: string; // from clinics row (joined in getSession)
     type: "admin" | "doctor" | "staff";
     firstName: string;
     lastName: string;
@@ -60,6 +61,7 @@ export interface AppSession {
 ```
 
 *   **`session.user.clinicId`** — ONLY acceptable source for DB query scoping.
+*   **`session.user.clinicSubdomain`** — tenant slug from DB (e.g. S3 key prefix); not a substitute for `clinicId` in SQL filters.
 *   **`session.user.type`** — ONLY acceptable source for role checks.
 
 ## 🔐 RBAC Permission Matrix

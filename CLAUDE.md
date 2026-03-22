@@ -118,6 +118,8 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — Standard form wrapper for detail panels
 - `ModalShell.tsx` — Intercepting modal wrapper component
+- `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
+- `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `CalendarDashboardSkeleton`, `ReportsPlaceholderSkeleton`, `DetailPageSkeleton`, `ModalDetailSkeleton`)
 
 ---
@@ -225,10 +227,10 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - Authentication: Better-Auth integration, real `getSession()`, subdomain-aware middleware (Node runtime, shared `lib/clinic/resolve-by-subdomain`), `/api/auth/*` route handler, `/api/clinic` subdomain resolver
 - Login page (`app/(auth)/login/page.tsx`) — split 50/50 layout, React Hook Form + Zod, Sonner toasts, `returnUrl` redirect
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
+- Document upload: presigned URLs (`lib/actions/documents.ts`), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail
 
 **Not yet built (planned):**
 - All Reports views
-- Document upload flow (S3/Minio)
 
 > For build order and phase breakdown → `docs/10-Development-Phases.md`
 

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { clinics, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -8,6 +8,8 @@ export interface AppSession {
   user: {
     id: string;
     clinicId: string;
+    /** From `clinics.subdomain` — tenant slug for paths (e.g. S3 keys) without a separate clinic query. */
+    clinicSubdomain: string;
     type: "admin" | "doctor" | "staff";
     firstName: string;
     lastName: string;
@@ -24,21 +26,23 @@ export async function getSession(): Promise<AppSession> {
     throw new Error("UNAUTHORIZED");
   }
 
-  // Better-Auth session only contains base fields; fetch extended user fields
-  const dbUser = await db
+  // Better-Auth session only contains base fields; fetch user + clinic subdomain in one step
+  const row = await db
     .select({
       id: users.id,
       clinicId: users.clinicId,
+      clinicSubdomain: clinics.subdomain,
       type: users.type,
       firstName: users.firstName,
       lastName: users.lastName,
       email: users.email,
     })
     .from(users)
+    .innerJoin(clinics, eq(users.clinicId, clinics.id))
     .where(eq(users.id, session.user.id))
     .limit(1);
 
-  if (!dbUser[0]) {
+  if (!row[0]) {
     throw new Error("USER_NOT_FOUND");
   }
 
@@ -46,18 +50,19 @@ export async function getSession(): Promise<AppSession> {
   const headersList = await headers();
   const subdomainClinicId = headersList.get("x-clinic-id");
 
-  if (subdomainClinicId && dbUser[0].clinicId !== subdomainClinicId) {
+  if (subdomainClinicId && row[0].clinicId !== subdomainClinicId) {
     throw new Error("CLINIC_MISMATCH");
   }
 
   return {
     user: {
-      id: dbUser[0].id,
-      clinicId: dbUser[0].clinicId!,
-      type: dbUser[0].type as "admin" | "doctor" | "staff",
-      firstName: dbUser[0].firstName ?? "",
-      lastName: dbUser[0].lastName ?? "",
-      email: dbUser[0].email,
+      id: row[0].id,
+      clinicId: row[0].clinicId!,
+      clinicSubdomain: row[0].clinicSubdomain,
+      type: row[0].type as "admin" | "doctor" | "staff",
+      firstName: row[0].firstName ?? "",
+      lastName: row[0].lastName ?? "",
+      email: row[0].email,
     },
   };
 }

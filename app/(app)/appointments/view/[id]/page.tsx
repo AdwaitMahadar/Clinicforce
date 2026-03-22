@@ -47,6 +47,18 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
     notes:             r.notes ?? "",
     // TODO: Implement when audit_log table is built.
     activityLog:       [],
+    documents:          (r.documents ?? []).map((d) => ({
+      id: d.id,
+      title: d.title,
+      fileName: d.fileName,
+      mimeType: d.mimeType,
+      fileSize: d.fileSize,
+      type: d.type,
+      uploadedAt:
+        d.uploadedAt instanceof Date
+          ? d.uploadedAt.toISOString()
+          : String(d.uploadedAt),
+    })),
   };
 
   return (

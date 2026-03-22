@@ -45,6 +45,18 @@ export default async function InterceptedAppointmentModal({ params }: Props) {
     description:        r.description    ?? "",
     notes:              r.notes          ?? "",
     activityLog:        [],
+    documents:          (r.documents ?? []).map((d) => ({
+      id: d.id,
+      title: d.title,
+      fileName: d.fileName,
+      mimeType: d.mimeType,
+      fileSize: d.fileSize,
+      type: d.type,
+      uploadedAt:
+        d.uploadedAt instanceof Date
+          ? d.uploadedAt.toISOString()
+          : String(d.uploadedAt),
+    })),
   };
 
   return (

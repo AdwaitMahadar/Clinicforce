@@ -17,8 +17,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Calendar, FileText, ImageIcon, Plus, Upload } from "lucide-react";
+import { Calendar, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { DocumentCard, UploadDocumentDialog } from "@/components/common";
 import { DetailForm } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor, FormSection } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
@@ -129,13 +130,14 @@ function CloseButton({ onClose }: { onClose: () => void }) {
 // ─── Col 3: Documents + Activity Log (read-only, outside the form) ────────────
 
 function AppointmentSidePanel({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for document list wiring
   appointment,
   logEvents,
 }: {
   appointment: AppointmentDetail;
   logEvents: { title: string; body: string; time: string; unread: boolean }[];
 }) {
+  const [uploadOpen, setUploadOpen] = useState(false);
+
   return (
     <div className="flex flex-col overflow-hidden" style={{ width: "35%", flexShrink: 0 }}>
 
@@ -153,6 +155,7 @@ function AppointmentSidePanel({
           </p>
           <button
             type="button"
+            onClick={() => setUploadOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors"
             style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
           >
@@ -161,41 +164,24 @@ function AppointmentSidePanel({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div
-            className="flex items-start gap-2 p-2.5 rounded-lg border transition-colors cursor-pointer"
-            style={{ borderColor: "var(--color-border)", background: "var(--color-surface-alt)" }}
-          >
-            <div className="p-1.5 rounded" style={{ background: "var(--color-red-bg)", color: "var(--color-red)" }}>
-              <FileText size={16} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium truncate" style={{ color: "var(--color-text-primary)" }}>Lab_Results.pdf</p>
-              <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>2.4 MB · Today</p>
-            </div>
+        {appointment.documents.length === 0 ? (
+          <p className="text-xs text-center py-6" style={{ color: "var(--color-text-muted)" }}>
+            No documents for this visit yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {appointment.documents.map((doc) => (
+              <DocumentCard key={doc.id} document={doc} className="min-h-[72px]" />
+            ))}
           </div>
+        )}
 
-          <div
-            className="flex items-start gap-2 p-2.5 rounded-lg border transition-colors cursor-pointer"
-            style={{ borderColor: "var(--color-border)", background: "var(--color-surface-alt)" }}
-          >
-            <div className="p-1.5 rounded" style={{ background: "var(--color-blue-bg)", color: "var(--color-blue)" }}>
-              <ImageIcon size={16} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium truncate" style={{ color: "var(--color-text-primary)" }}>X-Ray_Chest.jpg</p>
-              <p className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>5.1 MB · Yesterday</p>
-            </div>
-          </div>
-
-          <div
-            className="flex flex-col items-center justify-center p-2.5 rounded-lg border border-dashed transition-colors cursor-pointer"
-            style={{ borderColor: "var(--color-border)" }}
-          >
-            <Plus size={18} style={{ color: "var(--color-text-muted)" }} />
-            <span className="text-[10px] mt-1 font-medium" style={{ color: "var(--color-text-muted)" }}>Add File</span>
-          </div>
-        </div>
+        <UploadDocumentDialog
+          patientId={appointment.patientId}
+          appointmentId={appointment.id}
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+        />
       </div>
 
       {/* Activity Log */}
