@@ -118,6 +118,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — Standard form wrapper for detail panels
 - `ModalShell.tsx` — Intercepting modal wrapper component
+- `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `CalendarDashboardSkeleton`, `ReportsPlaceholderSkeleton`, `DetailPageSkeleton`, `ModalDetailSkeleton`)
 
 ---
 

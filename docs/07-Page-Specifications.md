@@ -24,6 +24,8 @@ Top nav (entity) × Side nav (view)  →  /{entity}/{view}
 Detail modals open at `/{entity}/view/{id}` (intercepting route) or fall back to full page.
 New-record modals open at `/{entity}/new` (intercepting route) or fall back to full page.
 
+**Loading UI:** Each route segment may define `loading.tsx` next to `page.tsx`, using Shadcn `Skeleton` and shared layouts in `components/common/skeletons/` so the fallback matches the page shell (not a generic full-page spinner).
+
 ---
 
 ## 1. Home Dashboard — `/home/dashboard`

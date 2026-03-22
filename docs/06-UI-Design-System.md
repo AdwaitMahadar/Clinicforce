@@ -79,6 +79,12 @@ Reason: Next.js intercepting route `(.)appointments/[id]` is a dynamic segment t
 
 ---
 
+## 2.1 Route loading (`loading.tsx`)
+
+Authenticated routes under `app/(app)/` use a colocated **`loading.tsx`** per segment where the page suspends (async Server Components, slow navigations). Each file default-exports a layout that mirrors the real page shell (padding, `PageHeader`, tables, calendar, detail card, or modal) using the Shadcn **`Skeleton`** primitive (`components/ui/skeleton.tsx`). Reusable shapes live in **`components/common/skeletons/`** (e.g. `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `ModalDetailSkeleton`) so fallbacks stay aligned with the design tokens and do not use centered spinners alone.
+
+---
+
 ## 3. Folder & File Structure
 
 ```
@@ -87,6 +93,7 @@ app/
     layout.tsx                  ← AppShell layout (TopNav + SideNav + main)
     home/
       dashboard/page.tsx
+      dashboard/loading.tsx     ← Suspense fallback (optional per segment)
       reports/page.tsx
     appointments/
       dashboard/page.tsx
@@ -122,6 +129,8 @@ components/
     SideNav.tsx
     NavItem.tsx
     PageHeader.tsx
+  common/
+    skeletons/                  ← Route loading.tsx building blocks (Skeleton-based)
   clinic/                       ← Domain-specific reusable components
     Badge.tsx                   ← Unified badge component (all variants)
     PatientAvatar.tsx

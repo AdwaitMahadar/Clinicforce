@@ -28,6 +28,8 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 
 ## 🧩 Component Inventory
 
+**Route loading:** Colocate `loading.tsx` with `page.tsx` under `app/(app)/`; use Shadcn `Skeleton` and `components/common/skeletons/*` so fallbacks match each page layout (tables, home stats, calendar, detail/modal).
+
 Reuse existing components instead of building ad-hoc solutions. 
 
 **Domain Components (`components/common/` & `components/clinic/`)**
