@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, FileText, Loader2, Pill, Users } from "lucide-react";
+import { CalendarDays, Loader2, Pill, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   Command,
@@ -29,6 +29,7 @@ import { searchGlobal } from "@/lib/actions/search";
 import { getViewPresignedUrl } from "@/lib/actions/documents";
 import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/constants/document";
 import type { GroupedSearchResults } from "@/types/search";
+import { DocumentMimeTypeIcon } from "@/components/common/DocumentMimeTypeIcon";
 import { StatusBadge } from "@/components/common/StatusBadge";
 
 const DEBOUNCE_MS = 300;
@@ -355,12 +356,10 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
                       }}
                       className="cursor-pointer items-start gap-2 py-2.5"
                     >
-                      <FileText
-                        className="mt-0.5 shrink-0"
-                        size={18}
-                        strokeWidth={2}
-                        style={{ color: "var(--color-text-secondary)" }}
-                        aria-hidden
+                      <DocumentMimeTypeIcon
+                        mimeType={d.mimeType}
+                        iconSize={16}
+                        className="mt-0.5"
                       />
                       <div className="min-w-0 flex-1">
                         <p

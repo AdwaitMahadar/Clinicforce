@@ -5,11 +5,11 @@
  */
 
 import { useCallback, useState } from "react";
-import { FileText, Image as ImageIcon, File } from "lucide-react";
 import { isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { getViewPresignedUrl } from "@/lib/actions/documents";
 import type { PatientDocument } from "@/types/patient";
+import { DocumentMimeTypeIcon } from "@/components/common/DocumentMimeTypeIcon";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -23,43 +23,6 @@ function formatRelativeUploaded(iso: string): string {
   if (isToday(d)) return "Today";
   if (isYesterday(d)) return "Yesterday";
   return formatDistanceToNow(d, { addSuffix: true });
-}
-
-function FileTypeIcon({ mimeType }: { mimeType: string }) {
-  const isPdf = mimeType === "application/pdf";
-  const isImage = mimeType.startsWith("image/");
-  if (isPdf) {
-    return (
-      <div
-        className="p-1.5 rounded-md flex-shrink-0"
-        style={{ background: "var(--color-red-bg)", color: "var(--color-red)" }}
-      >
-        <FileText size={16} aria-hidden />
-      </div>
-    );
-  }
-  if (isImage) {
-    return (
-      <div
-        className="p-1.5 rounded-md flex-shrink-0"
-        style={{ background: "var(--color-blue-bg)", color: "var(--color-blue)" }}
-      >
-        <ImageIcon size={16} aria-hidden />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="p-1.5 rounded-md flex-shrink-0"
-      style={{
-        background: "var(--color-surface-alt)",
-        color: "var(--color-text-muted)",
-        border: "1px solid var(--color-border)",
-      }}
-    >
-      <File size={16} aria-hidden />
-    </div>
-  );
 }
 
 export interface DocumentCardProps {
@@ -99,7 +62,7 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
         cursor: busy ? "wait" : "pointer",
       }}
     >
-      <FileTypeIcon mimeType={doc.mimeType} />
+      <DocumentMimeTypeIcon mimeType={doc.mimeType} />
       <div className="min-w-0 flex-1">
         <p
           className="text-xs font-medium truncate"

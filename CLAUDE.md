@@ -118,6 +118,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — Standard form wrapper for detail panels
 - `ModalShell.tsx` — Intercepting modal wrapper component
+- `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata

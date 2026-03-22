@@ -40,6 +40,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<PatientAvatar />` / `<InitialsBadge />` - Deterministic initials avatar.
 *   `<PageHeader />` - Title block for *every* page.
 *   `<EventLog />` - Activity log list.
+*   `<DocumentMimeTypeIcon />` - MIME-based file icon (PDF / image / generic); used in `<DocumentCard />` and `<UniversalSearch />`.
 *   `<DocumentCard />` / `<UploadDocumentDialog />` - Patient/appointment document list + presigned upload (see `skills/file-upload/SKILL.md`).
 *   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
 *   `<DetailForm />` - Generic field-driven form panel supporting flat and sectioned modes.

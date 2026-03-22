@@ -35,6 +35,8 @@ export interface DocumentSearchHit {
   id: string;
   title: string;
   fileName: string;
+  /** Stored MIME type — drives icon in list/search */
+  mimeType: string;
   /** DB `document_type` */
   type: string;
   assignedToType: "patient" | "user";
