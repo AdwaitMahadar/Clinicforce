@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { navPillSpring, sidebarLogoSwapSpring } from "./nav-motion";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -83,7 +84,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                     initial={{ opacity: 0, scale: 0.7 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
-                    transition={{ duration: 0.15 }}
+                    transition={sidebarLogoSwapSpring}
                     onClick={() => setCollapsed(false)}
                     className="absolute inset-0 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
                     title="Expand sidebar"
@@ -96,7 +97,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                     initial={{ opacity: 0, scale: 0.7 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
-                    transition={{ duration: 0.15 }}
+                    transition={sidebarLogoSwapSpring}
                     className="size-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
                     style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
                   >
@@ -145,12 +146,7 @@ export function SideNav({ userName = "Dr. Jenkins", userRole = "Surgeon" }: Side
                     background: "rgba(255,255,255,0.80)",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.50)",
                   }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 600,
-                    damping: 35,
-                    mass: 0.4,
-                  }}
+                  transition={navPillSpring}
                 />
               )}
               <Icon size={18} strokeWidth={2} className="relative z-10 flex-shrink-0" />

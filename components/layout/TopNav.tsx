@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { navPillSpring, topNavLabelOpacity } from "./nav-motion";
 
 const NAV_ITEMS = [
   { href: "/home/dashboard",         label: "Home",         icon: Home },
@@ -67,12 +68,7 @@ export function TopNav() {
                         background: "white",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 0 0 1px var(--color-border)",
                       }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 600,
-                        damping: 35,
-                        mass: 0.4,
-                      }}
+                      transition={navPillSpring}
                     />
                   )}
 
@@ -91,8 +87,8 @@ export function TopNav() {
                         animate={{ width: "auto", opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{
-                          width:   { type: "spring", stiffness: 600, damping: 35, mass: 0.4 },
-                          opacity: { duration: 0.1, delay: 0.03 },
+                          width: navPillSpring,
+                          opacity: topNavLabelOpacity,
                         }}
                       >
                         {label}
