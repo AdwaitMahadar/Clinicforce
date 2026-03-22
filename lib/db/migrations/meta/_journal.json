@@ -29,6 +29,13 @@
       "when": 1772165045444,
       "tag": "0003_steep_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774141745163,
+      "tag": "0004_drop_appointment_end_and_checkout",
+      "breakpoints": true
     }
   ]
 }

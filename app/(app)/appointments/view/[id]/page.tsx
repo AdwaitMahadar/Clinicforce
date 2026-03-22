@@ -42,9 +42,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
     date:            r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
     duration:        Number(r.duration ?? 30),
     scheduledStartTime: fmtTime(r.scheduledStartTime),
-    scheduledEndTime:   fmtTime(r.scheduledEndTime),
     actualCheckIn:     fmtTime(r.actualCheckIn),
-    actualCheckOut:    fmtTime(r.actualCheckOut),
     description:       r.description ?? "",
     notes:             r.notes ?? "",
     // TODO: Implement when audit_log table is built.

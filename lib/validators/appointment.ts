@@ -89,9 +89,7 @@ export const createAppointmentSchema = z.object({
     .max(480, "Duration cannot exceed 480 minutes (8 hours)"),
 
   scheduledStartTime: z.string().optional().default(""),
-  scheduledEndTime:   z.string().optional().default(""),
   actualCheckIn:      z.string().optional().default(""),
-  actualCheckOut:     z.string().optional().default(""),
 
   description: z.string().optional().default(""),
   notes:       z.string().optional().default(""),
@@ -136,9 +134,7 @@ export const updateAppointmentSchema = z.object({
     .optional(),
 
   scheduledStartTime: z.string().optional(),
-  scheduledEndTime:   z.string().optional(),
   actualCheckIn:      z.string().optional(),
-  actualCheckOut:     z.string().optional(),
 
   description: z.string().optional(),
   notes:       z.string().optional(),

@@ -37,7 +37,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Soft vs. Hard Deletes:**
   - Users, Patients, Appointments, and Medicines are **never** hard-deleted (`is_active = false`).
   - **Documents** are the exception: They are hard-deleted. If deleting the S3 object fails remotely, the database record must NOT be deleted. (Treat S3 and DB deletion as a unified transaction).
-- **Check-in / Check-out:** The `actualCheckIn` and `actualCheckOut` times are optional and fully independent (checking in does not mandate checking out in the MVP).
+- **Actual time:** `actualCheckIn` is optional; end-of-visit is implied by `duration` (no separate check-out column).
 - **Uniqueness Limits:** Medicine names are **not uniquely constrained**. The exact same drug can exist multiple times. (This is intentional — clinics may stock multiple brands or formulations of the same drug.)
 
 ## ❌ DO NOT

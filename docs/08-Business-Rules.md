@@ -99,10 +99,9 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - Inactive appointments are hidden from all default views and calendar displays.
 - Documents linked to an inactive appointment via `appointmentId` remain accessible through the patient's document list.
 
-### Check-in / Check-out
-- `actualCheckIn` and `actualCheckOut` are optional timestamps.
-- They can be set independently — check-in does not require check-out, and vice versa.
-- No validation is enforced between scheduled time and actual times in MVP.
+### Actual time
+- `actualCheckIn` is an optional timestamp for when the patient was seen (actual visit time).
+- No validation is enforced between scheduled time and actual time in MVP.
 
 ---
 

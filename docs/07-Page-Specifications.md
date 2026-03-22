@@ -153,9 +153,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     date:               string;   // ISO timestamp
     duration:           number;
     scheduledStartTime: string | null;
-    scheduledEndTime:   string | null;
     actualCheckIn:      string | null;
-    actualCheckOut:     string | null;
     notes:              string | null;
     documents:          DocumentSummary[];
     activityLog:        LogEvent[];

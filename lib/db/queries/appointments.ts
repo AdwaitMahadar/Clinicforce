@@ -52,9 +52,7 @@ export interface AppointmentDetailRecord {
   date: Date;
   duration: number;
   scheduledStartTime: Date | null;
-  scheduledEndTime: Date | null;
   actualCheckIn: Date | null;
-  actualCheckOut: Date | null;
   notes: string | null;
   isActive: boolean;
   createdAt: Date;
@@ -151,9 +149,7 @@ export async function getAppointmentById(
       date: appointments.date,
       duration: appointments.duration,
       scheduledStartTime: appointments.scheduledStartTime,
-      scheduledEndTime: appointments.scheduledEndTime,
       actualCheckIn: appointments.actualCheckIn,
-      actualCheckOut: appointments.actualCheckOut,
       notes: appointments.notes,
       isActive: appointments.isActive,
       createdAt: appointments.createdAt,
@@ -205,9 +201,7 @@ export async function getAppointmentById(
     date: appt.date,
     duration: appt.duration,
     scheduledStartTime: appt.scheduledStartTime,
-    scheduledEndTime: appt.scheduledEndTime,
     actualCheckIn: appt.actualCheckIn,
-    actualCheckOut: appt.actualCheckOut,
     notes: appt.notes,
     isActive: appt.isActive,
     createdAt: appt.createdAt,

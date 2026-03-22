@@ -64,9 +64,7 @@ export interface AppointmentDetail {
   /** Duration in minutes */
   duration:           number;
   scheduledStartTime: string;
-  scheduledEndTime:   string;
   actualCheckIn:      string;
-  actualCheckOut:     string;
   description?:       string;
   notes:              string;
   activityLog:        AppointmentActivityEntry[];

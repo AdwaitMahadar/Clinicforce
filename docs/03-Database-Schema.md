@@ -121,9 +121,7 @@ Better-Auth email/token verification records.
 - `duration`: `integer` **notNull** (In minutes, Default: 30)
 - `notes`: `text` (Clinical notes)
 - `scheduled_start_time`: `timestamp`
-- `scheduled_end_time`: `timestamp`
 - `actual_check_in`: `timestamp`
-- `actual_check_out`: `timestamp`
 - `is_active`: `boolean` (Default: `true`)
 - `created_by`: `text` (References `users.id`)
 - `created_at`: `timestamp`

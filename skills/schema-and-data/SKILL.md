@@ -44,7 +44,7 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
   - Unique index: `(clinic_id, chart_id)`
   - Performance index: B-Tree on `(clinic_id, last_name, first_name)`
 - **`appointments`**:
-  - Key fields: `patient_id`, `doctor_id` (refs users), `title`, `status` (enum), `date` (scheduled start), `duration`
+  - Key fields: `patient_id`, `doctor_id` (refs users), `title`, `status` (enum), `date` (scheduled start), `duration`, optional `scheduled_start_time` / `actual_check_in`
   - Status enum: `'scheduled'`, `'completed'`, `'cancelled'`, `'no-show'`
   - Performance index: B-Tree on `(clinic_id, date)`, `(clinic_id, status)`
 - **`documents`**:

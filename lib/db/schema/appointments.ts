@@ -45,9 +45,7 @@ export const appointments = pgTable(
     duration: integer("duration").notNull().default(30), // minutes
     notes: text("notes"),
     scheduledStartTime: timestamp("scheduled_start_time"),
-    scheduledEndTime: timestamp("scheduled_end_time"),
     actualCheckIn: timestamp("actual_check_in"),
-    actualCheckOut: timestamp("actual_check_out"),
     isActive: boolean("is_active").notNull().default(true),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",

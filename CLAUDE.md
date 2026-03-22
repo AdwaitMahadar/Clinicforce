@@ -160,7 +160,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Type enum: `general | follow-up | emergency`
-- Tracks both scheduled time and actual check-in/check-out for audit
+- Tracks scheduled start (`date` + optional `scheduled_start_time`), optional actual visit time (`actual_check_in`), and `duration` (minutes)
 
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment

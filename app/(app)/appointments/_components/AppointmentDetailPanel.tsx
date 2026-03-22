@@ -230,9 +230,7 @@ const EMPTY_VALUES: CreateAppointmentInput = {
   date:               new Date().toISOString().slice(0, 10),
   duration:           30,
   scheduledStartTime: "",
-  scheduledEndTime:   "",
   actualCheckIn:      "",
-  actualCheckOut:     "",
   description:        "",
   notes:              "",
 };
@@ -307,9 +305,7 @@ function buildPrimaryFields(
 
 const TIMELINE_FIELDS: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
   { name: "scheduledStartTime", label: "Scheduled Start", type: "time", colSpan: 1 },
-  { name: "scheduledEndTime",   label: "Scheduled End",   type: "time", colSpan: 1 },
-  { name: "actualCheckIn",      label: "Actual Check-in",  type: "time", colSpan: 1 },
-  { name: "actualCheckOut",     label: "Actual Check-out", type: "time", colSpan: 1 },
+  { name: "actualCheckIn",      label: "Actual time",      type: "time", colSpan: 1 },
   {
     name: "notes",
     label: "Clinical Notes",
@@ -383,9 +379,7 @@ export function AppointmentDetailPanel({
         date:               appointment!.date.slice(0, 10),
         duration:           appointment!.duration,
         scheduledStartTime: appointment!.scheduledStartTime ?? "",
-        scheduledEndTime:   appointment!.scheduledEndTime   ?? "",
         actualCheckIn:      appointment!.actualCheckIn      ?? "",
-        actualCheckOut:     appointment!.actualCheckOut     ?? "",
         description:         appointment!.description ?? "",
         notes:              appointment!.notes ?? "",
       };
@@ -424,9 +418,7 @@ export function AppointmentDetailPanel({
           ? (typeof v.duration === "string" ? Number(v.duration) : v.duration)
           : undefined,
         scheduledStartTime: v.scheduledStartTime || undefined,
-        scheduledEndTime:   v.scheduledEndTime   || undefined,
         actualCheckIn:      v.actualCheckIn      || undefined,
-        actualCheckOut:     v.actualCheckOut     || undefined,
         description:        v.description || undefined,
         notes:              v.notes || undefined,
       });
