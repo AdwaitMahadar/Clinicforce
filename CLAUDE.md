@@ -119,6 +119,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `DetailForm.tsx` — Standard form wrapper for detail panels
 - `ModalShell.tsx` — Intercepting modal wrapper component
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
+- `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `CalendarDashboardSkeleton`, `ReportsPlaceholderSkeleton`, `DetailPageSkeleton`, `ModalDetailSkeleton`)
 

@@ -68,6 +68,7 @@ The general pattern for every action follows the anatomy above:
 - **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.
 - **Update actions**: Accept `id` + validated Zod payload. Scope the UPDATE with `clinic_id` to prevent cross-tenant writes.
 - **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
+- **Global search**: `searchGlobal` in `lib/actions/search.ts` — validate with `searchGlobalQuerySchema` (`lib/validators/search.ts`); parallel `LIMIT 5` queries per entity, all scoped by `clinicId`; return type `GroupedSearchResults` in `types/search.ts`.
 
 ## ❌ DO NOT
 

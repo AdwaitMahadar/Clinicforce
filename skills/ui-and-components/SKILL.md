@@ -41,6 +41,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<PageHeader />` - Title block for *every* page.
 *   `<EventLog />` - Activity log list.
 *   `<DocumentCard />` / `<UploadDocumentDialog />` - Patient/appointment document list + presigned upload (see `skills/file-upload/SKILL.md`).
+*   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
 *   `<DetailForm />` - Generic field-driven form panel supporting flat and sectioned modes.
 *   `<ModalShell />` - Universal modal envelope used for intercepting route modals.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).

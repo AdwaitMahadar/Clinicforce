@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Home,
   CalendarDays,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { UniversalSearch } from "@/components/common/UniversalSearch";
 import { navPillSpring, topNavLabelOpacity } from "./nav-motion";
 
 const NAV_ITEMS = [
@@ -25,6 +27,18 @@ const NAV_ITEMS = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="w-full flex justify-between items-center py-4 px-4 z-30 relative flex-shrink-0">
@@ -100,20 +114,20 @@ export function TopNav() {
             })}
           </div>
 
-          {/* Search */}
-          <div className="relative flex items-center">
-            <Search
-              size={15}
-              className="absolute left-2.5 text-[var(--color-text-muted)] pointer-events-none"
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-44 bg-[var(--color-surface-alt)]/60 border border-[var(--color-border)] rounded-lg py-1.5 pl-7 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:bg-white focus:border-[var(--color-text-muted)] transition-all h-9"
-            />
-          </div>
+          {/* Search — opens universal command palette (⌘/Ctrl+K) */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)] transition-colors"
+            title="Search"
+            aria-label="Open search"
+          >
+            <Search size={18} strokeWidth={2} />
+          </button>
         </div>
       </header>
+
+      <UniversalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* ── Right actions ── */}
       <div

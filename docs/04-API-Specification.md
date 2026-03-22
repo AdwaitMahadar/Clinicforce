@@ -12,3 +12,9 @@ Server actions and route handlers: session-scoped `clinicId`, RBAC via `requireR
 | `deleteDocument` | Deletes S3 object then DB row (doctor/admin only). |
 
 See `docs/09-File-Upload-Flow.md` for the browser sequence and Minio env vars.
+
+## Global search
+
+| Action | Purpose |
+|--------|---------|
+| `searchGlobal` | Accepts a trimmed query string (min 2 characters). Runs four parallel scoped reads (`LIMIT 5` each): patients (name/email/phone/chart id match; each hit includes `phone` for UI), active appointments (title / patient / doctor name), active medicines (name / brand match; each hit includes `category` and `brand` for UI), documents (title / file name / description) with optional patient join for display name. Returns `GroupedSearchResults` (`types/search.ts`). Schema: `searchGlobalQuerySchema` in `lib/validators/search.ts`. Client: `UniversalSearch` in `components/common/UniversalSearch.tsx` (TopNav, ⌘/Ctrl+K). |
