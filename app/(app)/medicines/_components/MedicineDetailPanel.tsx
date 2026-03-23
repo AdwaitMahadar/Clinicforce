@@ -3,30 +3,23 @@
 /**
  * app/(app)/medicines/_components/MedicineDetailPanel.tsx
  *
- * Supports two modes:
+ * DetailPanel + DetailForm (flat fields) + DetailSidebar (activity log only in edit).
  *
- *   mode="edit"   (default)
- *     - Requires `medicine` prop (existing record)
- *     - 60/40 layout: form left, activity log right
- *     - Shows Delete Medicine button
- *
- *   mode="create"
- *     - `medicine` is omitted — all form fields start blank
- *     - Full-width form (no activity log column — nothing to log yet)
- *     - No Delete button
- *     - Submit label is "Add Medicine"
+ *   mode="edit"   — sidebar column with activity log; Delete in footer
+ *   mode="create" — full-width form; no sidebar; no Delete
  *
  * Shared across:
- *   - medicines/[id]/page.tsx          ← edit, full-page fallback
- *   - @modal/(.)medicines/[id]/page.tsx ← edit, intercepting modal
- *   - medicines/new/page.tsx            ← create, full-page fallback
- *   - @modal/(.)medicines/new/page.tsx  ← create, intercepting modal
+ *   - medicines/view/[id]/page.tsx
+ *   - @modal/(.)medicines/view/[id]/page.tsx
+ *   - medicines/new/page.tsx
+ *   - @modal/(.)medicines/new/page.tsx
  */
 
+import { useRef } from "react";
 import { Pill, Beaker, Syringe, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { EventLog } from "@/components/common/EventLog";
-import { DetailForm } from "@/components/common/DetailForm";
+import { DetailPanel, DetailForm } from "@/components/common";
+import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import type { MedicineDetail } from "@/types/medicine";
 import type { MedicineIcon } from "@/types/medicine";
@@ -166,6 +159,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
 
 export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: MedicineDetailPanelProps) {
   const isCreate = mode === "create";
+  const formRef = useRef<DetailFormHandle | null>(null);
 
   const iconName = guessIcon(medicine?.form);
 
@@ -209,93 +203,57 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
     }
   };
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* ── Header ───────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
-        style={{
-          borderColor: "var(--color-border)",
-          background: "var(--color-surface-alt)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="size-10 rounded-xl flex items-center justify-center border"
-            style={{
-              background: "var(--color-blue-bg)",
-              borderColor: "var(--color-blue-border)",
-              color: "var(--color-blue)",
-            }}
-          >
-            <MedicineIconDisplay iconName={iconName} />
-          </div>
-          <div>
-            <h3
-              className="text-base font-bold"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {isCreate ? "New Medicine" : medicine!.name}
-            </h3>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-              {isCreate ? "Fill in the details to add a new medicine" : "Edit Details"}
-            </p>
-          </div>
-        </div>
-
-        {onClose && <CloseButton onClose={onClose} />}
-      </div>
-
-      {/* ── Body ─────────────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
-        {/* Form — full-width in create mode, 60% in edit mode */}
+  const header = (
+    <>
+      <div className="flex items-center gap-3">
         <div
-          className="flex flex-col"
+          className="size-10 rounded-xl flex items-center justify-center border"
           style={{
-            width: isCreate ? "100%" : "60%",
-            borderRight: isCreate ? "none" : "1px solid var(--color-border)",
+            background: "var(--color-blue-bg)",
+            borderColor: "var(--color-blue-border)",
+            color: "var(--color-blue)",
           }}
         >
-          <DetailForm<MedicineFormValues>
-            schema={medicineSchema}
-            defaultValues={defaultValues}
-            fields={MEDICINE_FIELDS}
-            onSubmit={handleSubmit}
-            onDelete={isCreate ? undefined : handleDelete}
-            onCancel={onClose}
-            submitLabel={isCreate ? "Add Medicine" : "Save Changes"}
-            deleteLabel="Delete Medicine"
-            successMessage={isCreate ? "Medicine added successfully." : "Medicine updated successfully."}
-          />
+          <MedicineIconDisplay iconName={iconName} />
         </div>
-
-        {/* Activity log — only in edit mode */}
-        {!isCreate && (
-          <div
-            className="flex flex-col overflow-hidden"
-            style={{ width: "40%", background: "var(--color-surface-alt)" }}
+        <div>
+          <h3
+            className="text-base font-bold"
+            style={{ color: "var(--color-text-primary)" }}
           >
-            <div
-              className="px-5 py-4 border-b flex-shrink-0"
-              style={{ borderColor: "var(--color-border)" }}
-            >
-              <p
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--color-text-muted)" }}
-              >
-                Activity Log
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-5">
-              <EventLog
-                events={medicine!.activityLog}
-                maxHeight="100%"
-                className="h-full"
-              />
-            </div>
-          </div>
-        )}
+            {isCreate ? "New Medicine" : medicine!.name}
+          </h3>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            {isCreate ? "Fill in the details to add a new medicine" : "Edit Details"}
+          </p>
+        </div>
       </div>
-    </div>
+
+      {onClose && <CloseButton onClose={onClose} />}
+    </>
+  );
+
+  const form = (
+    <DetailForm<MedicineFormValues>
+      ref={formRef}
+      schema={medicineSchema}
+      defaultValues={defaultValues}
+      fields={MEDICINE_FIELDS}
+      onSubmit={handleSubmit}
+    />
+  );
+
+  return (
+    <DetailPanel
+      header={header}
+      formRef={formRef}
+      form={form}
+      events={isCreate ? [] : medicine!.activityLog}
+      isCreate={isCreate}
+      onCancel={onClose}
+      onDelete={isCreate ? undefined : handleDelete}
+      submitLabel={isCreate ? "Add Medicine" : "Save Changes"}
+      deleteLabel="Delete Medicine"
+    />
   );
 }

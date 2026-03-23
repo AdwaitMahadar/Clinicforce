@@ -292,7 +292,17 @@ The row containing the search input, filter dropdowns, and export button. Appear
 ### `<DetailForm />` — Entity Detail Form
 **Location:** `components/common/DetailForm.tsx`
 
-A generic field-driven form panel wired to React Hook Form and Zod, supporting both flat and multi-column sectioned layouts.
+A generic field-driven form panel wired to React Hook Form and Zod. Pass a **`fields`** array (the only layout mode); it renders one scrollable 2-column grid (`colSpan` controls full-width rows). Exposes **`forwardRef`** + **`DetailFormHandle`** (`submit()`, `reset()`). Footer buttons are **not** included — the parent **`DetailPanel`** (or a custom layout) calls `formRef.current?.submit()` after validation. Select fields use a **controlled** Radix Select (`value` + `key`) so programmatic default changes stay in sync.
+
+### `<DetailPanel />` — Detail Modal / Page Shell
+**Location:** `components/common/DetailPanel.tsx`
+
+Layout for entity create/edit: **header** slot, **form** slot (usually `<DetailForm />`), optional **sidebar** (`DetailSidebar` — ~40% width in edit mode) with tabbed content + activity log, **footer** with Save, Cancel, and optional destructive action. Set **`isCreate`** to hide the sidebar and give the form full width.
+
+### `<DetailSidebar />` — Tabbed Sidebar + Activity Log
+**Location:** `components/common/DetailSidebar.tsx`
+
+Optional top **tabs** (`sidebarTabs`) and a persistent bottom **events** list (`EventLog`-compatible entries). Used inside `DetailPanel` for documents, related lists, and audit-style activity.
 
 ### `<ModalShell />` — Intercepting Modal Wrapper
 **Location:** `components/common/ModalShell.tsx`

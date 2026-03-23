@@ -3,27 +3,23 @@
 /**
  * app/(app)/appointments/_components/AppointmentDetailPanel.tsx
  *
- * Uses DetailForm in SECTIONED mode:
- *
- *   ┌─ Section 1 (30%) ─┬─ Section 2 (flex-1) ─┬─ rightSlot (35%, edit only) ─┐
- *   │ Primary Info       │ Timeline & Notes      │ Documents + Activity Log      │
- *   └────────────────────┴───────────────────────┴───────────────────────────────┘
- *   │ [Cancel Appt]                          [Cancel]  [Create / Save Changes]   │
- *   └──────────────────────────────────────────────────────────────────────────── ┘
- *
- * Create mode: 2 sections only (no rightSlot, Section 2 expands to fill).
+ * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Calendar, Upload } from "lucide-react";
+import { Calendar, FileText, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { DocumentCard, UploadDocumentDialog } from "@/components/common";
-import { DetailForm } from "@/components/common/DetailForm";
-import type { FormFieldDescriptor, FormSection } from "@/components/common/DetailForm";
+import {
+  DocumentCard,
+  UploadDocumentDialog,
+  DetailPanel,
+  DetailForm,
+} from "@/components/common";
+import type { DetailFormHandle } from "@/components/common/DetailForm";
+import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { EventLog } from "@/components/common/EventLog";
 import type { AppointmentDetail } from "@/types/appointment";
 import {
   createAppointmentSchema,
@@ -127,81 +123,50 @@ function CloseButton({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Col 3: Documents + Activity Log (read-only, outside the form) ────────────
+// ─── Documents tab (edit mode sidebar) ────────────────────────────────────────
 
-function AppointmentSidePanel({
-  appointment,
-  logEvents,
-}: {
-  appointment: AppointmentDetail;
-  logEvents: { title: string; body: string; time: string; unread: boolean }[];
-}) {
+function AppointmentDocumentsTab({ appointment }: { appointment: AppointmentDetail }) {
   const [uploadOpen, setUploadOpen] = useState(false);
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ width: "35%", flexShrink: 0 }}>
-
-      {/* Documents */}
-      <div
-        className="flex flex-col border-b p-6 overflow-y-auto"
-        style={{ borderColor: "var(--color-border)", flex: "0 0 50%" }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            Documents
-          </p>
-          <button
-            type="button"
-            onClick={() => setUploadOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors"
-            style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-          >
-            <Upload size={12} />
-            Upload
-          </button>
-        </div>
-
-        {appointment.documents.length === 0 ? (
-          <p className="text-xs text-center py-6" style={{ color: "var(--color-text-muted)" }}>
-            No documents for this visit yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {appointment.documents.map((doc) => (
-              <DocumentCard key={doc.id} document={doc} className="min-h-[72px]" />
-            ))}
-          </div>
-        )}
-
-        <UploadDocumentDialog
-          patientId={appointment.patientId}
-          appointmentId={appointment.id}
-          open={uploadOpen}
-          onOpenChange={setUploadOpen}
-        />
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <p
+          className="text-[10px] font-bold uppercase tracking-widest"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          Documents
+        </p>
+        <button
+          type="button"
+          onClick={() => setUploadOpen(true)}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold transition-colors"
+          style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+        >
+          <Upload size={12} />
+          Upload
+        </button>
       </div>
 
-      {/* Activity Log */}
-      <div
-        className="flex flex-col overflow-hidden"
-        style={{ flex: "0 0 50%", background: "var(--color-surface-alt)" }}
-      >
-        <div className="px-6 pt-5 pb-3 flex-shrink-0">
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            Activity Log
-          </p>
+      {appointment.documents.length === 0 ? (
+        <p className="text-xs text-center py-6" style={{ color: "var(--color-text-muted)" }}>
+          No documents for this visit yet.
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {appointment.documents.map((doc) => (
+            <DocumentCard key={doc.id} document={doc} className="min-h-[72px]" />
+          ))}
         </div>
-        <div className="flex-1 overflow-y-auto px-6 pb-5">
-          <EventLog events={logEvents} maxHeight="100%" className="h-full" />
-        </div>
-      </div>
-    </div>
+      )}
+
+      <UploadDocumentDialog
+        patientId={appointment.patientId}
+        appointmentId={appointment.id}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+      />
+    </>
   );
 }
 
@@ -221,9 +186,9 @@ const EMPTY_VALUES: CreateAppointmentInput = {
   notes:              "",
 };
 
-// ─── Field definitions (primary fields built with dynamic picker options) ──────
+// ─── Field definitions (single scrollable column; pickers filled at runtime) ───
 
-function buildPrimaryFields(
+function buildAppointmentFormFields(
   patientOptions: { label: string; value: string }[],
   doctorOptions: { label: string; value: string }[]
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
@@ -248,8 +213,8 @@ function buildPrimaryFields(
       name:        "title",
       label:       "Appointment Title",
       type:        "text",
-      colSpan:      2,
-      placeholder:  "e.g. Annual Physical Examination",
+      colSpan:     2,
+      placeholder: "e.g. Annual Physical Examination",
     },
     {
       name:    "type",
@@ -266,10 +231,10 @@ function buildPrimaryFields(
       options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
     },
     {
-      name:     "date",
-      label:    "Date",
-      type:     "date",
-      colSpan:  1,
+      name:    "date",
+      label:   "Date",
+      type:    "date",
+      colSpan: 1,
     },
     {
       name:    "duration",
@@ -279,27 +244,24 @@ function buildPrimaryFields(
       options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
     },
     {
-      name:        "notes",
+      name:        "description",
       label:       "Description",
       type:        "textarea",
       colSpan:     2,
       rows:        5,
       placeholder: "Add visit details or reason for appointment...",
     },
+    { name: "scheduledStartTime", label: "Scheduled Start", type: "time", colSpan: 1 },
+    { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 1 },
+    {
+      name: "notes",
+      label: "Clinical Notes",
+      type: "custom",
+      colSpan: 2,
+      renderControl: (field) => <ClinicalNotesControl field={field} />,
+    },
   ];
 }
-
-const TIMELINE_FIELDS: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
-  { name: "scheduledStartTime", label: "Scheduled Start", type: "time", colSpan: 1 },
-  { name: "actualCheckIn",      label: "Actual time",      type: "time", colSpan: 1 },
-  {
-    name: "notes",
-    label: "Clinical Notes",
-    type: "custom",
-    colSpan: 2,
-    renderControl: (field) => <ClinicalNotesControl field={field} />,
-  },
-];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -326,6 +288,7 @@ export function AppointmentDetailPanel({
 }: AppointmentDetailPanelProps) {
   const isCreate = mode === "create";
   const router   = useRouter();
+  const formRef  = useRef<DetailFormHandle | null>(null);
 
   const [patientOptions, setPatientOptions] = useState<{ label: string; value: string }[]>([]);
   const [doctorOptions, setDoctorOptions] = useState<{ label: string; value: string }[]>([]);
@@ -441,7 +404,7 @@ export function AppointmentDetailPanel({
         } catch { return ""; }
       })();
 
-  // Event log for the side panel
+  // Event log for the sidebar
   const logEvents = !isCreate
     ? appointment!.activityLog.map((e) => ({
         title:  e.action,
@@ -451,80 +414,69 @@ export function AppointmentDetailPanel({
       }))
     : [];
 
-  // Section config — Section 2 width is "auto" (flex-1) so it naturally
-  // expands to fill space when Col 3 is absent (create mode).
-  const sections: FormSection<CreateAppointmentInput | UpdateAppointmentInput>[] = [
-    {
-      title:       "Primary Information",
-      width:       "30%",
-      borderRight: true,
-      fields:      buildPrimaryFields(patientOptions, doctorOptions),
-    },
-    {
-      title:       "Timeline & Notes",
-      background:  "var(--color-surface-alt)",
-      borderRight: !isCreate,
-      fields:      TIMELINE_FIELDS,
-    },
-  ];
+  const header = (
+    <>
+      <div className="flex items-center gap-3">
+        <div
+          className="size-10 rounded-xl flex items-center justify-center border"
+          style={{
+            background:   "var(--color-blue-bg)",
+            borderColor:  "var(--color-blue-border)",
+            color:        "var(--color-blue)",
+          }}
+        >
+          <Calendar className="size-5" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold" style={{ color: "var(--color-text-primary)" }}>
+              {isCreate ? "New Appointment" : appointment!.title}
+            </h3>
+            {!isCreate && (
+              <StatusBadge status={appointment!.status} />
+            )}
+          </div>
+          <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+            {headerSubtitle}
+          </p>
+        </div>
+      </div>
+      {onClose && <CloseButton onClose={onClose} />}
+    </>
+  );
+
+  const form = (
+    <DetailForm<CreateAppointmentInput | UpdateAppointmentInput>
+      ref={formRef}
+      schema={isCreate ? createAppointmentSchema : updateAppointmentSchema}
+      defaultValues={defaultValues}
+      fields={buildAppointmentFormFields(patientOptions, doctorOptions)}
+      onSubmit={handleSubmit}
+    />
+  );
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* ── Header ────────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0"
-        style={{ borderColor: "var(--color-border)", background: "var(--color-surface-alt)" }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="size-10 rounded-xl flex items-center justify-center border"
-            style={{
-              background:   "var(--color-blue-bg)",
-              borderColor:  "var(--color-blue-border)",
-              color:        "var(--color-blue)",
-            }}
-          >
-            <Calendar className="size-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold" style={{ color: "var(--color-text-primary)" }}>
-                {isCreate ? "New Appointment" : appointment!.title}
-              </h3>
-              {!isCreate && (
-                <StatusBadge status={appointment!.status} />
-              )}
-            </div>
-            <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-              {headerSubtitle}
-            </p>
-          </div>
-        </div>
-        {onClose && <CloseButton onClose={onClose} />}
-      </div>
-
-      {/* ── Body + Footer — delegated to DetailForm ────────────────── */}
-      <DetailForm<CreateAppointmentInput | UpdateAppointmentInput>
-        schema={isCreate ? createAppointmentSchema : updateAppointmentSchema}
-        defaultValues={defaultValues}
-        sections={sections}
-        rightSlot={
-          !isCreate
-            ? <AppointmentSidePanel appointment={appointment!} logEvents={logEvents} />
-            : undefined
-        }
-        onSubmit={handleSubmit}
-        onDelete={!isCreate ? handleDelete : undefined}
-        onCancel={onClose ?? (() => router.back())}
-        submitLabel={isCreate ? "Create Appointment" : "Save Changes"}
-        deleteLabel="Cancel Appointment"
-        successMessage={
-          isCreate
-            ? "Appointment scheduled successfully."
-            : "Appointment updated successfully."
-        }
-      />
-    </div>
+    <DetailPanel
+      header={header}
+      formRef={formRef}
+      form={form}
+      events={logEvents}
+      sidebarTabs={
+        !isCreate
+          ? [
+              {
+                label: "Documents",
+                icon: FileText,
+                content: <AppointmentDocumentsTab appointment={appointment!} />,
+              },
+            ]
+          : undefined
+      }
+      isCreate={isCreate}
+      onCancel={onClose ?? (() => router.back())}
+      onDelete={!isCreate ? handleDelete : undefined}
+      submitLabel={isCreate ? "Create Appointment" : "Save Changes"}
+      deleteLabel="Cancel Appointment"
+    />
   );
 }

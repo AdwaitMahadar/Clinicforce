@@ -116,7 +116,9 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `TimeGridView.tsx` — FullCalendar timeGridWeek/timeGridDay wrapper
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
-- `DetailForm.tsx` — Standard form wrapper for detail panels
+- `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`). No footer — parent uses `DetailPanel` or composes actions.
+- `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`).
+- `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
 - `ModalShell.tsx` — Intercepting modal wrapper component
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
@@ -139,7 +141,7 @@ Routes follow `/{entity}/{view}` — all static segments. Root `/` redirects to 
 
 Detail records open as **intercepting route modals** (`@modal` parallel routes). Every entity also has a full-page fallback for direct URL / refresh access.
 
-Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). The new-patient form keeps **Save / Cancel inside the `<form>`** and, after `createPatient` succeeds, **closes the modal** (`router.back()` + `router.refresh()`), or **pushes to `/patients/dashboard`** from the full-page new route — list refreshed via `revalidatePath` + refresh.
+Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). Entity **detail/create** flows use **`DetailPanel`** + **`DetailForm`**; Save / Cancel sit in the **panel footer** (submit via `formRef`). After `createPatient` (and similar) succeeds, the modal **closes** (`router.back()` + `router.refresh()`), or the full-page new route **pushes to** `/patients/dashboard` — list refreshed via `revalidatePath` + refresh.
 
 **CRITICAL — `/view/[id]` routing pattern:** Detail routes MUST use `/view/[id]` (e.g. `/appointments/view/abc-123`), never a bare `/[id]` (e.g. `/appointments/abc-123`). A bare `[id]` is a dynamic segment that matches ANY string — including `dashboard`, `new`, and `reports` — causing the `@modal` interceptor to match nav-bar clicks and freeze the page. The `/view/` sub-segment creates a separate namespace that can never conflict with static nav segments.
 

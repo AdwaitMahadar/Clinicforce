@@ -23,12 +23,18 @@ export { AppointmentEventCard } from "./AppointmentEventCard";
 // ─── Forms ───────────────────────────────────────────────────────────────────
 export { DetailForm } from "./DetailForm";
 export type {
+  DetailFormHandle,
   DetailFormProps,
   FormFieldDescriptor,
-  FormSection,
   SelectOption,
   CustomField,
 } from "./DetailForm";
+
+export { DetailSidebar } from "./DetailSidebar";
+export type { DetailSidebarProps, DetailSidebarTab } from "./DetailSidebar";
+
+export { DetailPanel } from "./DetailPanel";
+export type { DetailPanelProps } from "./DetailPanel";
 
 // ─── Overlays ─────────────────────────────────────────────────────────────────
 export { ModalShell }       from "./ModalShell";

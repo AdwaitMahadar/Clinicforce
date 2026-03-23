@@ -129,10 +129,10 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 > **Status:** UI built (modal + full-page fallback). Server actions pending.
 
 ### Layout
-`AppointmentDetailPanel` — 3-column:
-- **Left (40%):** Primary info form (title, patient, doctor, type, status, date, duration, times)
-- **Centre (35%):** Notes textarea + Documents linked to this appointment
-- **Right (25%):** Activity log
+`AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
+- **Form column:** All fields in one grid — patient, doctor, title, type, status, date, duration, description, scheduled/actual times, clinical notes (custom control). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
+- **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
 ### Server Actions Needed
 
@@ -278,13 +278,14 @@ Both needed to populate the patient and doctor pickers in the form:
 
 ## 8. Patient Detail Modal / Page — `/patients/view/[id]`
 
-> **Status:** UI built (3-column view modal + full-page fallback). Server actions pending.
+> **Status:** UI built (`DetailPanel` + `DetailForm` + RHF/Zod; modal + full-page fallback). Server actions pending.
 
 ### Layout
-`PatientDetailPanel mode="view"` — 3 columns:
-- **Left (35%):** Personal info (name, DOB, gender, address, phone, email) + Medical context (blood group, allergies) + Emergency contact
-- **Centre (40%):** Tabbed — Documents | Appointments
-- **Right (25%):** Clinical notes textarea + Activity log
+`PatientDetailPanel` uses `<DetailPanel />`:
+- **Header:** Initials badge, name, chart ID pill, status badge, close
+- **Form column:** `<DetailForm />` with all patient fields (including clinical notes textarea at the bottom). Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`
+- **Sidebar:** `DetailSidebar` tabbed — Documents | Appointments (same list/upload behaviour as before). In **create** mode (`isCreate`), the sidebar column is hidden
+- **Activity log:** `events` prop on `DetailPanel` (always-visible bottom zone in the sidebar)
 
 ### Server Actions Needed
 
@@ -472,9 +473,9 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 > **Status:** UI built (modal + full-page fallback). Server actions pending.
 
 ### Layout
-`MedicineDetailPanel` — 2 sections:
-- **Main form area:** Name, SKU, Category, Brand, Form, Last Prescribed Date, Description, Active toggle
-- **Right section:** Activity log
+`MedicineDetailPanel` uses **`DetailPanel`** + **`DetailForm`**:
+- **Form column:** Single scrollable grid of medicine fields (name, identifiers, category, form, dates, description, active, etc.).
+- **Sidebar (edit only):** Activity log via `events`. Create mode hides the sidebar (`isCreate`).
 
 ### Server Actions Needed
 
@@ -638,7 +639,7 @@ The application provides intercepting routes to display forms seamlessly over th
 
 - **`appointments/_components/`, `patients/_components/`, `medicines/_components/`**:
   > **Status:** UI built.
-  Contain `AppointmentDetailPanel`, `PatientDetailPanel`, and `MedicineDetailPanel`. They encapsulate the core form interfaces and are shared by both the full-page routes and modal intercepts.
+  Contain `AppointmentDetailPanel`, `PatientDetailPanel`, and `MedicineDetailPanel`. Each composes **`DetailPanel`** + **`DetailForm`** (React Hook Form + Zod from `lib/validators/`) and is shared by both the full-page routes and modal intercepts.
 
 - **`@modal/(.)patients/view/[id]/`, `@modal/(.)patients/new/`**:
   > **Status:** UI built.

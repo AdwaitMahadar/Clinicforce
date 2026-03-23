@@ -40,12 +40,18 @@ export default async function InterceptedPatientModal({ params }: Props) {
     email:                 r.email  ?? "",
     phone:                 r.phone  ?? "",
     dateOfBirth:           formatDob(r.dateOfBirth),
+    dateOfBirthIso:        r.dateOfBirth
+      ? typeof r.dateOfBirth === "string"
+        ? r.dateOfBirth.slice(0, 10)
+        : ""
+      : "",
     gender:                (r.gender as PatientDetail["gender"]) ?? "Other",
     address:               r.address ?? "",
     bloodGroup:            r.bloodGroup ?? "",
     allergies:             r.allergies ?? null,
     emergencyContactName:  r.emergencyContactName  ?? "",
     emergencyContactPhone: r.emergencyContactPhone ?? "",
+    notes:                 r.notes ?? "",
     assignedDoctor:        "",
     status:                r.isActive ? "active" : "inactive",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

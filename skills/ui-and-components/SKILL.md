@@ -43,7 +43,8 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<DocumentMimeTypeIcon />` - MIME-based file icon (PDF / image / generic); used in `<DocumentCard />` and `<UniversalSearch />`.
 *   `<DocumentCard />` / `<UploadDocumentDialog />` - Patient/appointment document list + presigned upload (see `skills/file-upload/SKILL.md`).
 *   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
-*   `<DetailForm />` - Generic field-driven form panel supporting flat and sectioned modes.
+*   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`.
+*   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete).
 *   `<ModalShell />` - Universal modal envelope used for intercepting route modals.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).
 
@@ -71,15 +72,15 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: 3-column detail layout (Primary Form | Notes & Docs | Activity Log).
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — one form column (all appointment fields); edit mode: sidebar Documents tab + activity log; create mode: full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).
-    *   `/new` & `/view/[id]`: 3-column detail layout (Personal Info | Tabbed Docs/Appts | Notes & Log). After successful `createPatient`, modal closes via `back` + `refresh`; full-page new route pushes to `dashboard`. New-patient form submit controls stay inside `<form>`.
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` (RHF + Zod): form column (all fields + clinical notes), sidebar tabs Documents | Appointments, activity log in sidebar bottom zone; create mode hides sidebar. After successful `createPatient`, modal closes via `back` + `refresh`; full-page new route pushes to `dashboard`.
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
     *   `/dashboard`: DataTable (Search by name, filter by category/form); row click → `/medicines/view/[id]` (intercepting modal).
-    *   `/new` & `/view/[id]`: 2-column detail layout (Form | Activity Log).
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar.
     *   `/reports`: Placeholder view.
 
 Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** (`@modal/(.)[entity]/...` parallel routes) inside a `<ModalShell />` with a full-page fallback for direct URL access, sharing logic via entity-specific `_components/` directories.

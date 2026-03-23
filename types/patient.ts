@@ -58,12 +58,16 @@ export interface PatientDetail {
   email:                string;
   phone:                string;
   dateOfBirth:          string;   // Display string e.g. "Jun 14, 1985 (38 yrs)"
+  /** ISO `YYYY-MM-DD` from DB — set by detail routes for edit forms */
+  dateOfBirthIso?: string;
   gender:               PatientGender;
   address:              string;
   bloodGroup:           string;
   allergies:            string | null;
   emergencyContactName: string;
   emergencyContactPhone:string;
+  /** Clinical notes from DB */
+  notes?: string;
   assignedDoctor:       string;
   status:               PatientStatus;
   appointments:         PatientAppointment[];

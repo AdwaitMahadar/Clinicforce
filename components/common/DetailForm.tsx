@@ -6,42 +6,31 @@
  * A generic field-driven form panel, wired to React Hook Form + Zod v4.
  * Designed for entity detail modals (Medicine, Patient, Appointment, etc.)
  *
- * ─── Two layout modes ────────────────────────────────────────────────────────
+ * ─── Layout ───────────────────────────────────────────────────────────────────
  *
- * 1. FLAT (original) — pass `fields`:
- *    Renders a single scrollable 2-column grid. Used by MedicineDetailPanel.
+ * Pass `fields`: a single scrollable 2-column grid (col-span via `colSpan` on each
+ * descriptor). Entity side columns (e.g. documents) are composed by the parent
+ * next to this component (e.g. via `DetailPanel`).
  *
- *    <DetailForm fields={[...]} ... />
+ * ─── Imperative API ────────────────────────────────────────────────────────────
  *
- * 2. SECTIONED — pass `sections`:
- *    Renders side-by-side columns, each with its own title, field grid, and
- *    optional background. Used by AppointmentDetailPanel.
- *    `rightSlot` lets you inject a read-only panel (e.g. Documents + Activity
- *    Log) as a third column that sits alongside but outside the form itself.
- *
- *    <DetailForm
- *      sections={[
- *        { title: "Primary Info", width: "30%", borderRight: true, fields: [...] },
- *        { title: "Timeline & Notes", background: "var(--color-surface-alt)", fields: [...] },
- *      ]}
- *      rightSlot={<DocumentsAndLog />}
- *      ...
- *    />
+ * `forwardRef` + `DetailFormHandle`: `submit()` runs validation and `onSubmit`;
+ * `reset()` resets to `defaultValues`. Footer actions live in the parent.
  *
  * ─── Field types ──────────────────────────────────────────────────────────────
  *
  *   "text" | "date" | "email" | "number" | "time"  → <Input type={…} />
  *   "textarea"                                      → <Textarea />
- *   "select"                                        → <Select />
+ *   "select"                                        → Radix <Select /> (controlled: `value` + `key` so external resets sync)
  *   "custom"  (requires renderControl)              → caller-supplied JSX
  *
  * Rules:
  * - All colours come from CSS variables — no hardcoded hex values
- * - Toasts use Sonner (toast from "sonner")
  * - Zod schemas live in lib/validators/ — passed as props, not inlined
+ * - Toasts are owned by the parent `onSubmit` — not this component
  */
 
-import React, { useState } from "react";
+import React, { forwardRef, useCallback, useImperativeHandle, useState } from "react";
 import {
   useForm,
   type FieldValues,
@@ -50,9 +39,6 @@ import {
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { $ZodType } from "zod/v4/core";
-import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -121,22 +107,13 @@ export type FormFieldDescriptor<TValues extends FieldValues> =
   | SelectField<TValues>
   | CustomField<TValues>;
 
-// ─── Section type (for multi-column / sectioned layouts) ──────────────────────
+// ─── Imperative handle ────────────────────────────────────────────────────────
 
-export interface FormSection<TValues extends FieldValues> {
-  /** Rendered as a small uppercase heading above the field grid */
-  title?: string;
-  /** Fields rendered in this column's 2-col sub-grid */
-  fields: FormFieldDescriptor<TValues>[];
-  /** Column background — CSS variable or any valid CSS colour value */
-  background?: string;
-  /**
-   * Fixed column width (e.g. "30%"). When omitted the column uses
-   * `flex: 1` and expands to fill available space.
-   */
-  width?: string;
-  /** When true, draws a right border separating this column from the next */
-  borderRight?: boolean;
+export interface DetailFormHandle {
+  /** Validates with Zod, then calls `onSubmit`. Rejects if validation fails or `onSubmit` throws. */
+  submit: () => Promise<void>;
+  /** Resets fields to the current `defaultValues` prop. */
+  reset: () => void;
 }
 
 // ─── Main component props ─────────────────────────────────────────────────────
@@ -148,39 +125,11 @@ export interface DetailFormProps<TValues extends FieldValues> {
   /** Initial field values — usually the record fetched from the DB */
   defaultValues: DefaultValues<TValues>;
 
-  /**
-   * FLAT mode — a single scrollable 2-column grid.
-   * Mutually exclusive with `sections`.
-   */
-  fields?: FormFieldDescriptor<TValues>[];
+  /** Field descriptors — single scrollable 2-column grid */
+  fields: FormFieldDescriptor<TValues>[];
 
-  /**
-   * SECTIONED mode — side-by-side columns, each with their own field grid.
-   * Mutually exclusive with `fields`.
-   */
-  sections?: FormSection<TValues>[];
-
-  /**
-   * Content rendered as an extra column to the RIGHT of the section columns.
-   * Rendered inside the form's flex container but outside the scrollable
-   * field area — ideal for read-only panels (Documents, Activity Log) that
-   * are separate from the form's save/submit lifecycle.
-   * Only valid when `sections` is provided.
-   */
-  rightSlot?: React.ReactNode;
-
-  /** Called with validated values on submit */
+  /** Called with validated values on submit (native submit or `ref.submit()`). */
   onSubmit: (values: TValues) => Promise<void>;
-  /** Optional delete handler — shows delete button when provided */
-  onDelete?: () => Promise<void>;
-  /** Called when Cancel / close is requested */
-  onCancel?: () => void;
-  /** Label for the save button. Default: "Save Changes" */
-  submitLabel?: string;
-  /** Label for the delete button. Default: "Delete" */
-  deleteLabel?: string;
-  /** Success Sonner toast message. Default: "Changes saved." */
-  successMessage?: string;
   className?: string;
 }
 
@@ -210,11 +159,13 @@ function renderFieldControl<TValues extends FieldValues>(
   }
 
   if (descriptor.type === "select") {
+    const selectValue = String(field.value ?? "");
     return (
       <Select
+        key={selectValue}
         disabled={descriptor.disabled ?? isSaving}
         onValueChange={field.onChange}
-        defaultValue={String(field.value ?? "")}
+        value={selectValue}
       >
         <SelectTrigger className="w-full">
           <SelectValue
@@ -247,7 +198,7 @@ function renderFieldControl<TValues extends FieldValues>(
   );
 }
 
-// ─── Field grid (shared between flat and sectioned modes) ─────────────────────
+// ─── Field grid ───────────────────────────────────────────────────────────────
 
 function FieldGrid<TValues extends FieldValues>({
   fields,
@@ -287,24 +238,19 @@ function FieldGrid<TValues extends FieldValues>({
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Inner (generic) implementation ───────────────────────────────────────────
 
-export function DetailForm<TValues extends FieldValues>({
-  schema,
-  defaultValues,
-  fields,
-  sections,
-  rightSlot,
-  onSubmit,
-  onDelete,
-  onCancel,
-  submitLabel = "Save Changes",
-  deleteLabel = "Delete",
-  successMessage = "Changes saved.",
-  className,
-}: DetailFormProps<TValues>) {
+function DetailFormInner<TValues extends FieldValues>(
+  {
+    schema,
+    defaultValues,
+    fields,
+    onSubmit,
+    className,
+  }: DetailFormProps<TValues>,
+  ref: React.ForwardedRef<DetailFormHandle>
+) {
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const form = useForm<TValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -312,145 +258,68 @@ export function DetailForm<TValues extends FieldValues>({
     defaultValues,
   });
 
-  const handleSubmit = form.handleSubmit(async (values) => {
-    setIsSaving(true);
-    try {
-      await onSubmit(values);
-      toast.success(successMessage);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong.";
-      toast.error(message);
-    } finally {
-      setIsSaving(false);
-    }
-  });
+  const runValidatedSubmit = useCallback(
+    async (values: TValues) => {
+      setIsSaving(true);
+      try {
+        await onSubmit(values);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [onSubmit]
+  );
 
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    setIsDeleting(true);
-    try {
-      await onDelete();
-      toast.success("Record deleted.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Delete failed.";
-      toast.error(message);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const handleFormSubmit = form.handleSubmit(runValidatedSubmit);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      submit: () =>
+        new Promise<void>((resolve, reject) => {
+          form.handleSubmit(
+            async (values) => {
+              try {
+                await runValidatedSubmit(values);
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            },
+            () => {
+              reject(new Error("Validation failed"));
+            }
+          )();
+        }),
+      reset: () => {
+        form.reset(defaultValues);
+      },
+    }),
+    [form, runValidatedSubmit, defaultValues]
+  );
 
   return (
     <Form {...form}>
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleFormSubmit}
         className={cn("flex flex-col h-full", className)}
       >
-
-        {/* ── SECTIONED body (multi-column) ──────────────────────── */}
-        {sections ? (
-          <div className="flex flex-1 min-h-0">
-            {sections.map((section, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col overflow-y-auto p-6 gap-4"
-                style={{
-                  ...(section.width
-                    ? { width: section.width, flexShrink: 0 }
-                    : { flex: 1 }),
-                  background: section.background,
-                  borderRight: section.borderRight
-                    ? "1px solid var(--color-border)"
-                    : undefined,
-                }}
-              >
-                {section.title && (
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-widest flex-shrink-0"
-                    style={{ color: "var(--color-text-muted)" }}
-                  >
-                    {section.title}
-                  </p>
-                )}
-                <FieldGrid
-                  fields={section.fields}
-                  control={form.control}
-                  isSaving={isSaving}
-                  gap="gap-4"
-                />
-              </div>
-            ))}
-
-            {/* Read-only right panel (Documents, Activity Log, etc.) */}
-            {rightSlot}
-          </div>
-        ) : (
-          /* ── FLAT body (single scrollable grid) ─────────────────── */
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
-            <FieldGrid
-              fields={fields ?? []}
-              control={form.control}
-              isSaving={isSaving}
-              gap="gap-5"
-            />
-          </div>
-        )}
-
-        {/* ── Sticky footer ─────────────────────────────────────────── */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"
-          style={{ borderColor: "var(--color-border)" }}
-        >
-          {/* Delete (left) */}
-          {onDelete ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={isDeleting || isSaving}
-              className="text-sm gap-2"
-              style={{ color: "var(--color-red)" }}
-            >
-              {isDeleting ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Trash2 size={14} />
-              )}
-              {deleteLabel}
-            </Button>
-          ) : (
-            <div />
-          )}
-
-          {/* Cancel + Save (right) */}
-          <div className="flex gap-3">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onCancel}
-                disabled={isSaving || isDeleting}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isSaving || isDeleting}
-              className="gap-2"
-              style={{
-                background: "var(--color-ink)",
-                color: "var(--color-ink-fg)",
-              }}
-            >
-              {isSaving && <Loader2 size={14} className="animate-spin" />}
-              {submitLabel}
-            </Button>
-          </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <FieldGrid
+            fields={fields}
+            control={form.control}
+            isSaving={isSaving}
+            gap="gap-5"
+          />
         </div>
       </form>
     </Form>
   );
 }
+
+const DetailFormWithRef = forwardRef(DetailFormInner);
+DetailFormWithRef.displayName = "DetailForm";
+
+export const DetailForm = DetailFormWithRef as <TValues extends FieldValues>(
+  props: DetailFormProps<TValues> & { ref?: React.ForwardedRef<DetailFormHandle> }
+) => React.ReactElement | null;
