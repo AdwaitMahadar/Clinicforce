@@ -32,6 +32,11 @@ export function TimeGridView({
 }: TimeGridViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
 
+  // Calculate an offset so the current time sits naturally inside the view
+  // rather than glued to the absolute top edge. FullCalendar accepts any HH:mm
+  // string for scrollTime and safely handles container boundaries.
+  const scrollTime = `${Math.max(0, new Date().getHours() - 2).toString().padStart(2, "0")}:00:00`;
+
   // Convert AppointmentEvent → FullCalendar EventInput array
   const events = appointments.map((a) => ({
     id:    a.id,
@@ -70,7 +75,7 @@ export function TimeGridView({
         height="100%"
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
-        scrollTime="07:00:00"
+        scrollTime={scrollTime}
         slotDuration="00:30:00"
         slotLabelInterval="01:00:00"
         allDaySlot={false}

@@ -23,7 +23,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 
 **Forms & State:**
 *   Always use **React Hook Form + Zod**. Schemas must be imported from `lib/validators/`.
-*   Use **nuqs** for managing URL state (pagination, search, filters) instead of `URLSearchParams`.
+*   Use **nuqs** for managing URL state (pagination, search, filters) instead of `URLSearchParams`. Always use **`useQueryStates`** to natively batch simultaneous URL parameter updates (like calendar `view` and `date`) to prevent Server Component flicker.
 *   Use **Sonner** for toasts (never Shadcn's default toast).
 
 ## 🧩 Component Inventory
@@ -94,7 +94,7 @@ Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** 
 *   **Do not build custom list tables.** Always use `<DataTable />`.
 *   **Do not make one-off page headers.** Always use `<PageHeader />`.
 *   **Do not define Zod schemas inline.** Import them from `lib/validators/`.
-*   **Do not modify Shadcn UI components directly** in `components/ui/`.
+*   **Do not modify Shadcn UI components directly** in `components/ui/` unless making a globally required baseline fix (like adding `cursor-pointer` to buttons).
 *   **Do not implement client-side data tables.** The client never holds the full dataset. Pagination and filtering must be handled via URL state + Server Actions.
 *   **Do not use Shadcn's default toast.** Use Sonner.
 

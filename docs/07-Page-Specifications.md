@@ -119,8 +119,9 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **RBAC:** All roles.
 
 #### Notes
-- Month view groups events by day in the client after fetching the full month range. The selected date and view mode are stored in the URL via `nuqs` — `date` (ISO string, defaults to today) and `view` (defaults to `"month"`). The Server Component reads these to compute `rangeStart`/`rangeEnd` before calling `getAppointments`.
-- Week/Day views pass the event array directly to FullCalendar.
+- Month view groups events by day... URL state tracks `date` (ISO string, defaults to today) and `view` (defaults to `"month"`).
+- Always batch `view` and `date` state updates simultaneously using `nuqs` `useQueryStates` to prevent UI flicker.
+- Day and Week views pass the event array directly to FullCalendar, which uses `scrollTime` with a `-2` hour offset (`Math.max(0, currentHour - 2):00:00`) to place current time in view.
 - Clicking any event pushes `router.push('/appointments/view/${id}')` → intercepting modal.
 - "New Appointment" button pushes `router.push('/appointments/new')` → intercepting modal.
 

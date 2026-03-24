@@ -163,7 +163,7 @@ lib/
 ## 4. Component Library Strategy
 
 ### Base Layer — Shadcn/UI
-Shadcn components live in `components/ui/`. They are owned by the repo (not a node_modules dependency) and should **not be modified directly**. Compose them, don't edit them.
+Shadcn components live in `components/ui/`. They are owned by the repo (not a node_modules dependency) and should **not be modified directly**, with rare exceptions for global baseline fixes (e.g. adding `cursor-pointer` to `buttonVariants`). Compose them, don't edit them.
 
 **Install these Shadcn components at project setup:**
 - Layout & Feedback: `button`, `badge`, `avatar`, `skeleton`, `separator`, `tooltip`, `sonner`
@@ -351,7 +351,9 @@ lab test      → purple
 therapy       → blue-purple
 ```
 
-**View toggle:** Month / Week / Day buttons in the PageHeader actions area control which view is shown. Store this in the URL via `nuqs` (`useQueryState("view", parseAsString.withDefault("month"))`) so the selected view survives refresh and is shareable.
+**View toggle:** Month / Week / Day buttons in the PageHeader actions area control which view is shown. Store this in the URL via `nuqs` (use `useQueryStates` to natively batch simultaneous `view` and `date` state updates to prevent flicker) so the selected view survives refresh and is shareable. Interactive tab buttons in the view control match `TopNav` link behavior (`hover:text-primary`), and icon arrows match with `hover:bg-surface-alt`.
+
+**Time Grid Scroll:** In Day and Week views, use FullCalendar's `scrollTime` with a `-2` hour offset to position the current time smoothly in the viewport.
 
 **Rule — what goes in the URL vs useState:**
 - URL via `nuqs`: anything that affects what data is fetched or what the user sees — search, filters, pagination, selected date, calendar view mode
@@ -443,7 +445,7 @@ UI elements are shown or hidden based on the current user's role. The role is av
 ## 12. General Rules for AI Agents
 
 - **Do not install new UI libraries** without checking this document first. The approved libraries are: Shadcn/UI, TanStack Table, FullCalendar, React Hook Form, Zod, Sonner, nuqs.
-- **Do not modify files in `components/ui/`** directly. Compose from them in `components/clinic/` or `components/layout/`.
+- **Do not modify files in `components/ui/`** directly, except for global baseline fixes like adding `cursor-pointer` to button variants. Compose from them in `components/clinic/` or `components/layout/`.
 - **Always use the `<Badge />` component** from `components/clinic/Badge.tsx` for any status, type, or ID indicator. Do not create inline badge styles.
 - **Always use `<PageHeader />`** at the top of every page. Do not create one-off page headers.
 - **Always use `<DataTable />`** for list views. Do not build ad-hoc tables.

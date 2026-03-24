@@ -15,7 +15,7 @@
  * via `useOptimistic` if needed). We keep it simple: just nuqs + props.
  */
 
-import { useQueryState, parseAsString } from "nuqs";
+import { useQueryStates, parseAsString } from "nuqs";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { motion } from "framer-motion";
@@ -172,16 +172,17 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
 
   // URL state — changing these triggers a Next.js re-render of the parent
   // Server Component which fetches new events and passes them as props.
-  const [view, setView] = useQueryState(
-    "view",
-    parseAsString.withDefault("month").withOptions({ shallow: false })
+  const [params, setParams] = useQueryStates(
+    {
+      view: parseAsString.withDefault("month"),
+      date: parseAsString.withDefault(new Date().toISOString().slice(0, 10)),
+    },
+    { shallow: false }
   );
-  const [dateStr, setDateStr] = useQueryState(
-    "date",
-    parseAsString
-      .withDefault(new Date().toISOString().slice(0, 10))
-      .withOptions({ shallow: false })
-  );
+
+  const view = params.view;
+  const dateStr = params.date;
+  const setDateStr = (d: string) => setParams({ date: d });
 
   const calView = (view === "week" || view === "day" ? view : "month") as CalendarView;
 
@@ -196,7 +197,12 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
   }, [calView, currentDate]);
 
   function handleViewChange(v: CalendarView) {
-    setView(v);
+    if (v === "day") {
+      // Native nuqs batching: submit both view and date in one URL transition to prevent flicker
+      setParams({ view: v, date: new Date().toISOString().slice(0, 10) });
+    } else {
+      setParams({ view: v });
+    }
   }
 
   function handleNavigate(dir: -1 | 1) {
