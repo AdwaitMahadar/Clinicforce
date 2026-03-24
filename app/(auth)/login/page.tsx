@@ -26,9 +26,8 @@ function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormValues>({
+  } = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { rememberMe: false },
   });
 
   const onSubmit = async (data: LoginFormValues) => {

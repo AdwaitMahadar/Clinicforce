@@ -195,6 +195,7 @@ export async function createPatient(input: CreatePatientInput) {
 
 **Route:** `/login` (inside `app/(auth)/`)
 
+- **Forms + types:** The login form uses `useForm({ resolver: zodResolver(loginSchema) })` without an explicit generic (so types infer from the resolver), `z.infer<typeof loginSchema>` for the submit handler, and no `defaultValues` for Zod `.default()` fields such as `rememberMe`.
 - Email + password form
 - On success: redirect to `/home/dashboard`
 - On failure: show inline error message — do not use a toast for auth errors, show them next to the form

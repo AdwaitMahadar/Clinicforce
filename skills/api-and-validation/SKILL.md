@@ -58,6 +58,7 @@ Zod schemas are the **single source of truth for validation rules**, shared iden
 - Every schema exports the main `z.object()` and the inferred type (e.g. `export type MedicineFormValues = z.infer<typeof medicineSchema>;`).
 - You may use *drizzle-zod* schemas as base insert/select models, but extend them generously with specific error messages, custom transforms, and rigorous `.refine()` logic (e.g. enforcing "email OR phone must exist").
 - Ensure schemas use explicit error messaging like `.min(2, "Name must be at least 2 characters")`.
+- **RHF + `zodResolver`:** If a field uses `.default()` in Zod, omit that key from `useForm`’s `defaultValues`. Avoid `useForm<z.infer<typeof schema>>()` unless you align input/output (`z.input`); prefer `useForm({ resolver: zodResolver(schema) })` without a generic so inference from the resolver stays consistent (see login page).
 
 ## 📌 API Contracts and Requirements
 

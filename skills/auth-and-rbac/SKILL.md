@@ -23,7 +23,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `app/api/clinic/route.ts` | Optional `GET ?subdomain=` → `{ clinicId }` — same query as middleware; not used by in-app navigation |
 | `lib/clinic/resolve-by-subdomain.ts` | Shared Drizzle lookup for active clinic by subdomain |
 | `middleware.ts` | Node runtime; extracts subdomain, calls resolver, guards routes, sets `x-clinic-id` + `x-subdomain` |
-| `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts |
+| `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`) |
 
 ### Request pipeline
 
