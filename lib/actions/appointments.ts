@@ -303,23 +303,12 @@ export async function updateAppointment(input: unknown) {
       }
     }
 
-    // If patientId is changing, verify new patient is active
-    if (fields.patientId !== undefined) {
-      const [patient] = await db
-        .select({ isActive: patients.isActive })
-        .from(patients)
-        .where(and(eq(patients.clinicId, clinicId), eq(patients.id, fields.patientId)))
-        .limit(1);
-
-      if (!patient) {
-        return { success: false as const, error: "Patient not found." };
-      }
-      if (!patient.isActive) {
-        return {
-          success: false as const,
-          error: "Cannot assign an inactive patient.",
-        };
-      }
+    // Patient is immutable after creation (UI disables; reject tampered payloads)
+    if (fields.patientId !== undefined && fields.patientId !== existing.patientId) {
+      return {
+        success: false as const,
+        error: "Patient cannot be changed after the appointment is created.",
+      };
     }
 
     // If doctorId is changing, verify new doctor is active doctor
@@ -346,7 +335,6 @@ export async function updateAppointment(input: unknown) {
       .set({
         ...(fields.title       !== undefined && { title:       fields.title.trim()        }),
         ...(fields.description !== undefined && { description: n(fields.description)      }),
-        ...(fields.patientId   !== undefined && { patientId:   fields.patientId           }),
         ...(fields.doctorId    !== undefined && { doctorId:    fields.doctorId            }),
         ...(fields.type        !== undefined && { type:        fields.type                }),
         ...(fields.status      !== undefined && { status:      fields.status              }),

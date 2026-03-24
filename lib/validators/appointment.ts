@@ -112,6 +112,7 @@ export const updateAppointmentSchema = z.object({
     .max(255, "Title must be under 255 characters")
     .optional(),
 
+  /** Ignored by `updateAppointment` — patient cannot be reassigned after creation. Kept optional for shared form typing. */
   patientId: z.string().uuid("Please select a valid patient").optional(),
 
   doctorId: z.string().min(1, "Please select a valid doctor").optional(),

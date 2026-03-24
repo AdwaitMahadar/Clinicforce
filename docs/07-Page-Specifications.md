@@ -133,7 +133,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — patient, doctor, title, type, status, scheduled date + scheduled time, duration, description, actual check-in time (time-only), clinical notes (custom control). The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Form column:** All fields in one grid — patient, doctor, title, type, status, scheduled date + scheduled time, duration, description, actual check-in time (time-only), clinical notes (custom control). The patient select is **disabled in edit mode**; `patientId` is not sent on update. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
 - **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
@@ -171,7 +171,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **Validates:** Zod schema in `lib/validators/appointment.ts`
 - **Enforces:**
   - `doctorId` must be an active user with role `doctor`
-  - `patientId` must be an active patient
+  - `patientId` cannot be changed after creation (payload mismatch → error; column is never updated)
   - Duration between 15–480 minutes
 - **Returns:** Updated appointment or validation error
 - **RBAC:** All roles can edit. `clinicId` and `createdBy` are immutable.

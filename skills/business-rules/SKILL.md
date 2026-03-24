@@ -23,7 +23,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Document Size:** Maximum file size is **10MB** per file.
 - **Empty Strings:** Treat empty strings as `null` in all nullable database fields. Never store an empty string where `null` is the correct value.
 - **Timestamps:** `createdAt` is explicitly set once on creation; `updatedAt` must be updated on every mutation. Both are set explicitly server-side.
-- **Immutability:** The `createdBy` and `clinicId` fields are set ONLY at creation (sourced from the session) and can **never** be changed. ChartIds are immutable after initial generation.
+- **Immutability:** The `createdBy` and `clinicId` fields are set ONLY at creation (sourced from the session) and can **never** be changed. ChartIds are immutable after initial generation. Appointment **`patientId`** is immutable after creation (`updateAppointment` never writes it; mismatched payload → error).
 
 ### ChartId Generation
 - **Users**: Random 3-digit number (100–999). Placed under prefix: `#USR-`

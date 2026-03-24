@@ -74,7 +74,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — one form column (all appointment fields); edit mode: sidebar Documents tab + activity log; create mode: full-width form.
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — one form column (all appointment fields); **patient select disabled in edit**; edit mode: sidebar Documents tab + activity log; create mode: full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).

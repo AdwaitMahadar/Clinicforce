@@ -37,3 +37,5 @@ See `docs/09-File-Upload-Flow.md` for the browser sequence and Minio env vars.
 ## Appointments (`lib/actions/appointments.ts`)
 
 Create/update payloads use **`scheduledDate`** (`YYYY-MM-DD`) and **`scheduledTime`** (`HH:mm`, empty = start of that day). Server actions merge them into **`scheduled_at`** using a full `YYYY-MM-DDTHH:mm:ss` string before `new Date()` — never parse a bare time string alone. **`actualCheckIn`** in the payload is **time-only**; the action combines it with the server’s current calendar day (`new Date()`) when setting `actual_check_in`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema` in `lib/validators/appointment.ts`.
+
+`updateAppointment` does **not** update `patientId`. If the client sends `patientId` and it differs from the stored row, the action returns an error. The UI omits `patientId` on update and keeps the patient select disabled in edit mode.

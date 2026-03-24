@@ -91,6 +91,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ### Editing
 - All roles can edit appointments.
+- The `patientId` field is immutable after creation — the patient cannot be reassigned. The appointment detail form disables the patient control in edit mode; `updateAppointment` rejects any payload that attempts to change `patientId`.
 - The `createdBy` field and `clinicId` field are immutable after creation.
 
 ### Deletion (Soft)

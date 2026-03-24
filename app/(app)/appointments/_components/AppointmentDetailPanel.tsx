@@ -190,7 +190,8 @@ const EMPTY_VALUES: CreateAppointmentInput = {
 
 function buildAppointmentFormFields(
   patientOptions: { label: string; value: string }[],
-  doctorOptions: { label: string; value: string }[]
+  doctorOptions: { label: string; value: string }[],
+  patientSelectDisabled: boolean
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
   return [
     {
@@ -200,6 +201,7 @@ function buildAppointmentFormFields(
       colSpan:     2,
       placeholder: "Select a patient...",
       options:     patientOptions,
+      disabled:    patientSelectDisabled,
     },
     {
       name:        "doctorId",
@@ -353,7 +355,6 @@ export function AppointmentDetailPanel({
       const result = await updateAppointment({
         id: v.id!,
         title: v.title,
-        patientId: v.patientId,
         doctorId: v.doctorId,
         type: v.type,
         status: v.status,
@@ -450,7 +451,11 @@ export function AppointmentDetailPanel({
       ref={formRef}
       schema={isCreate ? createAppointmentSchema : updateAppointmentSchema}
       defaultValues={defaultValues}
-      fields={buildAppointmentFormFields(patientOptions, doctorOptions)}
+      fields={buildAppointmentFormFields(
+        patientOptions,
+        doctorOptions,
+        !isCreate
+      )}
       onSubmit={handleSubmit}
     />
   );
