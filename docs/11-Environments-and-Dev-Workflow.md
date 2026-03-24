@@ -91,6 +91,10 @@ Staging exists to catch issues that only appear on real infrastructure — subdo
 - **File storage:** Cloudflare R2 (same bucket as production, different folder prefix — or separate bucket if preferred)
 - **Hosting:** Railway production environment (same deployment, driven by env vars)
 
+### Debugging subdomain routing (Railway / reverse proxies)
+
+If tenant resolution fails or users are redirected to `/login` when they should not be, the platform may be sending a different `Host` or `x-forwarded-host` than the browser address bar suggests. Middleware prefers **`x-forwarded-host`** over **`host`** (see `docs/05-Authentication.md` §4). To see what the Node middleware actually receives, add a **temporary** `console.log` of both headers plus the extracted subdomain in `middleware.ts` immediately before the no-subdomain branch (note: public paths return earlier, so hit a protected route to trigger the log), inspect **Railway deployment logs** (or your host’s log stream), then **remove** the log before merging or releasing.
+
 ### `.env.staging` (never commit — local use only)
 Use this file when you want to run the app locally but pointed at Neon staging instead of Docker. Switch to it manually only when specifically testing cloud infrastructure.
 

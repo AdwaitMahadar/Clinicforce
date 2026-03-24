@@ -35,6 +35,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  console.log("[middleware] subdomain debug", {
+    "x-forwarded-host": request.headers.get("x-forwarded-host"),
+    host: request.headers.get("host"),
+    subdomain,
+  });
+
   // No subdomain — cannot determine which clinic
   if (!subdomain) {
     return NextResponse.redirect(new URL("/login", request.url));

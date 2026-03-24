@@ -38,6 +38,8 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 4. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
 5. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
 
+**Proxy / Railway:** If subdomain resolution looks wrong behind a reverse proxy, temporarily log `x-forwarded-host`, `host`, and the extracted subdomain in middleware and check platform logs; remove before ship (`docs/11-Environments-and-Dev-Workflow.md`).
+
 ### The `getSession()` Pattern
 
 ```typescript
