@@ -56,7 +56,7 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
 
   const events: AppointmentEvent[] = result.success
     ? result.data.map((a: AppointmentCalendarRow): AppointmentEvent => {
-        const start = a.date ? new Date(a.date) : new Date();
+        const start = a.scheduledAt ? new Date(a.scheduledAt) : new Date();
         const durationMs = Number(a.duration ?? 30) * 60 * 1000;
         const end = new Date(start.getTime() + durationMs);
         const apptType = (VALID_APPOINTMENT_DISPLAY_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];

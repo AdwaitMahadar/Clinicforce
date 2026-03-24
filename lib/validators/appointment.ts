@@ -4,7 +4,11 @@
  * Zod schema for the appointment form (create + update).
  * Single source of truth for validation — used by:
  *   - <AppointmentDetailPanel> component (client-side React Hook Form)
- *   - Server actions: createAppointment, updateAppointment (Phase 3)
+ *   - Server actions: createAppointment, updateAppointment
+ *
+ * Scheduled start is sent as separate date (YYYY-MM-DD) and time (HH:mm) fields;
+ * the server action combines them into `scheduled_at`. Actual check-in is time-only;
+ * the server combines it with today's date (`new Date()` on the server).
  *
  * Rule: Never define validation inline in a component. Always import from here.
  * Rule: Never include clinicId, createdBy, createdAt, updatedAt, or id in create schemas.
@@ -52,8 +56,6 @@ export const APPOINTMENT_DURATIONS = [
 ] as const;
 
 // ─── Create Schema ────────────────────────────────────────────────────────────
-// Used for the New Appointment form. Excludes all system-managed fields.
-// patientId is a patient row UUID from the picker; doctorId is a Better-Auth user text id (not necessarily UUID).
 
 export const createAppointmentSchema = z.object({
   title: z
@@ -73,12 +75,19 @@ export const createAppointmentSchema = z.object({
     error: "Please select a status",
   }),
 
-  /** ISO timestamp string for the appointment date/time. */
-  date: z.string().min(1, "Date is required"),
+  /** Calendar date for scheduled start (YYYY-MM-DD). Combined with `scheduledTime` on the server. */
+  scheduledDate: z.string().min(1, "Date is required"),
+
+  /** Time of day for scheduled start (HH:mm). Empty means start of that calendar day. */
+  scheduledTime: z.string().optional().default(""),
+
+  /**
+   * Actual check-in time of day only (HH:mm). Server stores full timestamp using today's date.
+   */
+  actualCheckIn: z.string().optional().default(""),
 
   /**
    * Duration in minutes. Must be between 15 and 480 (8 hours).
-   * Aligns with the DB integer column `duration`.
    * Uses z.coerce to accept string from select dropdown.
    */
   duration: z
@@ -88,15 +97,11 @@ export const createAppointmentSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration cannot exceed 480 minutes (8 hours)"),
 
-  scheduledStartTime: z.string().optional().default(""),
-  actualCheckIn:      z.string().optional().default(""),
-
   description: z.string().optional().default(""),
   notes:       z.string().optional().default(""),
 });
 
 // ─── Update Schema ────────────────────────────────────────────────────────────
-// Used for the Edit Appointment form. All fields optional except id.
 
 export const updateAppointmentSchema = z.object({
   id: z.string().uuid("Invalid appointment ID"),
@@ -123,7 +128,11 @@ export const updateAppointmentSchema = z.object({
     })
     .optional(),
 
-  date: z.string().optional(),
+  scheduledDate: z.string().optional(),
+  scheduledTime: z.string().optional(),
+
+  /** Time-only; server merges with server `new Date()` calendar day. */
+  actualCheckIn: z.string().optional(),
 
   duration: z
     .coerce
@@ -132,9 +141,6 @@ export const updateAppointmentSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration cannot exceed 480 minutes (8 hours)")
     .optional(),
-
-  scheduledStartTime: z.string().optional(),
-  actualCheckIn:      z.string().optional(),
 
   description: z.string().optional(),
   notes:       z.string().optional(),
@@ -147,5 +153,3 @@ export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
 
 /** Import this type for the update appointment form values. */
 export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
-
-// ─── Legacy schema (kept for reference; AppointmentDetailPanel now uses create/update schemas) ───

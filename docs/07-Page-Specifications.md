@@ -45,7 +45,7 @@ High-level clinic overview — metrics, recent activity, quick-action shortcuts.
   ```ts
   {
     totalPatients:          number;   // COUNT patients WHERE is_active = true
-    appointmentsToday:      number;   // COUNT appointments WHERE date::date = today AND is_active = true
+    appointmentsToday:      number;   // COUNT appointments WHERE scheduled_at::date = today AND is_active = true
     appointmentsScheduled:  number;   // COUNT appointments WHERE status = 'scheduled' AND is_active = true
     appointmentsCompleted:  number;   // COUNT appointments WHERE status = 'completed' last 30 days
     newPatientsThisMonth:   number;   // COUNT patients created in current calendar month
@@ -133,7 +133,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — patient, doctor, title, type, status, date, duration, description, scheduled/actual times, clinical notes (custom control). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Form column:** All fields in one grid — patient, doctor, title, type, status, scheduled date + scheduled time, duration, description, actual check-in time (time-only), clinical notes (custom control). The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
 - **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
@@ -153,10 +153,9 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     doctorName:         string;   // JOIN users (first_name + last_name)
     type:               string;
     status:             string;
-    date:               string;   // ISO timestamp
+    scheduledAt:        string;   // ISO timestamp (`scheduled_at`)
     duration:           number;
-    scheduledStartTime: string | null;
-    actualCheckIn:      string | null;
+    actualCheckIn:      string | null; // ISO timestamp when set
     notes:              string | null;
     documents:          DocumentSummary[];
     activityLog:        LogEvent[];
@@ -226,11 +225,11 @@ Both needed to populate the patient and doctor pickers in the form:
 |---|---|---|---|
 | Patient (name + email) | `first_name`, `last_name`, `email` | ✓ by last_name | Search only |
 | Chart ID | `chart_id` | — | Search only |
-| Last Visit | Derived from most recent appointment `date` | ✓ | — |
+| Last Visit | Derived from most recent appointment `scheduled_at` | ✓ | — |
 | Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
 | Status | `is_active` boolean → mapped to `active` / `inactive` display | — | ✓ (select) |
 
-> **Note on "Last Visit":** Derived field — a subquery or join to appointments to get `MAX(date)` for that patient. Not stored on the patient record directly.
+> **Note on "Last Visit":** Derived field — a subquery or join to appointments to get `MAX(scheduled_at)` for that patient. Not stored on the patient record directly.
 
 > **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
@@ -269,7 +268,7 @@ Both needed to populate the patient and doctor pickers in the form:
     lastName:       string;
     email:          string;
     phone:          string;
-    lastVisit:      string | null;   // MAX(appointments.date) for this patient
+    lastVisit:      string | null;   // MAX(appointments.scheduled_at) for this patient
     assignedDoctor: string | null;   // doctor name from that last appointment
     status:         "active" | "inactive" | "critical";
   }
@@ -319,15 +318,14 @@ Both needed to populate the patient and doctor pickers in the form:
     activityLog:           LogEvent[];
   }
   ```
-  where `PatientAppointmentSummary`:
+  where `PatientAppointmentSummary` (query layer; UI maps `scheduledAt` to display date + time strings):
   ```ts
   {
-    id:     string;
-    title:  string;
-    doctor: string;   // doctor display name
-    date:   string;
-    time:   string;
-    status: string;
+    id:           string;
+    title:        string;
+    doctor:       string;   // doctor display name
+    scheduledAt:  Date;
+    status:       string;
   }
   ```
   and `DocumentSummary`:

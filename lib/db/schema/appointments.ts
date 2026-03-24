@@ -41,10 +41,10 @@ export const appointments = pgTable(
     description: text("description"),
     status: appointmentStatusEnum("status").notNull().default("scheduled"),
     type: appointmentTypeEnum("type").notNull().default("general"),
-    date: timestamp("date").notNull(),
+    /** Scheduled start instant (date + time combined). */
+    scheduledAt: timestamp("scheduled_at").notNull(),
     duration: integer("duration").notNull().default(30), // minutes
     notes: text("notes"),
-    scheduledStartTime: timestamp("scheduled_start_time"),
     actualCheckIn: timestamp("actual_check_in"),
     isActive: boolean("is_active").notNull().default(true),
     createdBy: text("created_by").references(() => users.id, {
@@ -54,7 +54,7 @@ export const appointments = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    index("idx_appointment_date").on(t.clinicId, t.date),
+    index("idx_appointment_scheduled_at").on(t.clinicId, t.scheduledAt),
     index("idx_appointment_status").on(t.clinicId, t.status),
   ]
 );

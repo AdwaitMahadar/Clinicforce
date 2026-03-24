@@ -60,11 +60,13 @@ export interface AppointmentDetail {
   title:              string;
   type:               AppointmentType;
   status:             AppointmentStatus;
-  /** ISO date string "YYYY-MM-DD" */
-  date:               string;
+  /** Scheduled date for the form date picker (YYYY-MM-DD). */
+  scheduledDate:      string;
+  /** Scheduled time for the form time picker (HH:mm). */
+  scheduledTime:      string;
   /** Duration in minutes */
   duration:           number;
-  scheduledStartTime: string;
+  /** Actual check-in time for the form time picker only (HH:mm). */
   actualCheckIn:      string;
   description?:       string;
   notes:              string;

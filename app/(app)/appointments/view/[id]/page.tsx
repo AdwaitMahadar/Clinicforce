@@ -16,9 +16,13 @@ interface AppointmentDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-function fmtTime(v: Date | string | null | undefined): string {
+function fmtHm(v: Date | string | null | undefined): string {
   if (!v) return "";
-  try { return format(new Date(v as string), "HH:mm"); } catch { return ""; }
+  try {
+    return format(new Date(v as string), "HH:mm");
+  } catch {
+    return "";
+  }
 }
 
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
@@ -28,6 +32,7 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
   if (!result.success) notFound();
 
   const r = result.data;
+  const sa = r.scheduledAt ? new Date(r.scheduledAt) : null;
   const appointment: AppointmentDetail = {
     id:                 r.id,
     patientId:          r.patientId,
@@ -39,10 +44,10 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
     // Cast from DB enum subset → UI display type union
     type:            r.type as AppointmentDetail["type"],
     status:          r.status as AppointmentDetail["status"],
-    date:            r.date ? new Date(r.date).toISOString().slice(0, 10) : "",
+    scheduledDate:   sa ? format(sa, "yyyy-MM-dd") : "",
+    scheduledTime:   sa ? format(sa, "HH:mm") : "",
     duration:        Number(r.duration ?? 30),
-    scheduledStartTime: fmtTime(r.scheduledStartTime),
-    actualCheckIn:     fmtTime(r.actualCheckIn),
+    actualCheckIn:   fmtHm(r.actualCheckIn),
     description:       r.description ?? "",
     notes:             r.notes ?? "",
     // TODO: Implement when audit_log table is built.

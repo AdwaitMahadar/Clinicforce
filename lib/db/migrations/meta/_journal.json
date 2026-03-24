@@ -36,6 +36,13 @@
       "when": 1774141745163,
       "tag": "0004_drop_appointment_end_and_checkout",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774142000000,
+      "tag": "0005_appointment_scheduled_at",
+      "breakpoints": true
     }
   ]
 }

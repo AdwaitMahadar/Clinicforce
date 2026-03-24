@@ -18,7 +18,7 @@ export interface AppointmentSearchHit {
   id: string;
   title: string;
   patientName: string;
-  /** ISO string from `appointments.date` */
+  /** ISO string from `appointments.scheduled_at` */
   date: string;
   status: AppointmentStatus;
   type: AppointmentDbType;

@@ -41,8 +41,8 @@ export default async function HomeDashboardPage() {
   const appointmentRows: HomeRecentAppointmentRow[] = apptsResult.success
     ? apptsResult.data.map((a) => ({
         id:          a.id,
-        time:        a.date
-          ? format(new Date(a.date as unknown as string), "hh:mm a")
+        time:        a.scheduledAt
+          ? format(new Date(a.scheduledAt as unknown as string), "hh:mm a")
           : "—",
         patientName: a.patientName,
         visitType:   a.type.replace(/-/g, " "),

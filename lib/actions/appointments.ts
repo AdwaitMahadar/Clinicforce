@@ -41,13 +41,67 @@ const idSchema = z.string().uuid("Invalid ID");
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Treat empty/blank strings as null for nullable timestamp DB columns. */
-const dateOrNull = (v?: string | null): Date | null =>
-  v && v.trim() ? new Date(v.trim()) : null;
-
 /** Treat empty/blank strings as null for nullable string DB columns. */
 const n = (v?: string | null): string | null =>
   v && v.trim() ? v.trim() : null;
+
+/**
+ * Normalizes a time segment for ISO datetime strings. Never pass a bare "HH:mm"
+ * to `new Date()` alone — always pair with a full calendar date first.
+ */
+function normalizeTimeForIso(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "00:00:00";
+  if (t.length === 5 && t[2] === ":") return `${t}:00`;
+  return t;
+}
+
+function scheduledAtFromParts(scheduledDate: string, scheduledTime: string): Date {
+  const combined = `${scheduledDate.trim()}T${normalizeTimeForIso(scheduledTime)}`;
+  const d = new Date(combined);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error("Invalid scheduled date/time");
+  }
+  return d;
+}
+
+/** Builds `actual_check_in` using the server's calendar day (`serverNow`) + user time. */
+function actualCheckInFromTimeOnly(
+  timePart: string | undefined,
+  serverNow: Date
+): Date | null {
+  const t = timePart?.trim();
+  if (!t) return null;
+  const y = serverNow.getFullYear();
+  const m = serverNow.getMonth() + 1;
+  const day = serverNow.getDate();
+  const dateStr = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const combined = `${dateStr}T${normalizeTimeForIso(t)}`;
+  const d = new Date(combined);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function localDateYmd(d: Date): string {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${day}`;
+}
+
+function localTimeHm(d: Date): string {
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${min}`;
+}
+
+/** Aligns `<input type="time" />` values (may be HH:mm:ss) with `localTimeHm` (HH:mm). */
+function normalizeHmInput(raw: string): string {
+  const t = raw.trim();
+  if (t.length >= 8 && t[2] === ":" && t[5] === ":") return t.slice(0, 5);
+  if (t.length >= 5 && t[2] === ":") return t.slice(0, 5);
+  return t;
+}
 
 // ─── getAppointments ───────────────────────────────────────────────────────────
 
@@ -127,6 +181,14 @@ export async function createAppointment(input: unknown) {
 
     const { clinicId, id: userId } = session.user;
     const v = parsed.data;
+    const serverNow = new Date();
+
+    let scheduledAt: Date;
+    try {
+      scheduledAt = scheduledAtFromParts(v.scheduledDate, v.scheduledTime ?? "");
+    } catch {
+      return { success: false as const, error: "Invalid scheduled date or time." };
+    }
 
     // Business rule: patient must be active (docs/08-Business-Rules §4)
     const [patient] = await db
@@ -172,10 +234,9 @@ export async function createAppointment(input: unknown) {
         description:        n(v.description),
         type:               v.type,
         status:             v.status ?? "scheduled",
-        date:               new Date(v.date),
+        scheduledAt,
         duration:           v.duration,
-        scheduledStartTime: dateOrNull(v.scheduledStartTime),
-        actualCheckIn:      dateOrNull(v.actualCheckIn),
+        actualCheckIn:      actualCheckInFromTimeOnly(v.actualCheckIn, serverNow),
         notes:              n(v.notes),
         isActive:           true,
         createdBy:          userId,
@@ -205,11 +266,41 @@ export async function updateAppointment(input: unknown) {
 
     const { clinicId } = session.user;
     const { id, ...fields } = parsed.data;
+    const serverNow = new Date();
 
     // Verify ownership
     const existing = await getAppointmentById(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Appointment not found." };
+    }
+
+    let scheduledAt: Date | undefined;
+    if (fields.scheduledDate !== undefined || fields.scheduledTime !== undefined) {
+      const base = existing.scheduledAt;
+      const datePart =
+        fields.scheduledDate !== undefined ? fields.scheduledDate : localDateYmd(base);
+      const timePart =
+        fields.scheduledTime !== undefined ? fields.scheduledTime : localTimeHm(base);
+      try {
+        scheduledAt = scheduledAtFromParts(datePart, timePart ?? "");
+      } catch {
+        return { success: false as const, error: "Invalid scheduled date or time." };
+      }
+    }
+
+    let actualCheckIn: Date | null | undefined;
+    if (fields.actualCheckIn !== undefined) {
+      const trimmed = fields.actualCheckIn.trim();
+      if (!trimmed) {
+        actualCheckIn = null;
+      } else if (
+        existing.actualCheckIn &&
+        localTimeHm(existing.actualCheckIn) === normalizeHmInput(trimmed)
+      ) {
+        actualCheckIn = existing.actualCheckIn;
+      } else {
+        actualCheckIn = actualCheckInFromTimeOnly(trimmed, serverNow);
+      }
     }
 
     // If patientId is changing, verify new patient is active
@@ -259,10 +350,9 @@ export async function updateAppointment(input: unknown) {
         ...(fields.doctorId    !== undefined && { doctorId:    fields.doctorId            }),
         ...(fields.type        !== undefined && { type:        fields.type                }),
         ...(fields.status      !== undefined && { status:      fields.status              }),
-        ...(fields.date        !== undefined && { date:        new Date(fields.date)      }),
+        ...(scheduledAt !== undefined && { scheduledAt }),
         ...(fields.duration    !== undefined && { duration:    fields.duration            }),
-        ...(fields.scheduledStartTime !== undefined && { scheduledStartTime: dateOrNull(fields.scheduledStartTime) }),
-        ...(fields.actualCheckIn      !== undefined && { actualCheckIn:      dateOrNull(fields.actualCheckIn)      }),
+        ...(actualCheckIn !== undefined && { actualCheckIn }),
         ...(fields.notes       !== undefined && { notes:       n(fields.notes)            }),
         updatedAt: new Date(),
       })

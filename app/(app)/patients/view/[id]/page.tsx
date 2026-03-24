@@ -60,10 +60,8 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
       id:     a.id,
       title:  a.title,
       doctor: "",
-      date:   a.date ? format(new Date(a.date), "MMM d, yyyy") : "",
-      time:   a.scheduledStartTime
-        ? format(new Date(a.scheduledStartTime), "hh:mm a")
-        : "",
+      date:   a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
+      time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
       status: a.status,
     })),
     documents: r.documents.map((d) => ({

@@ -117,11 +117,10 @@ Better-Auth email/token verification records.
 - `description`: `text`
 - `status`: `enum` ('scheduled', 'completed', 'cancelled', 'no-show') (Default: 'scheduled')
 - `type`: `enum` ('general', 'follow-up', 'emergency') (Default: 'general')
-- `date`: `timestamp` **notNull** (Scheduled start)
+- `scheduled_at`: `timestamp` **notNull** (Scheduled start — date and time combined)
 - `duration`: `integer` **notNull** (In minutes, Default: 30)
 - `notes`: `text` (Clinical notes)
-- `scheduled_start_time`: `timestamp`
-- `actual_check_in`: `timestamp`
+- `actual_check_in`: `timestamp` (Optional; time-of-day from UI is stored with the server calendar day at save time)
 - `is_active`: `boolean` (Default: `true`)
 - `created_by`: `text` (References `users.id`)
 - `created_at`: `timestamp`
@@ -170,7 +169,7 @@ Better-Auth email/token verification records.
 
 ### Performance Indexes
 - `idx_patient_name`: B-Tree on `(clinic_id, last_name, first_name)`
-- `idx_appointment_date`: B-Tree on `(clinic_id, date)`
+- `idx_appointment_scheduled_at`: B-Tree on `(clinic_id, scheduled_at)`
 - `idx_document_assignment`: B-Tree on `(assigned_to_id, assigned_to_type)`
 - `idx_appointment_status`: B-Tree on `(clinic_id, status)`
 

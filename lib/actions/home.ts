@@ -58,7 +58,7 @@ export async function getHomeStats() {
           and(
             eq(appointments.clinicId, clinicId),
             eq(appointments.isActive, true),
-            sql`${appointments.date}::date = CURRENT_DATE`
+            sql`${appointments.scheduledAt}::date = CURRENT_DATE`
           )
         ),
 
@@ -83,7 +83,7 @@ export async function getHomeStats() {
             eq(appointments.clinicId, clinicId),
             eq(appointments.isActive, true),
             eq(appointments.status, "completed"),
-            gte(appointments.date, thirtyDaysAgo)
+            gte(appointments.scheduledAt, thirtyDaysAgo)
           )
         ),
 
@@ -134,7 +134,7 @@ export async function getRecentAppointments(limit: unknown = 5) {
       .select({
         id:          appointments.id,
         title:       appointments.title,
-        date:        appointments.date,
+        scheduledAt: appointments.scheduledAt,
         status:      appointments.status,
         type:        appointments.type,
         patientFirstName: patients.firstName,
@@ -153,7 +153,7 @@ export async function getRecentAppointments(limit: unknown = 5) {
           eq(appointments.isActive, true)
         )
       )
-      .orderBy(desc(appointments.date))
+      .orderBy(desc(appointments.scheduledAt))
       .limit(parsedLimit.data);
 
     return {
@@ -163,7 +163,7 @@ export async function getRecentAppointments(limit: unknown = 5) {
         title:       r.title,
         patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
         doctorName:  r.doctorName ?? "",
-        date:        r.date,
+        scheduledAt: r.scheduledAt,
         status:      r.status,
         type:        r.type,
       })),

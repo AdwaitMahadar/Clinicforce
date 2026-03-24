@@ -34,7 +34,7 @@ export interface PatientAppointmentSummary {
   id: string;
   title: string;
   doctor: string;
-  date: Date;
+  scheduledAt: Date;
   status: string;
 }
 
@@ -79,7 +79,7 @@ export interface GetPatientsParams {
 /**
  * Returns a paginated, filtered, sorted patient list for a clinic.
  *
- * `lastVisit` is derived from MAX(appointments.date) for each patient via
+ * `lastVisit` is derived from MAX(appointments.scheduled_at) for each patient via
  * a subquery. `assignedDoctor` is the doctor name from that same
  * most-recent appointment (joined via a second subquery on the same date).
  *
@@ -103,7 +103,7 @@ export async function getPatients(
   const lastVisitSq = db
     .select({
       patientId: appointments.patientId,
-      lastVisitDate: max(appointments.date).as("last_visit_date"),
+      lastVisitDate: max(appointments.scheduledAt).as("last_visit_date"),
     })
     .from(appointments)
     .where(
@@ -120,7 +120,7 @@ export async function getPatients(
     .select({
       patientId: appointments.patientId,
       doctorId: appointments.doctorId,
-      apptDate: appointments.date,
+      apptDate: appointments.scheduledAt,
     })
     .from(appointments)
     .where(
@@ -289,7 +289,7 @@ export async function getPatientById(
     .select({
       id: appointments.id,
       title: appointments.title,
-      date: appointments.date,
+      scheduledAt: appointments.scheduledAt,
       status: appointments.status,
       doctorName: sql<string>`COALESCE(
         NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
@@ -305,7 +305,7 @@ export async function getPatientById(
         eq(appointments.isActive, true)
       )
     )
-    .orderBy(desc(appointments.date));
+    .orderBy(desc(appointments.scheduledAt));
 
   const docs = await getDocumentsByAssignment(clinicId, id, "patient");
 
@@ -315,7 +315,7 @@ export async function getPatientById(
       id: a.id,
       title: a.title,
       doctor: a.doctorName ?? "",
-      date: a.date,
+      scheduledAt: a.scheduledAt,
       status: a.status,
     })),
     documents: docs,

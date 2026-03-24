@@ -166,7 +166,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Type enum: `general | follow-up | emergency`
-- Tracks scheduled start (`date` + optional `scheduled_start_time`), optional actual visit time (`actual_check_in`), and `duration` (minutes)
+- Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), and `duration` (minutes)
 
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment

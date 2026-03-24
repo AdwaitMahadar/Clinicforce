@@ -25,8 +25,8 @@ export interface AppointmentCalendarRow {
   title: string;
   patientName: string;
   doctorName: string;
-  /** Full Date of the scheduled start (appointment.date column). */
-  date: Date;
+  /** Full Date of the scheduled start (`scheduled_at`). */
+  scheduledAt: Date;
   /** Duration in minutes. */
   duration: number;
   status: string;
@@ -49,9 +49,8 @@ export interface AppointmentDetailRecord {
   doctorName: string;
   type: string;
   status: string;
-  date: Date;
+  scheduledAt: Date;
   duration: number;
-  scheduledStartTime: Date | null;
   actualCheckIn: Date | null;
   notes: string | null;
   isActive: boolean;
@@ -80,7 +79,7 @@ export async function getAppointments(
     .select({
       id: appointments.id,
       title: appointments.title,
-      date: appointments.date,
+      scheduledAt: appointments.scheduledAt,
       duration: appointments.duration,
       status: appointments.status,
       type: appointments.type,
@@ -99,18 +98,18 @@ export async function getAppointments(
       and(
         eq(appointments.clinicId, clinicId),
         eq(appointments.isActive, true),
-        gte(appointments.date, rangeStart),
-        lte(appointments.date, rangeEnd)
+        gte(appointments.scheduledAt, rangeStart),
+        lte(appointments.scheduledAt, rangeEnd)
       )
     )
-    .orderBy(asc(appointments.date));
+    .orderBy(asc(appointments.scheduledAt));
 
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
     patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
     doctorName: r.doctorName ?? "",
-    date: r.date,
+    scheduledAt: r.scheduledAt,
     duration: r.duration,
     status: r.status,
     type: r.type,
@@ -146,9 +145,8 @@ export async function getAppointmentById(
       )`,
       type: appointments.type,
       status: appointments.status,
-      date: appointments.date,
+      scheduledAt: appointments.scheduledAt,
       duration: appointments.duration,
-      scheduledStartTime: appointments.scheduledStartTime,
       actualCheckIn: appointments.actualCheckIn,
       notes: appointments.notes,
       isActive: appointments.isActive,
@@ -198,9 +196,8 @@ export async function getAppointmentById(
     doctorName: appt.doctorName ?? "",
     type: appt.type,
     status: appt.status,
-    date: appt.date,
+    scheduledAt: appt.scheduledAt,
     duration: appt.duration,
-    scheduledStartTime: appt.scheduledStartTime,
     actualCheckIn: appt.actualCheckIn,
     notes: appt.notes,
     isActive: appt.isActive,

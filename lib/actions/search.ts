@@ -75,7 +75,7 @@ export async function searchGlobal(query: unknown) {
         .select({
           id: appointments.id,
           title: appointments.title,
-          date: appointments.date,
+          scheduledAt: appointments.scheduledAt,
           status: appointments.status,
           type: appointments.type,
           patientFirstName: patients.firstName,
@@ -96,7 +96,7 @@ export async function searchGlobal(query: unknown) {
             )
           )
         )
-        .orderBy(desc(appointments.date))
+        .orderBy(desc(appointments.scheduledAt))
         .limit(5),
 
       db
@@ -165,7 +165,7 @@ export async function searchGlobal(query: unknown) {
         id: r.id,
         title: r.title,
         patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
-        date: r.date.toISOString(),
+        date: r.scheduledAt.toISOString(),
         status: r.status as AppointmentStatus,
         type: r.type as AppointmentDbType,
       })),

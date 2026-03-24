@@ -75,7 +75,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 
 ### Creation
 - Any role can create an appointment.
-- An appointment requires: `patientId`, `doctorId`, `date`, `type`, and `duration`.
+- An appointment requires: `patientId`, `doctorId`, scheduled date + time (combined into `scheduled_at` on the server), `type`, and `duration`.
 - The `doctorId` must reference an active user with the role `doctor`. You cannot assign an inactive doctor or a non-doctor user to an appointment.
 - You cannot create an appointment for an inactive patient.
 - Duration must be between **15 and 480 minutes** (8 hours maximum).
@@ -100,7 +100,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - Documents linked to an inactive appointment via `appointmentId` remain accessible through the patient's document list.
 
 ### Actual time
-- `actualCheckIn` is an optional timestamp for when the patient was seen (actual visit time).
+- `actual_check_in` is an optional timestamp for when the patient was seen. The UI collects **time only**; server actions combine it with the **server’s current calendar day** (`new Date()` — no clinic timezone handling in MVP).
 - No validation is enforced between scheduled time and actual time in MVP.
 
 ---

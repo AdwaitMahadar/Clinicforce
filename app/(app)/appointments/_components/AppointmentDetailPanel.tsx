@@ -178,9 +178,9 @@ const EMPTY_VALUES: CreateAppointmentInput = {
   doctorId:           "",
   type:               "general",
   status:             "scheduled",
-  date:               new Date().toISOString().slice(0, 10),
+  scheduledDate:      new Date().toISOString().slice(0, 10),
+  scheduledTime:      "",
   duration:           30,
-  scheduledStartTime: "",
   actualCheckIn:      "",
   description:        "",
   notes:              "",
@@ -231,7 +231,7 @@ function buildAppointmentFormFields(
       options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
     },
     {
-      name:    "date",
+      name:    "scheduledDate",
       label:   "Date",
       type:    "date",
       colSpan: 1,
@@ -251,7 +251,7 @@ function buildAppointmentFormFields(
       rows:        5,
       placeholder: "Add visit details or reason for appointment...",
     },
-    { name: "scheduledStartTime", label: "Scheduled Start", type: "time", colSpan: 1 },
+    { name: "scheduledTime", label: "Scheduled start", type: "time", colSpan: 1 },
     { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 1 },
     {
       name: "notes",
@@ -325,10 +325,10 @@ export function AppointmentDetailPanel({
         doctorId:           appointment!.doctorId,
         type:               appointment!.type as UpdateAppointmentInput["type"],
         status:             appointment!.status as UpdateAppointmentInput["status"],
-        date:               appointment!.date.slice(0, 10),
+        scheduledDate:      appointment!.scheduledDate ?? "",
+        scheduledTime:      appointment!.scheduledTime ?? "",
         duration:           appointment!.duration,
-        scheduledStartTime: appointment!.scheduledStartTime ?? "",
-        actualCheckIn:      appointment!.actualCheckIn      ?? "",
+        actualCheckIn:      appointment!.actualCheckIn ?? "",
         description:         appointment!.description ?? "",
         notes:              appointment!.notes ?? "",
       };
@@ -336,13 +336,11 @@ export function AppointmentDetailPanel({
   const handleSubmit = async (values: CreateAppointmentInput | UpdateAppointmentInput) => {
     if (isCreate) {
       const v = values as CreateAppointmentInput;
-      const dateStr = `${v.date}T${v.scheduledStartTime || "00:00"}:00`;
       const result = await createAppointment({
         ...v,
-        date:     dateStr,
         duration: typeof v.duration === "string" ? Number(v.duration) : v.duration,
         description: v.description ?? "",
-        notes:    v.notes ?? "",
+        notes: v.notes ?? "",
       });
       if (result.success) {
         toast.success("Appointment scheduled successfully.");
@@ -352,24 +350,24 @@ export function AppointmentDetailPanel({
       }
     } else {
       const v = values as UpdateAppointmentInput;
-      const dateValue = v.date
-        ? `${v.date}T${v.scheduledStartTime || "00:00"}:00`
-        : undefined;
       const result = await updateAppointment({
-        id:                 v.id!,
-        title:              v.title,
-        patientId:          v.patientId,
-        doctorId:           v.doctorId,
-        type:               v.type,
-        status:             v.status,
-        date:               dateValue,
-        duration:           v.duration !== undefined
-          ? (typeof v.duration === "string" ? Number(v.duration) : v.duration)
-          : undefined,
-        scheduledStartTime: v.scheduledStartTime || undefined,
-        actualCheckIn:      v.actualCheckIn      || undefined,
-        description:        v.description || undefined,
-        notes:              v.notes || undefined,
+        id: v.id!,
+        title: v.title,
+        patientId: v.patientId,
+        doctorId: v.doctorId,
+        type: v.type,
+        status: v.status,
+        scheduledDate: v.scheduledDate,
+        scheduledTime: v.scheduledTime,
+        duration:
+          v.duration !== undefined
+            ? typeof v.duration === "string"
+              ? Number(v.duration)
+              : v.duration
+            : undefined,
+        actualCheckIn: v.actualCheckIn,
+        description: v.description || undefined,
+        notes: v.notes || undefined,
       });
       if (result.success) {
         toast.success("Appointment updated successfully.");
@@ -394,14 +392,16 @@ export function AppointmentDetailPanel({
     ? "Fill in the details to schedule a new appointment"
     : (() => {
         try {
-          const dateStr = appointment!.date
-            ? format(parseISO(appointment!.date), "EEE, MMM d, yyyy")
+          const dateStr = appointment!.scheduledDate
+            ? format(parseISO(appointment!.scheduledDate), "EEE, MMM d, yyyy")
             : "";
-          const time = appointment!.scheduledStartTime
-            ? ` · ${appointment!.scheduledStartTime}`
+          const time = appointment!.scheduledTime
+            ? ` · ${appointment!.scheduledTime}`
             : "";
           return `${dateStr}${time}`;
-        } catch { return ""; }
+        } catch {
+          return "";
+        }
       })();
 
   // Event log for the sidebar

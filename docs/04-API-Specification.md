@@ -33,3 +33,7 @@ See `docs/09-File-Upload-Flow.md` for the browser sequence and Minio env vars.
 | Action | Purpose |
 |--------|---------|
 | `searchGlobal` | Accepts a trimmed query string (min 2 characters). Runs four parallel scoped reads (`LIMIT 5` each): patients (name/email/phone/chart id match; each hit includes `phone` for UI), active appointments (title / patient / doctor name), active medicines (name / brand match; each hit includes `category` and `brand` for UI), documents (title / file name / description; includes `mimeType` for list icons) with optional patient join for display name. Returns `GroupedSearchResults` (`types/search.ts`). Schema: `searchGlobalQuerySchema` in `lib/validators/search.ts`. Client: `UniversalSearch` in `components/common/UniversalSearch.tsx` (TopNav, ⌘/Ctrl+K). |
+
+## Appointments (`lib/actions/appointments.ts`)
+
+Create/update payloads use **`scheduledDate`** (`YYYY-MM-DD`) and **`scheduledTime`** (`HH:mm`, empty = start of that day). Server actions merge them into **`scheduled_at`** using a full `YYYY-MM-DDTHH:mm:ss` string before `new Date()` — never parse a bare time string alone. **`actualCheckIn`** in the payload is **time-only**; the action combines it with the server’s current calendar day (`new Date()`) when setting `actual_check_in`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema` in `lib/validators/appointment.ts`.
