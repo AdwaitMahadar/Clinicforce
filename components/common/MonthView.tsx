@@ -79,7 +79,7 @@ export function MonthView({
               key={dateKey}
               onClick={() => onDayClick?.(day)}
               className={cn(
-                "border-r border-b group cursor-pointer overflow-hidden",
+                "border-r border-b group overflow-hidden",
                 "flex flex-col transition-colors hover:bg-[var(--color-surface-alt)]",
                 !isCurrentMonth && "opacity-40"
               )}
@@ -111,7 +111,7 @@ export function MonthView({
                         e.stopPropagation();
                         onEventClick?.(appt);
                       }}
-                      className="w-full text-left text-[10px] font-medium px-1.5 py-0.5 rounded truncate block leading-tight border transition-opacity hover:opacity-80"
+                      className="w-full text-left text-[10px] font-medium px-1.5 py-0.5 rounded truncate block leading-tight border transition-opacity hover:opacity-80 cursor-pointer"
                       style={{
                         background:  colors.bg,
                         color:       colors.text,
