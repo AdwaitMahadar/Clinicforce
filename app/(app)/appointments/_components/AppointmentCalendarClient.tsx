@@ -236,7 +236,7 @@ export function AppointmentCalendarClient({ initialEvents }: Props) {
   );
 
   return (
-    <div className="p-8 h-full flex flex-col gap-5 min-h-0">
+    <div className="h-full flex flex-col gap-5 min-h-0">
       <PageHeader title="Appointments" subtitle={subtitle} actions={headerActions} />
 
       <div

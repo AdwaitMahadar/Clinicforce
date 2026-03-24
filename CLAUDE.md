@@ -179,6 +179,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - **All colours via CSS variables** — no hardcoded hex values anywhere in components. Variables defined in `app/globals.css`
 - **Typography:** DM Serif Display for `<h1>` page titles only; DM Sans for everything else
 - **`<PageHeader />`** at the top of every page — no one-off headers
+- **Main content width:** Full-page routes under `app/(app)/` wrap primary content in **`max-w-[1700px] mx-auto w-full`** inside the page shell (`p-8` / flex height); height-filling pages add **`flex-1 min-h-0`** on that inner wrapper. See `docs/06-UI-Design-System.md` §2.2. `@modal` routes use `ModalShell` only. Appointments calendar: `p-8` on `appointments/dashboard/page.tsx` only — not on `AppointmentCalendarClient` root.
 - **`<DataTable />`** for all list views — always server-side pagination/filtering
 - **`<StatusBadge />`** for all status, type, and ID indicators — no inline badge styles
 - **Forms** always use React Hook Form + a Zod schema from `lib/validators/`

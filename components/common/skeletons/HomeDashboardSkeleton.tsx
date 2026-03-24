@@ -26,7 +26,7 @@ function StatCardSkeleton() {
 export function HomeDashboardSkeleton() {
   return (
     <div className="p-8 h-full">
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1700px] mx-auto w-full">
         <PageHeaderSkeleton />
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

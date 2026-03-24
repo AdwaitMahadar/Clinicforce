@@ -26,6 +26,8 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 **Loading UI:** Each route segment may define `loading.tsx` next to `page.tsx`, using Shadcn `Skeleton` and shared layouts in `components/common/skeletons/` so the fallback matches the page shell (not a generic full-page spinner).
 
+**Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern.
+
 ---
 
 ## 1. Home Dashboard — `/home/dashboard`

@@ -75,32 +75,34 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
 
   return (
     <div className="p-8 h-full flex flex-col gap-5">
-      <PageHeader
-        title="Patients Directory"
-        subtitle="Manage patient records, history, and active treatments."
-        actions={
-          <Link href="/patients/new">
-            <Button
-              className="gap-2 shadow-sm"
-              style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-            >
-              <Plus size={15} />
-              New Patient
-            </Button>
-          </Link>
-        }
-      />
+      <div className="max-w-[1700px] mx-auto w-full flex flex-col gap-5 flex-1 min-h-0">
+        <PageHeader
+          title="Patients Directory"
+          subtitle="Manage patient records, history, and active treatments."
+          actions={
+            <Link href="/patients/new">
+              <Button
+                className="gap-2 shadow-sm"
+                style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+              >
+                <Plus size={15} />
+                New Patient
+              </Button>
+            </Link>
+          }
+        />
 
-      <TableFilterBar
-        searchPlaceholder="Search by name, ID, or phone number..."
-        filterColumns={PATIENT_FILTER_COLUMNS}
-      />
+        <TableFilterBar
+          searchPlaceholder="Search by name, ID, or phone number..."
+          filterColumns={PATIENT_FILTER_COLUMNS}
+        />
 
-      <div className="flex-1 min-h-0">
-        <PatientsTable data={rows} />
+        <div className="flex-1 min-h-0">
+          <PatientsTable data={rows} />
+        </div>
+
+        <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="patient" />
       </div>
-
-      <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="patient" />
     </div>
   );
 }

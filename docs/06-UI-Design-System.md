@@ -83,7 +83,13 @@ Reason: Next.js intercepting route `(.)appointments/[id]` is a dynamic segment t
 
 ## 2.1 Route loading (`loading.tsx`)
 
-Authenticated routes under `app/(app)/` use a colocated **`loading.tsx`** per segment where the page suspends (async Server Components, slow navigations). Each file default-exports a layout that mirrors the real page shell (padding, `PageHeader`, tables, calendar, detail card, or modal) using the Shadcn **`Skeleton`** primitive (`components/ui/skeleton.tsx`). Reusable shapes live in **`components/common/skeletons/`** (e.g. `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `ModalDetailSkeleton`) so fallbacks stay aligned with the design tokens and do not use centered spinners alone.
+Authenticated routes under `app/(app)/` use a colocated **`loading.tsx`** per segment where the page suspends (async Server Components, slow navigations). Each file default-exports a layout that mirrors the real page shell (padding, `PageHeader`, tables, calendar, detail card, or modal) using the Shadcn **`Skeleton`** primitive (`components/ui/skeleton.tsx`). Reusable shapes live in **`components/common/skeletons/`** (e.g. `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `ModalDetailSkeleton`) so fallbacks stay aligned with the design tokens and do not use centered spinners alone. Where the corresponding page uses the main content width rule (§2.2), the skeleton applies the same **`max-w-[1700px] mx-auto w-full`** inner wrapper (modal-only loaders use `ModalDetailSkeleton` and do not).
+
+### 2.2 Main content width (full-page routes)
+
+Every **`page.tsx`** under `app/(app)/` that renders in the AppShell main card (not `@modal` interceptors) wraps its primary content in an inner **`max-w-[1700px] mx-auto w-full`** container, inside the usual **`p-8`** (or height-preserving flex) outer shell. On wide viewports this keeps body content centered with a consistent max width. For vertically filling layouts (tables, calendar, full-page detail/new), the inner wrapper also carries **`flex-1 min-h-0`** (and flex column + gap where applicable) so **`h-full`** chains and scroll regions keep working.
+
+**Appointments calendar:** `appointments/dashboard/page.tsx` applies **`p-8`** on the outer shell; **`AppointmentCalendarClient`** must not add **`p-8`** on its root — otherwise horizontal padding would stack inside the max-width column and narrow the calendar vs other dashboards.
 
 ---
 

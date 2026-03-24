@@ -28,7 +28,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 
 ## 🧩 Component Inventory
 
-**Route loading:** Colocate `loading.tsx` with `page.tsx` under `app/(app)/`; use Shadcn `Skeleton` and `components/common/skeletons/*` so fallbacks match each page layout (tables, home stats, calendar, detail/modal).
+**Route loading:** Colocate `loading.tsx` with `page.tsx` under `app/(app)/`; use Shadcn `Skeleton` and `components/common/skeletons/*` so fallbacks match each page layout (tables, home stats, calendar, detail/modal). Skeletons that mirror full-page shells use the same **`max-w-[1700px] mx-auto w-full`** inner wrapper as §2.2 in `docs/06-UI-Design-System.md`.
 
 Reuse existing components instead of building ad-hoc solutions. 
 
@@ -50,6 +50,8 @@ Reuse existing components instead of building ad-hoc solutions.
 
 **Layouts (`components/layout/`)**
 *   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`); account menu uses Better Auth `signOut` → `/login`.
+
+**AppShell page content:** Full-page routes in `app/(app)/` wrap primary UI in **`max-w-[1700px] mx-auto w-full`** inside `p-8` (or flex `h-full` shells); use **`flex-1 min-h-0`** on that inner wrapper when the page must fill height (tables, calendar, detail). `@modal` routes omit this — they render `<ModalShell />` only. **`appointments/dashboard`:** `p-8` lives on the page; **`AppointmentCalendarClient`** root must not use `p-8` (avoid double inset inside the max-width column).
 
 ## 🧭 Navigation & Routing Rules
 

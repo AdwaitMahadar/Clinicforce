@@ -52,7 +52,7 @@ export default async function HomeDashboardPage() {
 
   return (
     <div className="p-8 h-full">
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1700px] mx-auto w-full">
 
         <PageHeader
           title="Dashboard"

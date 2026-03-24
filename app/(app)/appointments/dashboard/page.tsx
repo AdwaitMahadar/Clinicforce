@@ -73,5 +73,11 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
       })
     : [];
 
-  return <AppointmentCalendarClient initialEvents={events} />;
+  return (
+    <div className="p-8 h-full min-h-0 flex flex-col">
+      <div className="max-w-[1700px] mx-auto w-full flex-1 min-h-0 flex flex-col">
+        <AppointmentCalendarClient initialEvents={events} />
+      </div>
+    </div>
+  );
 }
