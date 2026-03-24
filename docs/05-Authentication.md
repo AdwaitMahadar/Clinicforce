@@ -82,13 +82,20 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
   emailAndPassword: { enabled: true, requireEmailVerification: false },
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
-  trustedOrigins: [
-    process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-    "http://demo-clinic.localhost:3000",
-    // TODO (production): replace with dynamic origin validation for *.clinicforce.com
-  ],
+  trustedOrigins:
+    process.env.NODE_ENV === "production"
+      ? [
+          "https://clinicforce.app",
+          "https://*.clinicforce.app",
+        ]
+      : [
+          "http://localhost:3000",
+          "http://*.localhost:3000",
+        ],
 });
 ```
+
+Better Auth matches `trustedOrigins` with **glob strings** (`*` / `?`), not `RegExp` literals — see `matchesOriginPattern` in better-auth. Production uses apex `https://clinicforce.app` plus `https://*.clinicforce.app`; development uses `http://localhost:3000` plus `http://*.localhost:3000` for tenant subdomains.
 
 ### Database Tables
 Better-Auth manages these tables via the Drizzle adapter. Schema is defined in `03-Database-Schema.md`.
@@ -109,7 +116,7 @@ The subdomain is the `subdomain` column in the `clinics` table. This is already 
 
 ### How it works (pipeline)
 
-1. **Middleware** (`middleware.ts`, Node runtime): reads `Host` → subdomain → `getClinicIdBySubdomain()` (shared with `GET /api/clinic` in `lib/clinic/resolve-by-subdomain.ts`). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`.
+1. **Middleware** (`middleware.ts`, Node runtime): reads **`x-forwarded-host`** (first, for reverse proxies such as Cloudflare) then **`host`** → subdomain → `getClinicIdBySubdomain()` (shared with `GET /api/clinic` in `lib/clinic/resolve-by-subdomain.ts`). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`.
 2. **`getSession()`**: loads the user from the DB (joined to `clinics` for `clinicSubdomain`). If **`x-clinic-id`** is present, it must equal `user.clinicId` or **`CLINIC_MISMATCH`** is thrown — so a user cannot use a session on another tenant’s host.
 
 **Why two steps?** Middleware binds the **HTTP request** to a tenant before RSC/server actions run. The session binds the **user** to a clinic. Both are required; `clinicSubdomain` on the session is the DB slug (e.g. S3 paths), not a replacement for middleware resolution.
@@ -221,6 +228,5 @@ Auth integration is complete. All items below are done.
 - [x] All server actions gate-checked with `getSession()` + `requireRole()`
 
 **Remaining (post-MVP):**
-- [ ] Wildcard `trustedOrigins` for `*.clinicforce.com` (see TODO in `lib/auth/index.ts`)
 - [ ] Password reset flow
 - [ ] Email verification

@@ -15,7 +15,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 
 | File | Role |
 | :--- | :--- |
-| `lib/auth/index.ts` | Better-Auth config — email+password, 7-day sessions, `trustedOrigins` |
+| `lib/auth/index.ts` | Better-Auth config — email+password, 7-day sessions; `trustedOrigins` by `NODE_ENV` (apex + `https://*.clinicforce.app` in prod; `localhost` + `http://*.localhost:3000` in dev — glob patterns, not RegExp) |
 | `lib/auth/session.ts` | `getSession()` — the ONLY way to get session data in server code |
 | `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
 | `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |
@@ -27,13 +27,13 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 
 ### Request pipeline
 
-- **Middleware** — Binds the request to a tenant (`Host` → subdomain → `clinicId`); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
+- **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → subdomain → `clinicId`); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
 - **`getSession()`** — Loads user + `clinicSubdomain` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour
 
 1. Public paths (`/login`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
-2. Subdomain is extracted from the `host` header (`demo-clinic.localhost:3000` → `demo-clinic`).
+2. Subdomain is extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`).
 3. Middleware calls `getClinicIdBySubdomain()` (Drizzle) to resolve `clinicId` — no internal HTTP round-trip.
 4. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
 5. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.

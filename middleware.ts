@@ -4,21 +4,31 @@ import { getClinicIdBySubdomain } from "@/lib/clinic/resolve-by-subdomain";
 
 const PUBLIC_PATHS = ["/login", "/api/auth", "/api/clinic", "/_next", "/favicon.ico"];
 
-function extractSubdomain(host: string): string | null {
-  // demo-clinic.localhost:3000 → demo-clinic
-  // medlife.clinicforce.com   → medlife
+function extractSubdomain(request: NextRequest): string | null {
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    "";
   const hostWithoutPort = host.split(":")[0];
-  const parts = hostWithoutPort.split(".");
-  if (parts.length >= 2 && parts[0] !== "www" && parts[0] !== "localhost") {
+  // Remove known apex domains to isolate the subdomain
+  const stripped = hostWithoutPort
+    .replace(/\.clinicforce\.app$/, "")
+    .replace(/\.localhost$/, "");
+  // If nothing was stripped, we're on the bare apex domain — no subdomain
+  if (stripped === hostWithoutPort.replace(/:\d+$/, "")) {
+    const parts = hostWithoutPort.split(".");
+    if (parts.length < 2 || parts[0] === "www" || parts[0] === "localhost") {
+      return null;
+    }
     return parts[0];
   }
-  return null;
+  if (!stripped || stripped === "www") return null;
+  return stripped;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = request.headers.get("host") ?? "";
-  const subdomain = extractSubdomain(host);
+  const subdomain = extractSubdomain(request);
 
   // Allow all public paths through without any checks
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
