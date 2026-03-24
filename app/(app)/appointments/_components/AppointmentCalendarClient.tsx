@@ -108,8 +108,12 @@ function ViewDateControl({
         <button
           key={key}
           onClick={() => onViewChange(key)}
-          className="relative px-3 py-1.5 text-xs font-semibold rounded-md transition-colors duration-150"
-          style={{ color: current === key ? "var(--color-ink-fg)" : "var(--color-text-secondary)" }}
+          className={`relative px-3 py-1.5 text-xs font-semibold rounded-md transition-colors duration-150 cursor-pointer ${
+            current === key 
+              ? "" 
+              : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          }`}
+          style={current === key ? { color: "var(--color-ink-fg)" } : undefined}
         >
           {current === key && (
             <motion.span
@@ -127,8 +131,7 @@ function ViewDateControl({
 
       <button
         onClick={() => onNavigate(-1)}
-        className="size-7 flex items-center justify-center rounded-md transition-colors hover:bg-[var(--color-surface-alt)]"
-        style={{ color: "var(--color-text-secondary)" }}
+        className="size-7 flex items-center justify-center rounded-md transition-colors cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)]"
         title="Previous"
       >
         <ChevronLeft size={14} />
@@ -136,12 +139,11 @@ function ViewDateControl({
 
       <button
         onClick={onToday}
-        className="px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap"
-        style={
+        className={`px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-colors cursor-pointer ${
           isTodayVisible
-            ? { color: "var(--color-text-muted)", cursor: "default" }
-            : { color: "var(--color-text-primary)" }
-        }
+            ? "text-[var(--color-text-muted)] cursor-default"
+            : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+        }`}
       >
         <span className="hidden sm:inline">{getHeaderLabel(current, currentDate)}</span>
         <span className="sm:hidden">Today</span>
@@ -149,8 +151,7 @@ function ViewDateControl({
 
       <button
         onClick={() => onNavigate(1)}
-        className="size-7 flex items-center justify-center rounded-md transition-colors hover:bg-[var(--color-surface-alt)]"
-        style={{ color: "var(--color-text-secondary)" }}
+        className="size-7 flex items-center justify-center rounded-md transition-colors cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-alt)]"
         title="Next"
       >
         <ChevronRight size={14} />
