@@ -24,6 +24,16 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,     // refresh if more than 1 day old
   },
 
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain:
+        process.env.NODE_ENV === "production"
+          ? ".clinicforce.app"
+          : ".localhost",
+    },
+  },
+
   trustedOrigins:
     process.env.NODE_ENV === "production"
       ? [

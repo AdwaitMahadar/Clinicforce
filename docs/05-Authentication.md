@@ -82,6 +82,15 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
   emailAndPassword: { enabled: true, requireEmailVerification: false },
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain:
+        process.env.NODE_ENV === "production"
+          ? ".clinicforce.app"
+          : ".localhost",
+    },
+  },
   trustedOrigins:
     process.env.NODE_ENV === "production"
       ? [
@@ -94,6 +103,8 @@ export const auth = betterAuth({
         ],
 });
 ```
+
+`advanced.crossSubDomainCookies` sets the session cookie `Domain` to `.clinicforce.app` in production and `.localhost` in development so the same Better-Auth session is available on any tenant subdomain.
 
 Better Auth matches `trustedOrigins` with **glob strings** (`*` / `?`), not `RegExp` literals — see `matchesOriginPattern` in better-auth. Production uses apex `https://clinicforce.app` plus `https://*.clinicforce.app`; development uses `http://localhost:3000` plus `http://*.localhost:3000` for tenant subdomains.
 
