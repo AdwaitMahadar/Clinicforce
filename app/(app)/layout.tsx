@@ -1,6 +1,11 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getSession } from "@/lib/auth/session";
+import {
+  SIDEBAR_COLLAPSED_COOKIE_NAME,
+  parseSidebarCollapsedCookie,
+} from "@/lib/constants/sidebar";
 import { USER_TYPE_LABELS } from "@/lib/constants/user";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
@@ -29,8 +34,18 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
 
   const userTypeLabel = USER_TYPE_LABELS[session.user.type];
 
+  const cookieStore = await cookies();
+  const initialCollapsed = parseSidebarCollapsedCookie(
+    cookieStore.get(SIDEBAR_COLLAPSED_COOKIE_NAME)?.value
+  );
+
   return (
-    <AppShell modal={modal} userDisplayName={displayName} userTypeLabel={userTypeLabel}>
+    <AppShell
+      modal={modal}
+      userDisplayName={displayName}
+      userTypeLabel={userTypeLabel}
+      initialCollapsed={initialCollapsed}
+    >
       <NuqsAdapter>{children}</NuqsAdapter>
     </AppShell>
   );

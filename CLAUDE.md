@@ -96,7 +96,7 @@ components/
   common/                   ← Domain components (see below)
 
 lib/
-  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`
+  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`)
   db/                       ← Drizzle schema + query functions
   validators/               ← Zod schemas (shared between forms and server actions)
   auth/                     ← Better-Auth config

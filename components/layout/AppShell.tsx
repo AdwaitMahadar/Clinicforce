@@ -8,13 +8,25 @@ interface AppShellProps {
   /** From `getSession()` in `app/(app)/layout.tsx` — shown in the sidebar user block. */
   userDisplayName: string;
   userTypeLabel: string;
+  /** From `sidebar-collapsed` cookie in `(app)/layout.tsx` — first paint matches persisted width. */
+  initialCollapsed: boolean;
 }
 
-export function AppShell({ children, modal, userDisplayName, userTypeLabel }: AppShellProps) {
+export function AppShell({
+  children,
+  modal,
+  userDisplayName,
+  userTypeLabel,
+  initialCollapsed,
+}: AppShellProps) {
   return (
     <div className="flex h-screen w-full overflow-hidden relative">
       {/* Left sidebar */}
-      <SideNav userDisplayName={userDisplayName} userTypeLabel={userTypeLabel} />
+      <SideNav
+        userDisplayName={userDisplayName}
+        userTypeLabel={userTypeLabel}
+        initialCollapsed={initialCollapsed}
+      />
 
       {/* Right — top nav + floating main card */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">

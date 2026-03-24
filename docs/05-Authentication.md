@@ -156,8 +156,13 @@ The `app/(auth)/` route group (login page) is public and must never call `getSes
 
 ```typescript
 // app/(app)/layout.tsx (illustrative)
+import { cookies } from "next/headers"
 import { getSession } from "@/lib/auth/session"
 import { redirect } from "next/navigation"
+import {
+  SIDEBAR_COLLAPSED_COOKIE_NAME,
+  parseSidebarCollapsedCookie,
+} from "@/lib/constants/sidebar"
 import { USER_TYPE_LABELS } from "@/lib/constants/user"
 
 export default async function AppLayout({ children, modal }) {
@@ -166,8 +171,17 @@ export default async function AppLayout({ children, modal }) {
     const displayName =
       [session.user.firstName, session.user.lastName].filter(Boolean).join(" ") || session.user.email
     const userTypeLabel = USER_TYPE_LABELS[session.user.type]
+    const cookieStore = await cookies()
+    const initialCollapsed = parseSidebarCollapsedCookie(
+      cookieStore.get(SIDEBAR_COLLAPSED_COOKIE_NAME)?.value
+    )
     return (
-      <AppShell modal={modal} userDisplayName={displayName} userTypeLabel={userTypeLabel}>
+      <AppShell
+        modal={modal}
+        userDisplayName={displayName}
+        userTypeLabel={userTypeLabel}
+        initialCollapsed={initialCollapsed}
+      >
         {children}
       </AppShell>
     )

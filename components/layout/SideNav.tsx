@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -20,6 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  SIDEBAR_COLLAPSED_COOKIE_NAME,
+  SIDEBAR_COLLAPSED_MAX_AGE_SECONDS,
+} from "@/lib/constants/sidebar";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -66,12 +70,24 @@ interface SideNavProps {
   userDisplayName: string;
   /** Label from `USER_TYPE_LABELS` (Administrator / Doctor / Staff) */
   userTypeLabel: string;
+  /** From `sidebar-collapsed` cookie via `(app)/layout` — avoids width flash on refresh */
+  initialCollapsed: boolean;
 }
 
-export function SideNav({ userDisplayName, userTypeLabel }: SideNavProps) {
-  const [collapsed, setCollapsed] = useState(false);
+function writeSidebarCollapsedCookie(collapsed: boolean) {
+  const v = collapsed ? "1" : "0";
+  document.cookie = `${SIDEBAR_COLLAPSED_COOKIE_NAME}=${v}; Path=/; Max-Age=${SIDEBAR_COLLAPSED_MAX_AGE_SECONDS}; SameSite=Lax`;
+}
+
+export function SideNav({ userDisplayName, userTypeLabel, initialCollapsed }: SideNavProps) {
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
+
+  const setCollapsedPersisted = useCallback((next: boolean) => {
+    setCollapsed(next);
+    writeSidebarCollapsedCookie(next);
+  }, []);
 
   const entitySegment = pathname.split("/")[1] ?? "home";
 
@@ -141,7 +157,7 @@ export function SideNav({ userDisplayName, userTypeLabel }: SideNavProps) {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
                     transition={sidebarLogoSwapSpring}
-                    onClick={() => setCollapsed(false)}
+                    onClick={() => setCollapsedPersisted(false)}
                     className="absolute inset-0 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors"
                     title="Expand sidebar"
                   >
@@ -164,7 +180,7 @@ export function SideNav({ userDisplayName, userTypeLabel }: SideNavProps) {
             </div>
           ) : (
             <button
-              onClick={() => setCollapsed(true)}
+              onClick={() => setCollapsedPersisted(true)}
               className="size-9 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-black/5 transition-colors flex-shrink-0"
               title="Collapse sidebar"
             >

@@ -28,6 +28,8 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 **Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern.
 
+**Side nav width:** Collapse/expand is persisted with the `sidebar-collapsed` cookie and server-read `initialCollapsed` in `(app)/layout` so all matrix pages paint with the correct sidebar width (see `docs/06-UI-Design-System.md`, Navigation).
+
 ---
 
 ## 1. Home Dashboard — `/home/dashboard`

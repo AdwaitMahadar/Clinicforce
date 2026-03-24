@@ -49,7 +49,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).
 
 **Layouts (`components/layout/`)**
-*   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`); account menu uses Better Auth `signOut` → `/login`.
+*   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`.
 
 **AppShell page content:** Full-page routes in `app/(app)/` wrap primary UI in **`max-w-[1700px] mx-auto w-full`** inside `p-8` (or flex `h-full` shells); use **`flex-1 min-h-0`** on that inner wrapper when the page must fill height (tables, calendar, detail). `@modal` routes omit this — they render `<ModalShell />` only. **`appointments/dashboard`:** `p-8` lives on the page; **`AppointmentCalendarClient`** root must not use `p-8` (avoid double inset inside the max-width column).
 

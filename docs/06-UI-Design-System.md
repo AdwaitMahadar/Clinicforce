@@ -26,6 +26,8 @@ The top nav also exposes **global search** (`components/common/UniversalSearch.t
 
 The sidebar always shows both items for all top nav selections in the MVP. No hiding logic is required now but the architecture should support it via a config object in the future.
 
+**Collapsed width persistence:** The user can collapse or expand the sidebar (`components/layout/SideNav.tsx`). The preference is stored in an HTTP cookie named `sidebar-collapsed` (`1` = collapsed, `0` = expanded), with `Max-Age` of one year and `Path=/`, `SameSite=Lax`. `app/(app)/layout.tsx` reads the cookie with `cookies()` before render and passes `initialCollapsed` through `AppShell` to `SideNav` so the first HTML paint matches the saved width (no flash). Toggling updates the cookie via `document.cookie` on the client.
+
 ### Route Structure
 Routes follow the pattern `/{entity}/{view}`. All routes are **static segments** — no dynamic routing for the matrix itself.
 
@@ -151,6 +153,8 @@ components/
     WeekViewGrid.tsx            ← FullCalendar timeGridWeek wrapper
 
 lib/
+  constants/
+    sidebar.ts                  ← `sidebar-collapsed` cookie name, max-age, parse helper
   db/                           ← Drizzle schema and query functions
   validators/                   ← Zod schemas (shared between forms and API)
   auth/                         ← Better-Auth config
