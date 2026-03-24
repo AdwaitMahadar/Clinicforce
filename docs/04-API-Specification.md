@@ -11,6 +11,12 @@ When using `zodResolver(schema)` with fields that use Zod `.default()` (e.g. `re
 
 Duplicating defaults in `useForm` or forcing `z.infer` as the form generic while the resolver’s input type still treats optional keys can produce a TypeScript mismatch (`boolean | undefined` vs `boolean`).
 
+## String IDs in Zod
+
+- **Postgres UUIDs** (e.g. `patientId`, appointment `id`): validate with `z.string().uuid()` where the value is always a UUID.
+- **Better-Auth user ids** (e.g. appointment `doctorId`): validate with `z.string().min(1)` only — Better-Auth `user.id` is not guaranteed to be UUID-shaped.
+- **Document `assignedToId`:** validate with `z.string().min(1)` — it is a patient row UUID when `assignedToType` is `patient`, or a Better-Auth user id when `assignedToType` is `user` (see `lib/validators/document.ts`).
+
 ## Documents (S3 presigned flow)
 
 | Action | Purpose |

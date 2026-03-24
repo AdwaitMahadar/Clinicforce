@@ -61,7 +61,7 @@ Two server-side operations are required:
 - **Never** saves anything to the DB at this step
 
 ### `confirmDocumentUpload` (Server Action; same role as “save metadata” below)
-- **Input:** `fileKey`, `fileName`, `fileSize`, `mimeType`, `title`, `description`, `type` (document type enum), `assignedToId` (patient UUID), `appointmentId` (optional)
+- **Input:** `fileKey`, `fileName`, `fileSize`, `mimeType`, `title`, `description`, `type` (document type enum), `assignedToId` (patient row UUID in this flow; Zod: `z.string().min(1)` — not `.uuid()` — for consistency with polymorphic / Better-Auth id shapes), `appointmentId` (optional)
 - **What it does:**
   - Calls `getSession()` — auth + clinicId check
   - Enforces RBAC — staff, doctor, and admin can all upload
@@ -140,7 +140,7 @@ Clicking a card opens a **presigned GET URL** in a new browser tab. The browser 
 ```
 
 - **`clinicSubdomain`** — from `session.user.clinicSubdomain` (`clinics.subdomain`), loaded in `getSession()` with the user row (not `clinicId` UUIDs in the path)
-- **`assignedToType`** / **`assignedToId`** — match the `documents` table polymorphic assignment (`patient` | `user` + UUID); the presign request sends both so the key matches the eventual DB row
+- **`assignedToType`** / **`assignedToId`** — match the `documents` table polymorphic assignment: `patient` + patient row UUID, or `user` + Better-Auth user id (text, not necessarily UUID). The presign request sends both so the key matches the eventual DB row.
 - UUID prefix ensures no collisions even if the same filename is uploaded twice
 - Sanitise the filename before use (strip special characters, replace spaces with hyphens); subdomain is normalised for safe path segments
 
@@ -165,8 +165,8 @@ The S3 client should be initialised in `lib/storage/s3-client.ts` and reused acr
 ## 9. Zod Validators
 
 Implemented in `lib/validators/document.ts`:
-- `getUploadPresignedUrlSchema` — presigned PUT step (includes `assignedToType` + `assignedToId` for the object key)
-- `confirmDocumentUploadSchema` — metadata insert (server always sets `assignedToType: 'patient'` for this flow)
+- `getUploadPresignedUrlSchema` — presigned PUT step (includes `assignedToType` + `assignedToId` for the object key). `assignedToId` is `z.string().min(1)` (not `.uuid()`) because it may be a patient UUID or a Better-Auth user id.
+- `confirmDocumentUploadSchema` — metadata insert (server always sets `assignedToType: 'patient'` for this flow). `assignedToId` uses the same non-empty string rule for consistency.
 - `uploadDocumentDialogSchema` — React Hook Form + file refinements for `<UploadDocumentDialog />`
 
 Document type enum values live in `lib/constants/` aligned with the `documents` table `pgEnum`.

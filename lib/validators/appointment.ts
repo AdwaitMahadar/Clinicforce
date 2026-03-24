@@ -53,7 +53,7 @@ export const APPOINTMENT_DURATIONS = [
 
 // ─── Create Schema ────────────────────────────────────────────────────────────
 // Used for the New Appointment form. Excludes all system-managed fields.
-// patientId and doctorId are UUIDs resolved server-side from pickers.
+// patientId is a patient row UUID from the picker; doctorId is a Better-Auth user text id (not necessarily UUID).
 
 export const createAppointmentSchema = z.object({
   title: z
@@ -63,7 +63,7 @@ export const createAppointmentSchema = z.object({
 
   patientId: z.string().min(1, "Please select a patient").uuid("Please select a valid patient"),
 
-  doctorId: z.string().min(1, "Please select a doctor").uuid("Please select a valid doctor"),
+  doctorId: z.string().min(1, "Please select a doctor"),
 
   type: z.enum(APPOINTMENT_TYPES, {
     error: "Please select an appointment type",
@@ -109,7 +109,7 @@ export const updateAppointmentSchema = z.object({
 
   patientId: z.string().uuid("Please select a valid patient").optional(),
 
-  doctorId: z.string().uuid("Please select a valid doctor").optional(),
+  doctorId: z.string().min(1, "Please select a valid doctor").optional(),
 
   type: z
     .enum(APPOINTMENT_TYPES, {

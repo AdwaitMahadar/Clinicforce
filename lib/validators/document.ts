@@ -16,7 +16,7 @@ export const getUploadPresignedUrlSchema = z.object({
   mimeType:        z.string().min(1, "MIME type is required"),
   fileSize:        z.number().int().min(1, "File size must be positive"),
   assignedToType:  assignedToTypeEnum,
-  assignedToId:    z.string().uuid("Invalid assignment ID"),
+  assignedToId:    z.string().min(1, "Invalid assignment ID"),
   appointmentId:   z.string().uuid().optional(),
 });
 
@@ -28,7 +28,7 @@ export const confirmDocumentUploadSchema = z.object({
   mimeType:      z.string().min(1),
   title:         z.string().max(255).optional(),
   type:          documentTypeEnum.default("other"),
-  assignedToId:  z.string().uuid("Invalid patient ID"),
+  assignedToId:  z.string().min(1, "Invalid patient or user ID"),
   appointmentId: z.string().uuid().optional(),
   description:   z.string().optional(),
 });
