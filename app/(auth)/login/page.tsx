@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Activity, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth/client";
 
@@ -338,7 +338,12 @@ export default function LoginPage() {
             className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0"
             style={{ background: "var(--color-ink)" }}
           >
-            <Activity className="w-5 h-5" style={{ color: "var(--color-ink-fg)" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- static mark from public/ */}
+            <img
+              src="/clinicforce-mark.png"
+              alt="Clinicforce"
+              className="size-9 object-contain"
+            />
           </div>
           <span
             className="text-2xl font-bold tracking-tighter"
@@ -425,7 +430,12 @@ export default function LoginPage() {
               className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0"
               style={{ background: "var(--color-ink)" }}
             >
-              <Activity className="w-5 h-5" style={{ color: "var(--color-ink-fg)" }} />
+              {/* eslint-disable-next-line @next/next/no-img-element -- static mark from public/ */}
+              <img
+                src="/clinicforce-mark.png"
+                alt="Clinicforce"
+                className="size-9 object-contain"
+              />
             </div>
             <span
               className="text-2xl font-bold tracking-tighter"

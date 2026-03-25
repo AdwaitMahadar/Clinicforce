@@ -163,7 +163,12 @@ export function TopNav() {
           aria-label="Clinicforce"
           role="img"
         >
-          <span className="text-sm font-bold tracking-tight">CF</span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static mark from public/ */}
+          <img
+            src="/clinicforce-mark.png"
+            alt="Clinicforce"
+            className="size-6 object-contain"
+          />
         </div>
       </div>
     </div>
