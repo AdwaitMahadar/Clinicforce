@@ -13,6 +13,7 @@ import {
   parseISO,
   startOfMonth, endOfMonth,
   startOfWeek,  endOfWeek,
+  startOfDay, endOfDay,
   isValid,
 } from "date-fns";
 import { getAppointments } from "@/lib/actions/appointments";
@@ -30,7 +31,7 @@ function getRange(view: string, date: Date) {
     return { rangeStart: startOfWeek(date), rangeEnd: endOfWeek(date) };
   }
   if (view === "day") {
-    return { rangeStart: date, rangeEnd: date };
+    return { rangeStart: startOfDay(date), rangeEnd: endOfDay(date) };
   }
   // default: month
   return { rangeStart: startOfMonth(date), rangeEnd: endOfMonth(date) };

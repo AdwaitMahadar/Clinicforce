@@ -27,6 +27,7 @@ import {
   addDays,   subDays,
   startOfMonth, endOfMonth,
   startOfWeek,  endOfWeek,
+  startOfDay, endOfDay,
   isToday,
 } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -66,8 +67,8 @@ export function getRangeForView(view: CalendarView, date: Date) {
     };
   }
   return {
-    rangeStart: date.toISOString(),
-    rangeEnd:   date.toISOString(),
+    rangeStart: startOfDay(date).toISOString(),
+    rangeEnd:   endOfDay(date).toISOString(),
   };
 }
 

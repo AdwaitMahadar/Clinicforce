@@ -99,8 +99,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   ```ts
   {
     clinicId:   string;   // from session — never from client
-    rangeStart: Date;     // first visible date of the current view window
-    rangeEnd:   Date;     // last visible date of the current view window
+    rangeStart: Date;     // start of the visible window (month: startOfMonth; week: startOfWeek; day: startOfDay)
+    rangeEnd:   Date;     // end of the visible window (month: endOfMonth; week: endOfWeek; day: endOfDay)
     view:       "month" | "week" | "day";
   }
   ```
@@ -126,6 +126,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **RBAC:** All roles.
 
 #### Notes
+- The dashboard server `getRange` uses `date-fns` `startOfDay` / `endOfDay` for **day** view so `getAppointments` receives a full calendar day (inclusive); a single instant for both bounds would return no rows.
 - Month view groups events by day... URL state tracks `date` (ISO string, defaults to today) and `view` (defaults to `"month"`).
 - Always batch `view` and `date` state updates simultaneously using `nuqs` `useQueryStates` to prevent UI flicker.
 - Day and Week views pass the event array directly to FullCalendar, which uses `scrollTime` with a `-2` hour offset (`Math.max(0, currentHour - 2):00:00`) to place current time in view.
