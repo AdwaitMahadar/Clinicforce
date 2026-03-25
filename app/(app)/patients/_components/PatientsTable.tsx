@@ -11,7 +11,7 @@ const patientColumns: ColumnDef<PatientRow>[] = [
     id: "patient",
     header: "Patient",
     cell: ({ row }) => (
-      <div className="flex items-center gap-3 min-w-[200px]">
+      <div className="flex items-center gap-5 min-w-[200px]">
         <InitialsBadge name={`${row.original.firstName} ${row.original.lastName}`} size="md" />
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text-primary)" }}>

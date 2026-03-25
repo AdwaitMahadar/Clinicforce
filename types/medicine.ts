@@ -8,6 +8,7 @@ import type { LogEvent } from "@/components/common";
 
 // ─── Dashboard row (list view) ────────────────────────────────────────────────
 
+/** Form / detail header icon keys — used by `MedicineDetailPanel` (not the dashboard row). */
 export type MedicineIcon = "pill" | "medication_liquid" | "vaccines" | "prescriptions";
 
 export interface MedicineRow {
@@ -16,7 +17,6 @@ export interface MedicineRow {
   category: string;
   brand:    string;
   lastUsed: string;   // display string, e.g. "Nov 5, 2024"
-  icon:     MedicineIcon;
   status:   "active" | "inactive";
 }
 

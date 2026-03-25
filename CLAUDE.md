@@ -107,7 +107,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 ```
 
 **`components/common/` inventory (what's built):**
-- `DataTable.tsx` — TanStack Table v8, server-side mode, with skeleton loading
+- `DataTable.tsx` — TanStack Table v8, server-side list data; padded headers/cells + `first:pl-8` / `last:pr-8` on edge columns; sort toggle on label/icon only; route `loading.tsx` for skeletons (not an `isLoading` prop on the table)
 - `TableFilterBar.tsx` — Notion-style collapsible filter panel with column/value selectors
 - `TablePagination.tsx` — Reusable pagination footer
 - `StatusBadge.tsx` — Unified badge for appointment status, patient status, types, chart IDs
@@ -142,7 +142,7 @@ Routes follow `/{entity}/{view}` — all static segments. Root `/` redirects to 
 
 Detail records open as **intercepting route modals** (`@modal` parallel routes). Every entity also has a full-page fallback for direct URL / refresh access.
 
-Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). Entity **detail/create** flows use **`DetailPanel`** + **`DetailForm`**; Save / Cancel sit in the **panel footer** (submit via `formRef`). After `createPatient` (and similar) succeeds, the modal **closes** (`router.back()` + `router.refresh()`), or the full-page new route **pushes to** `/patients/dashboard` — list refreshed via `revalidatePath` + refresh.
+Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). The patients list uses **`InitialsBadge`** before the name; the medicines list uses a **category-mapped Lucide icon** in a neutral rounded square (`MedicinesTable`, same flex layout pattern). Entity **detail/create** flows use **`DetailPanel`** + **`DetailForm`**; Save / Cancel sit in the **panel footer** (submit via `formRef`). After `createPatient` (and similar) succeeds, the modal **closes** (`router.back()` + `router.refresh()`), or the full-page new route **pushes to** `/patients/dashboard` — list refreshed via `revalidatePath` + refresh.
 
 **CRITICAL — `/view/[id]` routing pattern:** Detail routes MUST use `/view/[id]` (e.g. `/appointments/view/abc-123`), never a bare `/[id]` (e.g. `/appointments/abc-123`). A bare `[id]` is a dynamic segment that matches ANY string — including `dashboard`, `new`, and `reports` — causing the `@modal` interceptor to match nav-bar clicks and freeze the page. The `/view/` sub-segment creates a separate namespace that can never conflict with static nav segments.
 

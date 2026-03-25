@@ -264,27 +264,21 @@ Used at the top of every dashboard and reports page. Accepts slots for title, su
 ### `<DataTable />` — Universal Data Table
 **Location:** `components/common/DataTable.tsx`
 
-Built on **TanStack Table v8**. Used for all list views (Patients, Appointments, Medicines, Users). Accepts column definitions and data as props.
+Built on **TanStack Table v8**. Used for all list views (Patients, Medicines, etc.). The parent owns **`columns`** (`ColumnDef<TData>[]`) and **`data`**; optional **`enableSorting`** (default `true`), **`emptyState`**, **`onRowClick`**, and a wrapper **`className`**.
 
-**Critical: Server-side mode only.** The DataTable does not manage filtering, sorting, or pagination state internally. It receives data and emits change events upward.
+**Critical: Server-side mode only.** Filtering, pagination, and list-defining sort order come from **URL search params + server actions** — the dashboard `page.tsx` reads `searchParams` and fetches a page of rows. The DataTable may apply **client-side sorting** to the current page via TanStack when `enableSorting` is true; it does not load extra pages or replace server filters.
 
-```ts
-interface DataTableProps<TData> {
-  columns: ColumnDef<TData>[]
-  data: TData[]
-  totalRows: number
-  pageIndex: number
-  pageSize: number
-  onPageChange: (page: number) => void
-  onSortChange: (sort: SortingState) => void
-  onFilterChange: (filters: ColumnFiltersState) => void
-  isLoading?: boolean
-}
-```
+**Loading:** Route-level **`loading.tsx`** (and skeleton components under `components/common/skeletons/`) show table-shaped placeholders. The DataTable itself has no `isLoading` prop — never show the empty state during initial load; show skeleton rows in the route fallback instead.
 
-When `isLoading` is true, render skeleton rows instead of data rows. Never show an empty table while data is fetching.
+**Padding & edge insets (all applied on `DataTable` via `className` on `TableHead` / `TableCell` — do not change `components/ui/table.tsx` for list spacing):**
+- **Headers:** `px-4` on every cell; **`first:pl-8`** and **`last:pr-8`** on the first and last column so the table has extra breathing room at the left and right edges.
+- **Body cells:** `px-4 py-3` with the same **`first:pl-8 last:pr-8`** on outer columns. The empty-state row (single spanned cell) uses the same pattern so horizontal inset matches.
 
-Row click navigation: each row should navigate to the entity's intercepting modal route. Pass an `onRowClick` handler — do not hardcode navigation inside the DataTable component.
+**Sort interaction:** Sort toggles are attached to an **inner** `inline-flex` span that wraps the header label and sort icon only — not the full `TableHead` cell — so clicking the padded area of a wide header does not reorder columns.
+
+**Row click navigation:** Pass **`onRowClick`** to navigate to the entity’s intercepting modal route (e.g. `/patients/view/[id]`). Do not hardcode routes inside `DataTable`.
+
+**Leading column visuals:** List rows may place a leading affordance in the first column before the primary label — e.g. **`InitialsBadge`** on `/patients/dashboard`, or a **`size-8` rounded square** (`--color-surface-alt`, `--color-border`) with a **category-mapped Lucide icon** on `/medicines/dashboard` (`MedicinesTable`). Keep colours on design tokens; do not duplicate one-off padding — inherit from `DataTable` cell rules.
 
 ### `<SearchFilterBar />` — Search and Filter Row
 **Location:** `components/clinic/SearchFilterBar.tsx`

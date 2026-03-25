@@ -1,22 +1,63 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  Droplets,
+  FlaskConical,
+  Heart,
+  Pill,
+  Shield,
+  ShieldPlus,
+  Sun,
+  Wind,
+} from "lucide-react";
 import { DataTable, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
 import type { MedicineRow } from "@/types/medicine";
+
+/** Category label → Lucide icon (dashboard list only; detail panel uses form-based icons). */
+const MEDICINE_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Antibiotics: Shield,
+  Painkillers: Pill,
+  "Diabetes Care": Droplets,
+  Antihistamines: Wind,
+  Vitamins: Sun,
+  Cardiovascular: Heart,
+  Antifungals: FlaskConical,
+  Antivirals: ShieldPlus,
+};
+
+function MedicineCategoryLeadingIcon({ category }: { category: string }) {
+  const Icon = MEDICINE_CATEGORY_ICONS[category] ?? Pill;
+  return (
+    <div
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border"
+      style={{
+        background: "var(--color-surface-alt)",
+        borderColor: "var(--color-border)",
+      }}
+    >
+      <Icon className="size-4" style={{ color: "var(--color-text-secondary)" }} />
+    </div>
+  );
+}
 
 const medicineColumns: ColumnDef<MedicineRow>[] = [
   {
     accessorKey: "name",
     header: "Medicine",
     cell: ({ row }) => (
-      <div className="min-w-[180px]">
-        <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          {row.original.name}
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-          {row.original.brand}
-        </p>
+      <div className="flex items-center gap-5 min-w-[200px]">
+        <MedicineCategoryLeadingIcon category={row.original.category} />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text-primary)" }}>
+            {row.original.name}
+          </p>
+          <p className="text-xs truncate mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+            {row.original.brand}
+          </p>
+        </div>
       </div>
     ),
   },

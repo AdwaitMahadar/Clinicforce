@@ -33,7 +33,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 Reuse existing components instead of building ad-hoc solutions. 
 
 **Domain Components (`components/common/` & `components/clinic/`)**
-*   `<DataTable />` - Universal table (always server-side pagination, pass `isLoading` for skeletons).
+*   `<DataTable />` — TanStack v8 list table: cell padding `px-4 py-3`, headers `px-4`, outer columns `first:pl-8 last:pr-8` for edge inset; sort handler on inner label+icon span only (not full header cell). Spacing is set in `DataTable` via `className` — do not edit `components/ui/table.tsx`. Initial load: route `loading.tsx` skeletons — no `isLoading` on DataTable.
 *   `<SearchFilterBar />` / `<TableFilterBar />` - Notion-style search and filter row.
 *   `<TablePagination />` - Reusable pagination footer.
 *   `<Badge />` / `<StatusBadge />` - Unified badge for statuses, types, and chart IDs. Appointment statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `components/common/StatusBadge.tsx`).
@@ -81,7 +81,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` (RHF + Zod): form column (all fields + clinical notes), sidebar tabs Documents | Appointments, activity log in sidebar bottom zone; create mode hides sidebar. After successful `createPatient`, modal closes via `back` + `refresh`; full-page new route pushes to `dashboard`.
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
-    *   `/dashboard`: DataTable (Search by name, filter by category/form); row click → `/medicines/view/[id]` (intercepting modal).
+    *   `/dashboard`: DataTable (Search by name, filter by category/form); first column = category-mapped Lucide icon in `surface-alt` square + name/brand (same flex pattern as patients + `InitialsBadge`); row click → `/medicines/view/[id]` (intercepting modal).
     *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar.
     *   `/reports`: Placeholder view.
 

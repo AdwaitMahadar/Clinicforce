@@ -100,15 +100,20 @@ export function DataTable<TData>({
                 return (
                   <TableHead
                     key={header.id}
-                    className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider select-none",
-                      canSort && "cursor-pointer hover:text-[var(--color-text-primary)] transition-colors"
-                    )}
+                    className="text-[10px] font-bold uppercase tracking-wider select-none px-4 first:pl-8 last:pr-8"
                     style={{ color: "var(--color-text-muted)" }}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                   >
                     {header.isPlaceholder ? null : (
-                      <span className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1",
+                          canSort &&
+                            "cursor-pointer hover:text-[var(--color-text-primary)] transition-colors"
+                        )}
+                        onClick={
+                          canSort ? header.column.getToggleSortingHandler() : undefined
+                        }
+                      >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {canSort && <SortIcon state={header.column.getIsSorted()} />}
                       </span>
@@ -131,7 +136,10 @@ export function DataTable<TData>({
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className="px-4 py-3 first:pl-8 last:pr-8"
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -139,7 +147,10 @@ export function DataTable<TData>({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-28 text-center">
+              <TableCell
+                colSpan={columns.length}
+                className="h-28 px-4 py-3 text-center first:pl-8 last:pr-8"
+              >
                 {emptyState ?? (
                   <span style={{ color: "var(--color-text-muted)" }} className="text-sm">
                     No records found.

@@ -70,7 +70,6 @@ export default async function MedicinesDashboardPage({ searchParams }: PageProps
     lastUsed: r.lastPrescribedDate
       ? format(new Date(r.lastPrescribedDate), "MMM d, yyyy")
       : "Never",
-    icon:     "pill",
     status:   r.isActive ? "active" : "inactive",
   }));
   const total = result.data.total;

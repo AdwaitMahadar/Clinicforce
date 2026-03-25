@@ -26,6 +26,8 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 **Loading UI:** Each route segment may define `loading.tsx` next to `page.tsx`, using Shadcn `Skeleton` and shared layouts in `components/common/skeletons/` so the fallback matches the page shell (not a generic full-page spinner).
 
+**`DataTable` list views** (e.g. `/patients/dashboard`, `/medicines/dashboard`): Cell/header padding, first/last column edge insets (`first:pl-8` / `last:pr-8`), and “sort only on label + icon” behavior are implemented in `components/common/DataTable.tsx` (not `components/ui/table.tsx`). See `docs/06-UI-Design-System.md` — `<DataTable />`.
+
 **Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern. **Create** intercepting modals (patients, appointments, medicines **`/new`**) use **`ModalShell size="lg"`**; **edit/view** modals use **`size="xl"`**. Matching `loading.tsx` fallbacks use **`ModalDetailSkeleton`** with the same **`size`** and **`variant="create"`** vs default **`detail`** (see `docs/06-UI-Design-System.md` §2.1).
 
 **Side nav width:** Collapse/expand is persisted with the `sidebar-collapsed` cookie and server-read `initialCollapsed` in `(app)/layout` so all matrix pages paint with the correct sidebar width (see `docs/06-UI-Design-System.md`, Navigation).
@@ -422,12 +424,12 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 ### Table Columns
 | Column | DB Field | Sortable? | Filterable? |
 |---|---|---|---|
-| Medicine Name | `name` | ✓ by name | Search |
+| Medicine | `name` (+ `brand` subline); **leading icon** from `category` (Lucide mapping in `MedicinesTable`, same flex layout pattern as `InitialsBadge` on patients) | ✓ by name | Search |
 | Category | `category` | — | ✓ (select) |
-| Form | `form` | — | ✓ (select) |
-| Brand | `brand` | — | — |
 | Last Prescribed | `last_prescribed_date` | ✓ | — |
 | Status | `is_active` | — | ✓ (select: Active / Inactive) |
+
+**Filters not shown as columns:** `form` is available in `TableFilterBar` only (not a table column). **Brand** appears under the medicine name, not as its own column.
 
 > **SKU removed.** The `sku` field was present in early mock data but is not part of the DB schema and has been fully removed from the UI, types, and mock data.
 
@@ -441,7 +443,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
   ```ts
   {
     clinicId:    string;   // from session
-    search?:     string;   // matches name, sku, brand
+    search?:     string;   // matches name, brand, category
     category?:   string;
     form?:       string;
     isActive?:   boolean;  // default: true only
@@ -458,16 +460,15 @@ The clinical notes field in the right column is a freeform textarea backed by `p
     total: number;
   }
   ```
-  where `MedicineRow`:
+  where each row matches `lib/db/queries/medicines.ts` `MedicineRow` (`lastPrescribedDate` as `Date | null` from the DB). The dashboard page maps rows to UI `MedicineRow` in `types/medicine.ts` (formatted `lastUsed`, `status` badge, category label for the list icon — **no** separate `icon` field on the row type).
   ```ts
   {
     id:                 string;
     name:               string;
-    sku:                string;
-    category:           string;
-    form:               string;
-    brand:              string;
-    lastPrescribedDate: string | null;
+    category:           string | null;
+    form:               string | null;
+    brand:              string | null;
+    lastPrescribedDate: Date | null;
     isActive:           boolean;
   }
   ```
