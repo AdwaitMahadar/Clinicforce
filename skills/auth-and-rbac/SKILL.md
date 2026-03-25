@@ -15,7 +15,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 
 | File | Role |
 | :--- | :--- |
-| `lib/auth/index.ts` | Better-Auth config — email+password, 7-day sessions; `advanced.crossSubDomainCookies` (`.clinicforce.app` in prod, `.localhost` in dev); `trustedOrigins` by `NODE_ENV` (apex + `https://*.clinicforce.app` in prod; `localhost` + `http://*.localhost:3000` in dev — glob patterns, not RegExp) |
+| `lib/auth/index.ts` | Better-Auth config — email+password, 7-day sessions; `advanced.crossSubDomainCookies` enabled only in prod (`Domain=.clinicforce.app`); off in dev (avoids `Domain=.localhost` cookie rejection); `trustedOrigins` by `NODE_ENV` (apex + `https://*.clinicforce.app` in prod; `localhost` + `http://*.localhost:3000` in dev — glob patterns, not RegExp) |
 | `lib/auth/session.ts` | `getSession()` — the ONLY way to get session data in server code |
 | `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
 | `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |

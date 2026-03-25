@@ -84,7 +84,7 @@ export const auth = betterAuth({
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
+      enabled: process.env.NODE_ENV === "production",
       domain:
         process.env.NODE_ENV === "production"
           ? ".clinicforce.app"
@@ -104,7 +104,7 @@ export const auth = betterAuth({
 });
 ```
 
-`advanced.crossSubDomainCookies` sets the session cookie `Domain` to `.clinicforce.app` in production and `.localhost` in development so the same Better-Auth session is available on any tenant subdomain.
+`advanced.crossSubDomainCookies` is enabled only when `NODE_ENV === "production"`. In production it sets the session cookie `Domain` to `.clinicforce.app` so the same Better-Auth session is available on any tenant subdomain. In local development it is disabled so the cookie is not scoped with `Domain=.localhost` (browsers such as Chrome reject that attribute on `localhost`).
 
 Better Auth matches `trustedOrigins` with **glob strings** (`*` / `?`), not `RegExp` literals — see `matchesOriginPattern` in better-auth. Production uses apex `https://clinicforce.app` plus `https://*.clinicforce.app`; development uses `http://localhost:3000` plus `http://*.localhost:3000` for tenant subdomains.
 
