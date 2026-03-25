@@ -69,7 +69,8 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
       ? format(new Date(r.lastVisit), "MMM d, yyyy")
       : "No visits",
     assignedDoctor: r.assignedDoctor ?? "—",
-    status:         r.isActive ? "active" : "inactive",
+    /** List rows from `getPatients` carry `status` only — `isActive` is not on the payload. */
+    status:         r.status,
   }));
   const total = result.data.total;
 

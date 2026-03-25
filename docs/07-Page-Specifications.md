@@ -246,7 +246,7 @@ Both needed to populate the patient and doctor pickers in the form:
   {
     clinicId:    string;   // from session
     search?:     string;   // matches first_name, last_name, chart_id, phone
-    status?:     "active" | "inactive" | "critical";
+    status?:     "active" | "inactive";
     doctorId?:   string;   // filter by last consulted doctor
     page:        number;   // 1-indexed
     pageSize:    number;   // default 10
@@ -272,9 +272,10 @@ Both needed to populate the patient and doctor pickers in the form:
     phone:          string;
     lastVisit:      string | null;   // MAX(appointments.scheduled_at) for this patient
     assignedDoctor: string | null;   // doctor name from that last appointment
-    status:         "active" | "inactive" | "critical";
+    status:         "active" | "inactive";
   }
   ```
+- **Wire note:** `lib/db/queries/patients.ts` maps `patients.is_active` → `status` on each list row and does **not** expose `isActive` on that shape. The dashboard (and any consumer) must use `row.status`; deriving from `row.isActive` is always wrong for this action.
 - **Filter:** Always `clinic_id = session.clinicId`
 - **RBAC:** All roles.
 
