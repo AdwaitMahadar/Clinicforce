@@ -72,7 +72,7 @@ export async function getSession(): Promise<AppSession> {
 - `session.user.clinicId` is the source of truth for all database queries — never hardcode the clinicId anywhere else
 - `session.user.clinicSubdomain` is loaded with the user (no extra clinic round-trip) and is the tenant slug for path-based features such as S3 object keys
 - `session.user.clinicName` is the clinic display name from `clinics.name` (safe to pass to client components; never pass `clinicId`)
-- `app/(app)/layout.tsx` builds the public clinic logo URL from `S3_ENDPOINT`, `S3_BUCKET_NAME`, and `session.user.clinicSubdomain` (`lib/clinic/build-clinic-logo-url.ts` — `{subdomain}/assets/logo/logo.png`) and passes it to `SideNav`; the sidebar shows `InitialsBadge` until the logo `<img>` successfully loads (`onLoad`); the image stays hidden until then so missing files, CORS, or network errors never show a broken icon
+- `app/(app)/layout.tsx` builds the public clinic logo URL from `ASSETS_BASE_URL` and `session.user.clinicSubdomain` (`lib/clinic/build-clinic-logo-url.ts` — `{ASSETS_BASE_URL}/{subdomain}/assets/logo/logo.png`) and passes it to `SideNav`; the sidebar shows `InitialsBadge` until the logo `<img>` successfully loads (`onLoad`); the image stays hidden until then so missing files, CORS, or network errors never show a broken icon
 - `session.user.type` is the source of truth for all role checks
 
 ---

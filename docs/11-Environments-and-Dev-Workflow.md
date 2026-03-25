@@ -45,6 +45,9 @@ S3_ACCESS_KEY="minioadmin"
 S3_SECRET_KEY="minioadmin_secret"
 S3_BUCKET_NAME="clinicforce-docs"
 
+# PUBLIC ASSET URL — browser-facing prefix for `{subdomain}/assets/...` (e.g. clinic logos)
+ASSETS_BASE_URL="http://localhost:9000/clinicforce-docs"
+
 # APP
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="development"
@@ -113,6 +116,9 @@ S3_ACCESS_KEY="your-r2-access-key"
 S3_SECRET_KEY="your-r2-secret-key"
 S3_BUCKET_NAME="clinicforce-docs"
 
+# PUBLIC ASSET URL — browser-facing prefix for `{subdomain}/assets/...` (R2 custom domain or CDN)
+ASSETS_BASE_URL="https://assets.clinicforce.app"
+
 # APP
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="development"
@@ -153,6 +159,7 @@ S3_REGION=auto
 S3_ACCESS_KEY=<r2 access key>
 S3_SECRET_KEY=<r2 secret key>
 S3_BUCKET_NAME=clinicforce-docs
+ASSETS_BASE_URL=https://assets.clinicforce.app
 ```
 
 ### Deployments
