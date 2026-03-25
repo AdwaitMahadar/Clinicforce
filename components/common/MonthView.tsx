@@ -8,6 +8,7 @@ import {
   eachDayOfInterval,
   isSameMonth,
   format,
+  parseISO,
   isToday,
 } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -38,10 +39,10 @@ export function MonthView({
 
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
-  // Group appointments by date string for fast lookup
+  // Group by local calendar date (ISO `start` is UTC; parse then format in local TZ)
   const apptsByDate: Record<string, AppointmentEvent[]> = {};
   for (const appt of appointments) {
-    const dateKey = appt.start.slice(0, 10); // "YYYY-MM-DD"
+    const dateKey = format(parseISO(appt.start), "yyyy-MM-dd");
     if (!apptsByDate[dateKey]) apptsByDate[dateKey] = [];
     apptsByDate[dateKey].push(appt);
   }
@@ -103,7 +104,7 @@ export function MonthView({
               <div className="flex-1 overflow-hidden px-1.5 pb-1.5 space-y-1.5">
                 {dayAppts.slice(0, MAX_EVENTS_VISIBLE).map((appt) => {
                   const colors = TYPE_COLORS[appt.type as AppointmentType] ?? TYPE_COLORS.general;
-                  const time   = appt.start.slice(11, 16); // "HH:MM"
+                  const time   = format(parseISO(appt.start), "HH:mm");
                   return (
                     <button
                       key={appt.id}

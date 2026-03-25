@@ -344,7 +344,7 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 
 **Appointment type colours** (shared by month chips and time-grid cards): defined in `lib/appointment-calendar-styles.ts` as `TYPE_COLORS` / `TYPE_LABELS`, using semantic tokens from `globals.css` (never hex in components). Core DB types: **general** → blue emphasis (`--color-blue-bg-strong` / `--color-blue-border-emphasis`), **follow-up** → amber, **emergency** → red. Extra calendar-only display types (e.g. vaccination, dental) map to their own token sets in the same file.
 
-**Month view chips** show `time · patientFirstName` using `patientFirstName` from the calendar query (not parsed from `patientName`).
+**Month view chips** show `time · patientFirstName` using `patientFirstName` from the calendar query (not parsed from `patientName`). Derive chip time and day grouping from `parseISO(start)` + `format` (local timezone), not substrings of the UTC ISO string.
 
 **View toggle:** Month / Week / Day buttons in the PageHeader actions area control which view is shown. Store this in the URL via `nuqs` (use `useQueryStates` to natively batch simultaneous `view` and `date` state updates to prevent flicker) so the selected view survives refresh and is shareable. Interactive tab buttons in the view control match `TopNav` link behavior (`hover:text-primary`), and icon arrows match with `hover:bg-surface-alt`.
 

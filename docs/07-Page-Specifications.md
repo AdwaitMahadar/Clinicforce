@@ -127,7 +127,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 #### Notes
 - The dashboard server `getRange` uses `date-fns` `startOfDay` / `endOfDay` for **day** view so `getAppointments` receives a full calendar day (inclusive); a single instant for both bounds would return no rows.
-- Month view groups events by day... URL state tracks `date` (ISO string, defaults to today) and `view` (defaults to `"month"`).
+- **Month view** (`<MonthView />`): group keys and chip times use `date-fns` `parseISO` + `format` on `AppointmentEvent.start` so the browser’s local calendar date and clock time match the grid (events are stored/transmitted as UTC ISO strings). URL state tracks `date` (ISO string, defaults to today) and `view` (defaults to `"month"`).
 - Always batch `view` and `date` state updates simultaneously using `nuqs` `useQueryStates` to prevent UI flicker.
 - Day and Week views pass the event array directly to FullCalendar, which uses `scrollTime` with a `-2` hour offset (`Math.max(0, currentHour - 2):00:00`) to place current time in view.
 - Clicking any event pushes `router.push('/appointments/view/${id}')` → intercepting modal.
