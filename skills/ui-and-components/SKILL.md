@@ -19,7 +19,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 **Typography Rules:**
 *   **DM Serif Display**: Use ONLY for `<h1>` page titles and the brand name.
 *   **DM Sans**: Use for EVERYTHING else (body, labels, buttons, tables).
-*   **Monospace**: Use for Chart IDs (e.g., `#PT-8821`).
+*   **Monospace**: Use for Chart IDs (`#PT-…` patients, `#STF-…` staff/users). Format with `formatPatientChartId` / `formatStaffChartId` from `lib/utils/chart-id.ts` — never hand-roll prefixes in components.
 
 **Forms & State:**
 *   Always use **React Hook Form + Zod**. Schemas must be imported from `lib/validators/`.

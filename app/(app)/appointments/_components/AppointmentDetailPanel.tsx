@@ -39,6 +39,7 @@ import {
   getActivePatients,
   getActiveDoctors,
 } from "@/lib/actions/appointments";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
 
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
@@ -301,7 +302,7 @@ export function AppointmentDetailPanel({
         if (patientsRes.success && patientsRes.data) {
           setPatientOptions(
             patientsRes.data.map((p) => ({
-              label: `${p.firstName} ${p.lastName} (#PT-${p.chartId})`,
+              label: `${p.firstName} ${p.lastName} (${formatPatientChartId(p.chartId)})`,
               value: p.id,
             }))
           );

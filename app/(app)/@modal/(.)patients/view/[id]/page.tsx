@@ -7,6 +7,7 @@
 
 import { notFound } from "next/navigation";
 import { format, parseISO, differenceInYears } from "date-fns";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
 import { getPatientDetail } from "@/lib/actions/patients";
 import { PatientDetailPanel } from "@/app/(app)/patients/_components/PatientDetailPanel";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -34,7 +35,7 @@ export default async function InterceptedPatientModal({ params }: Props) {
   const r = result.data;
   const patient: PatientDetail = {
     id:                    r.id,
-    chartId:               `#PT-${r.chartId}`,
+    chartId:               formatPatientChartId(r.chartId),
     firstName:             r.firstName,
     lastName:              r.lastName,
     email:                 r.email  ?? "",

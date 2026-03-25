@@ -13,6 +13,7 @@ export type PatientStatus = "active" | "inactive";
 
 export interface PatientRow {
   id:             string;
+  /** Raw numeric string from the server; format with `formatPatientChartId` where rendered. */
   chartId:        string;
   firstName:      string;
   lastName:       string;
@@ -52,6 +53,7 @@ export interface PatientDocument {
 
 export interface PatientDetail {
   id:                   string;
+  /** Display string from `formatPatientChartId` (e.g. `#PT-1001`). */
   chartId:              string;
   firstName:            string;
   lastName:             string;

@@ -31,6 +31,7 @@ import { DOCUMENT_TYPE_LABELS, type DocumentType } from "@/lib/constants/documen
 import type { GroupedSearchResults } from "@/types/search";
 import { DocumentMimeTypeIcon } from "@/components/common/DocumentMimeTypeIcon";
 import { StatusBadge } from "@/components/common/StatusBadge";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
 
 const DEBOUNCE_MS = 300;
 
@@ -225,7 +226,7 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
                         className="text-xs mt-0.5"
                         style={{ color: "var(--color-text-muted)" }}
                       >
-                        #{p.chartId}
+                        {formatPatientChartId(p.chartId)}
                         {p.phone ? ` · ${p.phone}` : ""}
                       </p>
                     </div>

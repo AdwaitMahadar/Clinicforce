@@ -18,7 +18,7 @@ When writing database queries, Drizzle models, or server actions, you MUST follo
 2. **Resolve `clinic_id` server-side**: The `clinic_id` must ALWAYS be resolved on the server (e.g., from the authenticated session). 
    *Why?* Clients cannot be trusted. If the client passes the `clinic_id`, a malicious user could simply change the `clinic_id` in the API payload to access another clinic's data.
 3. **Never expose `clinic_id` to the client**: Do not pass the `clinic_id` in API responses unless absolutely necessary, and NEVER include it in URLs or client state.
-4. **Use `chart_id` instead of UUIDs in URLs and UI**: Never show raw UUIDs (like `patient.id`) to users. Use the user-friendly `chart_id`. Note that `chart_id` is only unique *per clinic*, not globally.
+4. **Use `chart_id` instead of UUIDs in URLs and UI**: Never show raw UUIDs (like `patient.id`) to users. Use the user-friendly `chart_id`. Note that `chart_id` is only unique *per clinic*, not globally. In the UI, **display** integers with `#PT-` (patients) / `#STF-` (staff) via `lib/utils/chart-id.ts` — the DB column stays a plain integer.
 
 ## Schema Summary
 

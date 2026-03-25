@@ -11,6 +11,7 @@ import { getPatientDetail } from "@/lib/actions/patients";
 import { PatientDetailPanel } from "../../_components/PatientDetailPanel";
 import type { PatientDetail } from "@/types/patient";
 import { format, parseISO, differenceInYears } from "date-fns";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
 
 interface PatientDetailPageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
   const r = result.data;
   const patient: PatientDetail = {
     id:                   r.id,
-    chartId:              `#PT-${r.chartId}`,
+    chartId:              formatPatientChartId(r.chartId),
     firstName:            r.firstName,
     lastName:             r.lastName,
     email:                r.email ?? "",

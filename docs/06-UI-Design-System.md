@@ -222,7 +222,8 @@ critical     → red background, red text
 
 // Chart ID
 chartId      → subtle grey background, monospace font, e.g. #PT-8821
-              Format: '#PT-' prefix for patients, '#USR-' prefix for users
+              Format: '#PT-' prefix for patients, '#STF-' prefix for staff/users
+              Use `formatPatientChartId` / `formatStaffChartId` from `lib/utils/chart-id.ts` (display layer only; DB stores integers).
 ```
 
 **Usage:**
@@ -388,7 +389,7 @@ therapy       → blue-purple
 ### Typography
 - **Display / Page titles:** DM Serif Display — used for `<h1>` page titles and the brand name only.
 - **All other text:** DM Sans — UI labels, body, table content, buttons.
-- **Chart IDs:** Monospace font (e.g. `font-mono` in Tailwind) for `#PT-` style identifiers.
+- **Chart IDs:** Monospace font (e.g. `font-mono` in Tailwind) for `#PT-` / `#STF-` style identifiers. Format via `lib/utils/chart-id.ts`.
 
 ### Spacing & Radius
 - Page content padding: `px-10 py-9`
@@ -425,7 +426,7 @@ Avoid heavy shadows. Use borders instead of box-shadows for card separation. The
 
 - `clinicId` is never passed through the UI as a prop or stored in client state. It is resolved server-side from the authenticated session on every request.
 - Never expose `clinicId` in URLs.
-- The `chartId` (e.g. `#PT-8821`) is the user-facing identifier shown in the UI. The internal UUID is never shown to clinic staff.
+- The `chartId` (patients: e.g. `#PT-8821`; staff: e.g. `#STF-101`) is the user-facing identifier shown in the UI. The internal UUID is never shown to clinic staff.
 
 ---
 

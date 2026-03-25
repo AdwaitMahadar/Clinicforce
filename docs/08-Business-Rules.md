@@ -11,7 +11,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 ### Ranges
 | Entity | Range | Digits | Display Format |
 |---|---|---|---|
-| Users | 100 – 999 | 3 | `#USR-` prefix e.g. `#USR-472` |
+| Users (staff) | 100 – 999 | 3 | `#STF-` prefix e.g. `#STF-472` |
 | Patients | 10000 – 99999 | 5 | `#PT-` prefix e.g. `#PT-38291` |
 
 ### Generation Algorithm

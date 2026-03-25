@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { DataTable, InitialsBadge, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
 import type { PatientRow } from "@/types/patient";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
 
 const patientColumns: ColumnDef<PatientRow>[] = [
   {
@@ -35,7 +36,7 @@ const patientColumns: ColumnDef<PatientRow>[] = [
           border:     "1px solid var(--color-border)",
         }}
       >
-        {row.getValue("chartId")}
+        {formatPatientChartId(row.original.chartId)}
       </span>
     ),
   },

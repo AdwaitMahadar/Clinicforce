@@ -100,6 +100,7 @@ lib/
   db/                       ← Drizzle schema + query functions
   validators/               ← Zod schemas (shared between forms and server actions)
   auth/                     ← Better-Auth config
+  utils/                    ← `chart-id.ts` — `#PT-` / `#STF-` display formatters (integers in DB only)
   appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
 
 types/                      ← UI/view-model TypeScript types (patient, appointment, medicine, home)

@@ -26,8 +26,8 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Immutability:** The `createdBy` and `clinicId` fields are set ONLY at creation (sourced from the session) and can **never** be changed. ChartIds are immutable after initial generation. Appointment **`patientId`** is immutable after creation (`updateAppointment` never writes it; mismatched payload → error).
 
 ### ChartId Generation
-- **Users**: Random 3-digit number (100–999). Placed under prefix: `#USR-`
-- **Patients**: Random 5-digit number (10000–99999). Placed under prefix: `#PT-`
+- **Users (staff)**: Random 3-digit number (100–999). Display prefix: `#STF-`
+- **Patients**: Random 5-digit number (10000–99999). Display prefix: `#PT-`
 - **Rules**: Must be generated randomly (not sequentially). Must be unique *per clinic*. Are never reused, even if the user/patient is deactivated. Used purely for display—the true primary key for relations is always the UUID.
 
 ## ⚠️ Edge Cases & Special Rules (Commonly Overlooked!)
