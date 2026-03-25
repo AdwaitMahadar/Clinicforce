@@ -60,17 +60,12 @@
 import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-// ─── Size presets ─────────────────────────────────────────────────────────────
+import {
+  MODAL_SHELL_SIZE_MAP,
+  type ModalSize,
+} from "@/components/common/modal-shell-sizes";
 
-const SIZE_MAP = {
-  sm:   { width: "min(92vw, 540px)",  height: "min(85vh, 480px)"  },
-  md:   { width: "min(92vw, 760px)",  height: "min(85vh, 600px)"  },
-  lg:   { width: "min(92vw, 1100px)", height: "min(88vh, 820px)"  },
-  xl:   { width: "min(92vw, 1650px)", height: "min(90vh, 1080px)" },
-  full: { width: "96vw",              height: "96vh"               },
-} as const;
-
-export type ModalSize = keyof typeof SIZE_MAP;
+export type { ModalSize };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -165,7 +160,7 @@ export function ModalShell({
   }, [closeOnEscape, handleClose]);
 
   // Resolved dimensions
-  const resolvedSize = SIZE_MAP[size];
+  const resolvedSize = MODAL_SHELL_SIZE_MAP[size];
   const resolvedWidth  = width  ?? resolvedSize.width;
   const resolvedHeight = height ?? resolvedSize.height;
 

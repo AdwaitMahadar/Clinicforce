@@ -28,7 +28,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 
 ## 🧩 Component Inventory
 
-**Route loading:** Colocate `loading.tsx` with `page.tsx` under `app/(app)/`; use Shadcn `Skeleton` and `components/common/skeletons/*` so fallbacks match each page layout (tables, home stats, calendar, detail/modal). Skeletons that mirror full-page shells use the same **`max-w-[1700px] mx-auto w-full`** inner wrapper as §2.2 in `docs/06-UI-Design-System.md`.
+**Route loading:** Colocate `loading.tsx` with `page.tsx` under `app/(app)/`; use Shadcn `Skeleton` and `components/common/skeletons/*` so fallbacks match each page layout (tables, home stats, calendar, detail/modal). Skeletons that mirror full-page shells use the same **`max-w-[1700px] mx-auto w-full`** inner wrapper as §2.2 in `docs/06-UI-Design-System.md`. Intercepting **create** modals: `ModalDetailSkeleton` with **`size="lg"`** + **`variant="create"`**; **view/edit** modals: default **`ModalDetailSkeleton`** (**`xl`** / **`detail`**).
 
 Reuse existing components instead of building ad-hoc solutions. 
 

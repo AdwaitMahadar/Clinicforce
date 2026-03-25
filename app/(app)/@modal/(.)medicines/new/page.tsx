@@ -25,7 +25,7 @@ export default function NewMedicineModal() {
   const handleClose = useCallback(() => router.back(), [router]);
 
   return (
-    <ModalShell size="xl" label="Add New Medicine">
+    <ModalShell size="lg" label="Add New Medicine">
       <MedicineDetailPanel mode="create" onClose={handleClose} />
     </ModalShell>
   );

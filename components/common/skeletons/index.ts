@@ -4,4 +4,10 @@ export { HomeDashboardSkeleton } from "./HomeDashboardSkeleton";
 export { CalendarDashboardSkeleton } from "./CalendarDashboardSkeleton";
 export { ReportsPlaceholderSkeleton } from "./ReportsPlaceholderSkeleton";
 export { DetailPageSkeleton } from "./DetailPageSkeleton";
-export { ModalDetailSkeleton } from "./ModalDetailSkeleton";
+export {
+  ModalDetailSkeleton,
+} from "./ModalDetailSkeleton";
+export type {
+  ModalDetailSkeletonProps,
+  ModalDetailSkeletonVariant,
+} from "./ModalDetailSkeleton";

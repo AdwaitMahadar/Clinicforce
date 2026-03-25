@@ -17,7 +17,7 @@ export default function NewAppointmentModal() {
   const handleClose = useCallback(() => router.back(), [router]);
 
   return (
-    <ModalShell size="xl" label="New Appointment">
+    <ModalShell size="lg" label="New Appointment">
       <AppointmentDetailPanel mode="create" onClose={handleClose} />
     </ModalShell>
   );

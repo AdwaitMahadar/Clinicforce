@@ -26,7 +26,7 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 **Loading UI:** Each route segment may define `loading.tsx` next to `page.tsx`, using Shadcn `Skeleton` and shared layouts in `components/common/skeletons/` so the fallback matches the page shell (not a generic full-page spinner).
 
-**Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern.
+**Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern. **Create** intercepting modals (patients, appointments, medicines **`/new`**) use **`ModalShell size="lg"`**; **edit/view** modals use **`size="xl"`**. Matching `loading.tsx` fallbacks use **`ModalDetailSkeleton`** with the same **`size`** and **`variant="create"`** vs default **`detail`** (see `docs/06-UI-Design-System.md` §2.1).
 
 **Side nav width:** Collapse/expand is persisted with the `sidebar-collapsed` cookie and server-read `initialCollapsed` in `(app)/layout` so all matrix pages paint with the correct sidebar width (see `docs/06-UI-Design-System.md`, Navigation).
 

@@ -119,12 +119,12 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`). No footer — parent uses `DetailPanel` or composes actions.
 - `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`).
 - `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
-- `ModalShell.tsx` — Intercepting modal wrapper component
+- `ModalShell.tsx` — Intercepting modal wrapper component (`modal-shell-sizes.ts` — shared width/height presets with `ModalDetailSkeleton`)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
-- `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `CalendarDashboardSkeleton`, `ReportsPlaceholderSkeleton`, `DetailPageSkeleton`, `ModalDetailSkeleton`)
+- `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, `HomeDashboardSkeleton`, `CalendarDashboardSkeleton`, `ReportsPlaceholderSkeleton`, `DetailPageSkeleton`, `ModalDetailSkeleton` — `size` / `variant` for modal loaders; create modals use `lg` + `create`)
 
 ---
 
