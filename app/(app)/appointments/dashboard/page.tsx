@@ -61,9 +61,10 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
         const end = new Date(start.getTime() + durationMs);
         const apptType = (VALID_APPOINTMENT_DISPLAY_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];
         return {
-          id:          a.id,
-          patientName: a.patientName ?? "",
-          doctorName:  a.doctorName  ?? "",
+          id:               a.id,
+          patientName:      a.patientName ?? "",
+          patientFirstName: a.patientFirstName ?? "",
+          doctorName:       a.doctorName ?? "",
           type:        apptType,
           status:      a.status as AppointmentEvent["status"],
           start:       start.toISOString(),

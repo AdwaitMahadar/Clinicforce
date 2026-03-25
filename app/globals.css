@@ -54,6 +54,9 @@
   --color-blue:         #2563EB;
   --color-blue-bg:      #EFF6FF;
   --color-blue-border:  #BFDBFE;
+  /** Richer blue tint for calendar type chips (general) — slightly more saturated than `--color-blue-bg`. */
+  --color-blue-bg-strong:       #DBEAFE;
+  --color-blue-border-emphasis: #93C5FD;
 
   --color-purple:       #7C3AED;
   --color-purple-bg:    #F5F3FF;

@@ -13,9 +13,9 @@ export const TYPE_COLORS: Record<
   AppointmentType,
   { bg: string; text: string; border: string; solid: string }
 > = {
-  general:     { bg: "var(--color-blue-bg)",   text: "var(--color-blue)",   border: "var(--color-blue-border)",   solid: "var(--color-blue)" },
-  "follow-up": { bg: "var(--color-blue-bg)",   text: "var(--color-blue)",   border: "var(--color-blue-border)",   solid: "var(--color-blue)" },
-  emergency:   { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  solid: "var(--color-green)" },
+  general:     { bg: "var(--color-blue-bg-strong)",       text: "var(--color-blue)",   border: "var(--color-blue-border-emphasis)", solid: "var(--color-blue)" },
+  "follow-up": { bg: "var(--color-amber-bg)",               text: "var(--color-amber)",  border: "var(--color-amber-border)",         solid: "var(--color-amber)" },
+  emergency:   { bg: "var(--color-red-bg)",                 text: "var(--color-red)",    border: "var(--color-red-border)",           solid: "var(--color-red)" },
   vaccination: { bg: "var(--color-amber-bg)",  text: "var(--color-amber)",  border: "var(--color-amber-border)",  solid: "var(--color-amber)" },
   checkup:     { bg: "var(--color-red-bg)",    text: "var(--color-red)",    border: "var(--color-red-border)",    solid: "var(--color-red)" },
   dental:      { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  solid: "var(--color-green)" },

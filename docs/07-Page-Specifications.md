@@ -102,19 +102,22 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     view:       "month" | "week" | "day";
   }
   ```
-- **Output:** Array of `AppointmentEvent`:
+- **Output:** DB rows as `AppointmentCalendarRow` (joined names, `scheduled_at`, duration). The dashboard page maps them to `AppointmentEvent` for the calendar client:
   ```ts
+  // AppointmentCalendarRow (query layer) — includes:
   {
-    id:          string;
-    title:       string;
-    patientName: string;   // JOIN patients
-    doctorName:  string;   // JOIN users
-    date:        string;   // ISO timestamp (scheduled start)
-    duration:    number;   // minutes
-    status:      "scheduled" | "completed" | "cancelled" | "no-show";
-    type:        "general" | "follow-up" | "emergency" | ...;
-    notes:       string | null;
+    id: string;
+    title: string;
+    patientName: string;       // patients.first_name + last_name
+    patientFirstName: string;  // patients.first_name (for month-view chips)
+    doctorName: string;
+    scheduledAt: Date;
+    duration: number;
+    status: string;
+    type: string;
+    notes: string | null;
   }
+  // AppointmentEvent (UI) — see `types/appointment.ts`
   ```
 - **Filter:** `clinic_id = session.clinicId`, `is_active = true`, `date BETWEEN rangeStart AND rangeEnd`
 - **Sort:** `date ASC`

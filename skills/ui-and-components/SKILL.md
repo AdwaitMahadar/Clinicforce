@@ -46,7 +46,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`.
 *   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete).
 *   `<ModalShell />` - Universal modal envelope used for intercepting route modals.
-*   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — appointment type colours/labels: `lib/appointment-calendar-styles.ts` (not the DB enum; display superset in `@/types/appointment`).
+*   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — type colours/labels in `lib/appointment-calendar-styles.ts` (`TYPE_COLORS`: general=blue emphasis tokens, follow-up=amber, emergency=red; not the DB enum alone — display superset in `@/types/appointment`). Month chips use `AppointmentEvent.patientFirstName` from the query; week/day cards still use full `patientName` on the event title.
 
 **Layouts (`components/layout/`)**
 *   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`.

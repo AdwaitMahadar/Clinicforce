@@ -100,7 +100,7 @@ export function MonthView({
               </div>
 
               {/* Event chips */}
-              <div className="flex-1 overflow-hidden px-1 pb-1 space-y-0.5">
+              <div className="flex-1 overflow-hidden px-1.5 pb-1.5 space-y-1.5">
                 {dayAppts.slice(0, MAX_EVENTS_VISIBLE).map((appt) => {
                   const colors = TYPE_COLORS[appt.type as AppointmentType] ?? TYPE_COLORS.general;
                   const time   = appt.start.slice(11, 16); // "HH:MM"
@@ -111,14 +111,14 @@ export function MonthView({
                         e.stopPropagation();
                         onEventClick?.(appt);
                       }}
-                      className="w-full text-left text-[10px] font-medium px-1.5 py-0.5 rounded truncate block leading-tight border transition-opacity hover:opacity-80 cursor-pointer"
+                      className="w-full text-left text-xs font-medium px-2 py-1.5 min-h-8 rounded-md truncate block leading-snug border transition-opacity hover:opacity-80 cursor-pointer"
                       style={{
                         background:  colors.bg,
                         color:       colors.text,
                         borderColor: colors.border,
                       }}
                     >
-                      {time} · {appt.patientName.split(" ")[0]}
+                      {time} · {appt.patientFirstName}
                     </button>
                   );
                 })}

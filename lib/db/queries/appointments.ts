@@ -24,6 +24,8 @@ export interface AppointmentCalendarRow {
   id: string;
   title: string;
   patientName: string;
+  /** `patients.first_name` — exposed for month-view chips (full name remains in `patientName`). */
+  patientFirstName: string;
   doctorName: string;
   /** Full Date of the scheduled start (`scheduled_at`). */
   scheduledAt: Date;
@@ -108,6 +110,7 @@ export async function getAppointments(
     id: r.id,
     title: r.title,
     patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
+    patientFirstName: r.patientFirstName,
     doctorName: r.doctorName ?? "",
     scheduledAt: r.scheduledAt,
     duration: r.duration,

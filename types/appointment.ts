@@ -27,9 +27,11 @@ export type AppointmentType = AppointmentDbType | AppointmentCalendarExtra;
 
 /** The shape passed as props to MonthView / TimeGridView. */
 export interface AppointmentEvent {
-  id:          string;
-  patientName: string;
-  doctorName:  string;
+  id:               string;
+  patientName:      string;
+  /** `patients.first_name` from the calendar query — use for compact month chips. */
+  patientFirstName: string;
+  doctorName:       string;
   type:        AppointmentType;
   status:      AppointmentStatus;
   /** ISO date-time string, e.g. "2025-02-22T09:00:00" */
