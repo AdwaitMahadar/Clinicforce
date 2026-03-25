@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Activity, ArrowRight, Loader2 } from "lucide-react";
+import { Activity, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth/client";
 
@@ -17,8 +17,119 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const TESTIMONIALS = [
+  {
+    quote:
+      "Clinicforce has transformed how we manage our daily operations. It feels less like software and more like a precision instrument.",
+    name: "Dr. Helena Vance",
+    role: "Chief Medical Director",
+    initials: "HV",
+  },
+  {
+    quote:
+      "Our front desk finally has one place for charts, documents, and scheduling. Onboarding new staff used to take weeks—now it takes days.",
+    name: "Marcus Chen",
+    role: "Practice Administrator",
+    initials: "MC",
+  },
+  {
+    quote:
+      "I see my day at a glance and spend less time hunting for information between rooms. That clarity is worth every minute we saved.",
+    name: "Dr. Priya Nair",
+    role: "Family Physician",
+    initials: "PN",
+  },
+  {
+    quote:
+      "We needed something serious about privacy without feeling clinical and cold. Clinicforce nails that balance for our team and our patients' data.",
+    name: "Elena Ruiz",
+    role: "Clinic Operations Lead",
+    initials: "ER",
+  },
+] as const;
+
+function TestimonialCarousel() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % TESTIMONIALS.length);
+    }, 4500);
+    return () => clearInterval(id);
+  }, []);
+
+  const current = TESTIMONIALS[index];
+
+  return (
+    <div
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Customer testimonials"
+      aria-live="polite"
+      className="p-6 rounded-[10px] inline-flex flex-col gap-4 max-w-md w-full"
+      style={{
+        background: "var(--color-glass-fill-card)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid var(--color-glass-border)",
+      }}
+    >
+      <div className="flex gap-2 items-center" role="tablist" aria-label="Choose testimonial">
+        {TESTIMONIALS.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            role="tab"
+            aria-selected={i === index}
+            aria-label={`Testimonial ${i + 1} of ${TESTIMONIALS.length}`}
+            className="w-2 h-2 rounded-full transition-colors shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-green)]"
+            style={{
+              background:
+                i === index ? "var(--color-green)" : "var(--color-border)",
+            }}
+            onClick={() => setIndex(i)}
+          />
+        ))}
+      </div>
+      <p
+        className="text-sm font-medium italic leading-relaxed"
+        style={{ color: "var(--color-text-secondary)" }}
+      >
+        &ldquo;{current.quote}&rdquo;
+      </p>
+      <div className="flex items-center gap-3">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+          style={{
+            background: "var(--color-surface-alt)",
+            color: "var(--color-text-primary)",
+            border: "1px solid var(--color-border)",
+          }}
+        >
+          {current.initials}
+        </div>
+        <div>
+          <p
+            className="text-xs font-bold"
+            style={{ color: "var(--color-text-primary)" }}
+          >
+            {current.name}
+          </p>
+          <p
+            className="text-[10px] uppercase tracking-widest"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            {current.role}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl") ?? "/home/dashboard";
 
@@ -53,7 +164,7 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Email */}
       <div>
         <label
@@ -104,19 +215,34 @@ function LoginForm() {
             Forgot?
           </a>
         </div>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          {...register("password")}
-          className="w-full h-12 px-4 rounded-[10px] outline-none transition-all duration-200 placeholder:opacity-40 focus:ring-2"
-          style={{
-            background: "var(--color-surface-alt)",
-            border: "1px solid var(--color-border)",
-            color: "var(--color-text-primary)",
-          }}
-        />
+        <div className="relative">
+          <input
+            id="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            {...register("password")}
+            type={showPassword ? "text" : "password"}
+            className="w-full h-12 pl-4 pr-12 rounded-[10px] outline-none transition-all duration-200 placeholder:opacity-40 focus:ring-2"
+            style={{
+              background: "var(--color-surface-alt)",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-text-primary)",
+            }}
+          />
+          <button
+            type="button"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-opacity hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-[var(--color-green)]"
+            style={{ color: "var(--color-text-muted)" }}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            onClick={() => setShowPassword((v) => !v)}
+          >
+            {showPassword ? (
+              <EyeOff className="w-4 h-4" aria-hidden />
+            ) : (
+              <Eye className="w-4 h-4" aria-hidden />
+            )}
+          </button>
+        </div>
         {errors.password && (
           <p
             className="mt-1 text-xs px-1"
@@ -172,6 +298,8 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const year = new Date().getFullYear();
+
   return (
     <div
       className="flex min-h-screen overflow-hidden"
@@ -179,7 +307,7 @@ export default function LoginPage() {
     >
       {/* ── Left Panel: Brand ──────────────────────────────────── */}
       <div
-        className="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden"
+        className="hidden lg:flex lg:w-1/2 relative flex-col min-h-0 p-14 overflow-hidden"
         style={{
           background:
             "linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-alt) 100%)",
@@ -205,7 +333,7 @@ export default function LoginPage() {
         </div>
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="relative z-10 flex items-center gap-3 shrink-0">
           <div
             className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0"
             style={{ background: "var(--color-ink)" }}
@@ -220,94 +348,40 @@ export default function LoginPage() {
           </span>
         </div>
 
-        {/* Hero content */}
-        <div className="relative z-10 max-w-lg">
-          <h1
-            className="text-5xl font-extrabold tracking-tight leading-[1.1] mb-6"
-            style={{
-              fontFamily: "var(--font-serif)",
-              color: "var(--color-text-primary)",
-            }}
-          >
-            Clinic management,{" "}
-            <span
-              className="italic"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              precisely
-            </span>{" "}
-            crafted.
-          </h1>
-          <p
-            className="text-lg leading-relaxed mb-8"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            The complete management system for modern healthcare practices.
-          </p>
-
-          {/* Glass testimonial card */}
-          <div
-            className="p-6 rounded-[10px] inline-flex flex-col gap-4 max-w-md"
-            style={{
-              background: "var(--color-glass-fill-card)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              border: "1px solid var(--color-glass-border)",
-            }}
-          >
-            <div className="flex gap-2 items-center">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--color-green)" }}
-              />
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--color-border)" }}
-              />
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ background: "var(--color-border)" }}
-              />
-            </div>
-            <p
-              className="text-sm font-medium italic leading-relaxed"
-              style={{ color: "var(--color-text-secondary)" }}
-            >
-              &ldquo;Clinicforce has transformed how we manage our daily
-              operations. It feels less like software and more like a precision
-              instrument.&rdquo;
-            </p>
-            <div className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+        {/* Hero + testimonial — vertically centered band */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center py-12 min-h-0">
+          <div className="max-w-lg w-full space-y-10">
+            <div>
+              <h1
+                className="text-5xl font-black tracking-tight leading-[1.08] mb-6"
                 style={{
-                  background: "var(--color-surface-alt)",
+                  fontFamily: "var(--font-serif)",
                   color: "var(--color-text-primary)",
-                  border: "1px solid var(--color-border)",
                 }}
               >
-                HV
-              </div>
-              <div>
-                <p
-                  className="text-xs font-bold"
-                  style={{ color: "var(--color-text-primary)" }}
+                Clinic management,{" "}
+                <span
+                  className="italic font-extrabold"
+                  style={{ color: "var(--color-text-secondary)" }}
                 >
-                  Dr. Helena Vance
-                </p>
-                <p
-                  className="text-[10px] uppercase tracking-widest"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  Chief Medical Director
-                </p>
-              </div>
+                  precisely
+                </span>{" "}
+                crafted.
+              </h1>
+              <p
+                className="text-lg leading-relaxed font-medium"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                The complete management system for modern healthcare practices.
+              </p>
             </div>
+
+            <TestimonialCarousel />
           </div>
         </div>
 
         {/* Bottom meta */}
-        <div className="relative z-10 flex gap-8">
+        <div className="relative z-10 flex gap-10 shrink-0 pt-4">
           <div className="flex flex-col">
             <span
               className="text-[11px] uppercase tracking-widest font-bold mb-1"
@@ -341,12 +415,12 @@ export default function LoginPage() {
 
       {/* ── Right Panel: Form ──────────────────────────────────── */}
       <div
-        className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-24"
+        className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:px-24 lg:py-28"
         style={{ background: "var(--color-surface)" }}
       >
         <div className="w-full max-w-md">
           {/* Mobile logo — hidden on desktop */}
-          <div className="lg:hidden flex items-center gap-3 mb-12">
+          <div className="lg:hidden flex items-center gap-3 mb-14">
             <div
               className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0"
               style={{ background: "var(--color-ink)" }}
@@ -362,14 +436,17 @@ export default function LoginPage() {
           </div>
 
           {/* Heading */}
-          <div className="mb-10">
+          <div className="mb-12">
             <h2
-              className="text-3xl font-bold tracking-tight mb-2"
+              className="text-[1.875rem] font-extrabold tracking-tight mb-3 leading-tight"
               style={{ color: "var(--color-text-primary)" }}
             >
               Welcome back
             </h2>
-            <p className="font-medium" style={{ color: "var(--color-text-secondary)" }}>
+            <p
+              className="text-sm font-medium leading-relaxed"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
               Please enter your credentials to continue.
             </p>
           </div>
@@ -377,7 +454,7 @@ export default function LoginPage() {
           {/* Form — wrapped in Suspense for useSearchParams */}
           <Suspense
             fallback={
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
@@ -399,7 +476,7 @@ export default function LoginPage() {
           className="text-[10px] uppercase tracking-[0.2em] font-bold"
           style={{ color: "var(--color-text-muted)" }}
         >
-          © 2025 Clinicforce
+          © {year} Clinicforce
         </div>
         <div className="flex gap-6 pointer-events-auto">
           <a

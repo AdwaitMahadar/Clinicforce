@@ -229,6 +229,7 @@ export async function createPatient(input: CreatePatientInput) {
 **Route:** `/login` (inside `app/(auth)/`)
 
 - **Forms + types:** The login form uses `useForm({ resolver: zodResolver(loginSchema) })` without an explicit generic (so types infer from the resolver), `z.infer<typeof loginSchema>` for the submit handler, and no `defaultValues` for Zod `.default()` fields such as `rememberMe`.
+- **UI-only (see `docs/06-UI-Design-System.md`):** Left-panel testimonial carousel with dot navigation; password field visibility toggle; footer copyright year from `new Date().getFullYear()`. These do not change auth behaviour.
 - Email + password form
 - On success: redirect to `/home/dashboard`
 - On failure: show inline error message — do not use a toast for auth errors, show them next to the form

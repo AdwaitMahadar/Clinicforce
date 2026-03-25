@@ -65,7 +65,10 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
 ## 📄 Per-Page Requirements (Summary)
 
 *   **Login (`/login`):**
-    *   Split 50/50 layout — left brand panel (hidden mobile), right form panel.
+    *   Split 50/50 layout — left brand panel (hidden mobile), right form panel; increased padding/rhythm vs a flat stack; stronger heading weights on hero + “Welcome back”.
+    *   Left: **testimonial carousel** (several fake quotes), dots = nav + auto-rotate (~4.5s), same glass card styling.
+    *   Password: **Eye / EyeOff** toggle (type `password` ↔ `text` only).
+    *   Footer: `© {new Date().getFullYear()} Clinicforce`.
     *   Client component. React Hook Form + Zod. Sonner toasts on error. `useForm({ resolver: zodResolver(schema) })` without a generic so types infer from the resolver; no `defaultValues` for Zod `.default()` fields (see `docs/04-API-Specification.md`).
     *   `signIn.email()` from `lib/auth/client.ts`. Redirects to `?returnUrl` or `/home/dashboard` on success.
     *   No OAuth buttons. No "Request access" link. `rememberMe` checkbox wired to form.

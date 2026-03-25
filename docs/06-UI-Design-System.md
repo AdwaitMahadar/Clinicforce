@@ -164,6 +164,8 @@ lib/
     avatar.ts                   ← Deterministic colour from name/id hash
 ```
 
+**Login page (`/login`, `app/(auth)/login/page.tsx`):** Public split layout — left brand column (gradient, optional grain overlay, marketing headline, **glass testimonial carousel**: multiple quotes with dot navigation, auto-advance ~4.5s, `aria-live` for updates) and right column (credentials). Password field uses a **visibility toggle** (Lucide `Eye` / `EyeOff`) that only switches `input` type between `password` and `text`. Footer copyright uses **`new Date().getFullYear()`**. All colours via design tokens (`var(--color-*)`). Typography: serif display for the left headline; sans for form and body.
+
 ---
 
 ## 4. Component Library Strategy
