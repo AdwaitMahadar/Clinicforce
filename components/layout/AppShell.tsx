@@ -12,6 +12,10 @@ interface AppShellProps {
   avatarSeed: string;
   /** From `sidebar-collapsed` cookie in `(app)/layout.tsx` — first paint matches persisted width. */
   initialCollapsed: boolean;
+  /** Clinic display name from `getSession()` — sidebar header. */
+  clinicName: string;
+  /** Public object URL for `{subdomain}/assets/logo/logo.png` — sidebar header. */
+  clinicLogoUrl: string;
 }
 
 export function AppShell({
@@ -21,6 +25,8 @@ export function AppShell({
   userTypeLabel,
   avatarSeed,
   initialCollapsed,
+  clinicName,
+  clinicLogoUrl,
 }: AppShellProps) {
   return (
     <div className="flex h-screen w-full overflow-hidden relative">
@@ -30,6 +36,8 @@ export function AppShell({
         userTypeLabel={userTypeLabel}
         avatarSeed={avatarSeed}
         initialCollapsed={initialCollapsed}
+        clinicName={clinicName}
+        clinicLogoUrl={clinicLogoUrl}
       />
 
       {/* Right — top nav + floating main card */}

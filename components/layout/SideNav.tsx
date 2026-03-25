@@ -24,6 +24,7 @@ import {
   SIDEBAR_COLLAPSED_COOKIE_NAME,
   SIDEBAR_COLLAPSED_MAX_AGE_SECONDS,
 } from "@/lib/constants/sidebar";
+import { InitialsBadge } from "@/components/common/InitialsBadge";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -66,6 +67,46 @@ interface SideNavProps {
   avatarSeed: string;
   /** From `sidebar-collapsed` cookie via `(app)/layout` — avoids width flash on refresh */
   initialCollapsed: boolean;
+  /** From `getSession()` — clinic header label */
+  clinicName: string;
+  /** Public URL for `{subdomain}/assets/logo/logo.png` */
+  clinicLogoUrl: string;
+}
+
+/**
+ * Shows `InitialsBadge` until the logo `<img>` fires `onLoad`. The image stays `hidden`
+ * (display:none) until then so 404/CORS/network failures never show a broken icon — only initials.
+ */
+function ClinicBrandMark({
+  clinicName,
+  clinicLogoUrl,
+}: {
+  clinicName: string;
+  clinicLogoUrl: string;
+}) {
+  const [logoLoaded, setLogoLoaded] = useState(false);
+
+  return (
+    <div className="relative flex size-9 shrink-0 items-center justify-center">
+      <InitialsBadge
+        name={clinicName}
+        size="md"
+        className={cn("size-9 shrink-0 rounded-lg", logoLoaded && "hidden")}
+        aria-hidden={logoLoaded}
+      />
+      {/* Plain <img>: public S3/R2 URL — avoid next/image remotePatterns (product rule). */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- external tenant logo URL */}
+      <img
+        src={clinicLogoUrl}
+        alt=""
+        className={cn("size-9 rounded-lg object-contain", !logoLoaded && "hidden")}
+        onLoad={() => setLogoLoaded(true)}
+        onError={() => {
+          /* keep hidden; initials remain visible */
+        }}
+      />
+    </div>
+  );
 }
 
 function writeSidebarCollapsedCookie(collapsed: boolean) {
@@ -78,6 +119,8 @@ export function SideNav({
   userTypeLabel,
   avatarSeed,
   initialCollapsed,
+  clinicName,
+  clinicLogoUrl,
 }: SideNavProps) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [isHovered, setIsHovered] = useState(false);
@@ -132,15 +175,14 @@ export function SideNav({
           style={{ backdropFilter: "blur(8px)" }}
         >
           {!collapsed && (
-            <div className="flex items-center gap-2 pl-1.5">
-              <div
-                className="size-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
-                style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-              >
-                <span className="text-sm font-bold tracking-tight">CF</span>
-              </div>
-              <span className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] whitespace-nowrap">
-                Clinicforce
+            <div className="flex items-center gap-2 pl-1.5 min-w-0">
+              <ClinicBrandMark
+                key={clinicLogoUrl}
+                clinicName={clinicName}
+                clinicLogoUrl={clinicLogoUrl}
+              />
+              <span className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] whitespace-nowrap truncate">
+                {clinicName}
               </span>
             </div>
           )}
@@ -168,10 +210,13 @@ export function SideNav({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.7 }}
                     transition={sidebarLogoSwapSpring}
-                    className="size-9 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0"
-                    style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+                    className="size-9 rounded-lg shadow-sm flex-shrink-0 overflow-hidden flex items-center justify-center"
                   >
-                    <span className="text-sm font-bold tracking-tight">CF</span>
+                    <ClinicBrandMark
+                      key={clinicLogoUrl}
+                      clinicName={clinicName}
+                      clinicLogoUrl={clinicLogoUrl}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>

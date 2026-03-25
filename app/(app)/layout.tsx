@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getSession } from "@/lib/auth/session";
+import { buildClinicLogoPublicUrl } from "@/lib/clinic/build-clinic-logo-url";
 import {
   SIDEBAR_COLLAPSED_COOKIE_NAME,
   parseSidebarCollapsedCookie,
@@ -34,6 +35,8 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
 
   const userTypeLabel = USER_TYPE_LABELS[session.user.type];
 
+  const clinicLogoUrl = buildClinicLogoPublicUrl(session.user.clinicSubdomain);
+
   const cookieStore = await cookies();
   const initialCollapsed = parseSidebarCollapsedCookie(
     cookieStore.get(SIDEBAR_COLLAPSED_COOKIE_NAME)?.value
@@ -46,6 +49,8 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
       userTypeLabel={userTypeLabel}
       avatarSeed={session.user.id}
       initialCollapsed={initialCollapsed}
+      clinicName={session.user.clinicName}
+      clinicLogoUrl={clinicLogoUrl}
     >
       <NuqsAdapter>{children}</NuqsAdapter>
     </AppShell>

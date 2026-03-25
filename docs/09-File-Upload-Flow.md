@@ -55,7 +55,7 @@ Two server-side operations are required:
 - **Input:** `fileName`, `mimeType`, `fileSize`, `assignedToType`, `assignedToId`, optional `appointmentId`
 - **What it does:**
   - Calls `getSession()` — auth + clinic context; includes `clinicSubdomain` for keys
-  - Generates a unique `fileKey`: `{clinicSubdomain}/{assignedToType}/{assignedToId}/{uuid}-{sanitised-filename}` (see §7)
+  - Generates a unique `fileKey`: `{clinicSubdomain}/docs/patients|users/{id}/{uuid}-{sanitised-filename}` (see §7)
   - Uses AWS SDK v3 `PutObjectCommand` + `getSignedUrl` to generate a presigned PUT URL (expiry: 15 minutes)
   - Returns `{ uploadUrl, fileKey }`
 - **Never** saves anything to the DB at this step
@@ -136,11 +136,12 @@ Clicking a card opens a **presigned GET URL** in a new browser tab. The browser 
 ## 7. File Key Convention
 
 ```
-{clinicSubdomain}/{assignedToType}/{assignedToId}/{uuid}-{sanitised-filename}
+{clinicSubdomain}/docs/patients/{patientId}/{uuid}-{sanitised-filename}
+{clinicSubdomain}/docs/users/{userId}/{uuid}-{sanitised-filename}
 ```
 
 - **`clinicSubdomain`** — from `session.user.clinicSubdomain` (`clinics.subdomain`), loaded in `getSession()` with the user row (not `clinicId` UUIDs in the path)
-- **`assignedToType`** / **`assignedToId`** — match the `documents` table polymorphic assignment: `patient` + patient row UUID, or `user` + Better-Auth user id (text, not necessarily UUID). The presign request sends both so the key matches the eventual DB row.
+- **`docs/patients/`** vs **`docs/users/`** — derived from `assignedToType` (`patient` → `patients`, `user` → `users`). **`assignedToId`** matches the `documents` table polymorphic assignment: patient row UUID, or Better-Auth user id (text, not necessarily UUID). The presign request sends both so the key matches the eventual DB row.
 - UUID prefix ensures no collisions even if the same filename is uploaded twice
 - Sanitise the filename before use (strip special characters, replace spaces with hyphens); subdomain is normalised for safe path segments
 
@@ -155,7 +156,7 @@ S3_ENDPOINT=http://localhost:9000
 S3_REGION=us-east-1
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
-S3_BUCKET_NAME=clinicforce
+S3_BUCKET_NAME=clinicforce-docs
 ```
 
 The S3 client should be initialised in `lib/storage/s3-client.ts` and reused across server actions. The bucket must exist in Minio before uploads work — create it via the Minio console at `http://localhost:9001` or via the AWS SDK on app startup.

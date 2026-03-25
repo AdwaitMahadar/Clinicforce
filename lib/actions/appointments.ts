@@ -13,6 +13,7 @@
  *   Soft-delete   : doctor, admin
  */
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
@@ -243,6 +244,7 @@ export async function createAppointment(input: unknown) {
       })
       .returning({ id: appointments.id });
 
+    revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
@@ -346,6 +348,7 @@ export async function updateAppointment(input: unknown) {
       })
       .where(and(eq(appointments.clinicId, clinicId), eq(appointments.id, id)));
 
+    revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
@@ -383,6 +386,7 @@ export async function deleteAppointment(id: unknown) {
         )
       );
 
+    revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };

@@ -28,7 +28,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 ### Request pipeline
 
 - **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → subdomain → `clinicId`); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
-- **`getSession()`** — Loads user + `clinicSubdomain` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Middleware and session serve different jobs (request vs user); both stay.
+- **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour
 
@@ -59,6 +59,7 @@ export interface AppSession {
     id: string;
     clinicId: string;
     clinicSubdomain: string; // from clinics row (joined in getSession)
+    clinicName: string; // from clinics.name — safe for UI; never expose clinicId client-side
     type: "admin" | "doctor" | "staff";
     firstName: string;
     lastName: string;
@@ -69,6 +70,7 @@ export interface AppSession {
 
 *   **`session.user.clinicId`** — ONLY acceptable source for DB query scoping.
 *   **`session.user.clinicSubdomain`** — tenant slug from DB (e.g. S3 key prefix); not a substitute for `clinicId` in SQL filters.
+*   **`session.user.clinicName`** — display name for branding (also used with env-based public logo URL in `app/(app)/layout.tsx`).
 *   **`session.user.type`** — ONLY acceptable source for role checks.
 
 ## 🔐 RBAC Permission Matrix

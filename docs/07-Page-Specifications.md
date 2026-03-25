@@ -701,7 +701,7 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [ ] `lib/validators/medicine.ts` — exists ✓. Already includes `category` and `form`.
 
 ### Step 2 — Auth / Session Helper
-- [x] `lib/auth/session.ts` exports a real `getSession()` backed by Better-Auth — returns `{ id, clinicId, type, firstName, lastName, email }`. Throws `UNAUTHORIZED` if no session, `CLINIC_MISMATCH` if subdomain and user clinic differ.
+- [x] `lib/auth/session.ts` exports a real `getSession()` backed by Better-Auth — returns `{ id, clinicId, clinicSubdomain, clinicName, type, firstName, lastName, email }`. Throws `UNAUTHORIZED` if no session, `CLINIC_MISMATCH` if subdomain and user clinic differ.
 - [x] Subdomain middleware (`middleware.ts`) resolves `clinicId` via `lib/clinic/resolve-by-subdomain.ts` (same query as `GET /api/clinic`) and forwards `x-clinic-id` / `x-subdomain`.
 
 ### Step 3 — RBAC Helper

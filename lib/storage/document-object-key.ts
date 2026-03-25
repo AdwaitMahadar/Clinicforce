@@ -1,6 +1,6 @@
 /**
  * Object key layout (docs/09-File-Upload-Flow.md §7):
- * `{clinicSubdomain}/{assignedToType}/{assignedToId}/{uuid}-{sanitised-filename}`
+ * `{clinicSubdomain}/docs/patients|users/{id}/{uuid}-{sanitised-filename}`
  */
 
 export function sanitizeFileName(name: string): string {
@@ -30,6 +30,7 @@ export function buildDocumentObjectKey(params: {
   originalFileName: string;
 }): string {
   const prefix = sanitizeClinicSubdomainForKey(params.clinicSubdomain);
+  const segment = params.assignedToType === "patient" ? "patients" : "users";
   const safe = sanitizeFileName(params.originalFileName);
-  return `${prefix}/${params.assignedToType}/${params.assignedToId}/${crypto.randomUUID()}-${safe}`;
+  return `${prefix}/docs/${segment}/${params.assignedToId}/${crypto.randomUUID()}-${safe}`;
 }

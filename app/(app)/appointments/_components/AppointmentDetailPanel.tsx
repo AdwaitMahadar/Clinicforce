@@ -347,7 +347,12 @@ export function AppointmentDetailPanel({
       });
       if (result.success) {
         toast.success("Appointment scheduled successfully.");
-        onClose?.();
+        if (onClose) {
+          onClose();
+        } else {
+          router.push("/appointments/dashboard");
+        }
+        router.refresh();
       } else {
         toast.error(result.error ?? "Failed to create appointment.");
       }
@@ -373,6 +378,7 @@ export function AppointmentDetailPanel({
       });
       if (result.success) {
         toast.success("Appointment updated successfully.");
+        router.refresh();
       } else {
         toast.error(result.error ?? "Failed to update appointment.");
       }
@@ -384,10 +390,11 @@ export function AppointmentDetailPanel({
     if (result.success) {
       toast.success("Appointment cancelled.");
       onClose?.();
+      router.refresh();
     } else {
       toast.error(result.error ?? "Failed to cancel appointment.");
     }
-  }, [appointment, onClose]);
+  }, [appointment, onClose, router]);
 
   // Header subtitle
   const headerSubtitle = isCreate

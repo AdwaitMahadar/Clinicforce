@@ -28,6 +28,8 @@ The sidebar always shows both items for all top nav selections in the MVP. No hi
 
 **Collapsed width persistence:** The user can collapse or expand the sidebar (`components/layout/SideNav.tsx`). The preference is stored in an HTTP cookie named `sidebar-collapsed` (`1` = collapsed, `0` = expanded), with `Max-Age` of one year and `Path=/`, `SameSite=Lax`. `app/(app)/layout.tsx` reads the cookie with `cookies()` before render and passes `initialCollapsed` through `AppShell` to `SideNav` so the first HTML paint matches the saved width (no flash). Toggling updates the cookie via `document.cookie` on the client.
 
+**Sidebar clinic branding:** The top brand row shows `clinicName` from `getSession()` (`clinics.name`) and a public logo URL built in `(app)/layout` as `{S3_ENDPOINT}/{S3_BUCKET_NAME}/{subdomain}/assets/logo/logo.png` (`lib/clinic/build-clinic-logo-url.ts`, normalised subdomain). `InitialsBadge` is shown by default; the logo is a plain `<img>` that stays `hidden` until `onLoad`, then replaces the initials — so failed loads (404, CORS, network) never flash a broken image. The top nav’s right “product” slot is a Clinicforce **CF** mark on `--color-ink` (same for all tenants).
+
 **Sidebar user avatar:** The bottom account row shows a DiceBear **open-peeps** illustration loaded from `https://api.dicebear.com/7.x/open-peeps/svg` with `seed` set to `session.user.id` (passed as `avatarSeed` from `(app)/layout` through `AppShell`), plus constrained `skinColor` and `backgroundColor` palettes in the query string. The same user always gets the same avatar. It is rendered as a plain `<img>` (not `next/image`) inside a `size-9` rounded, overflow-hidden frame.
 
 ### Route Structure

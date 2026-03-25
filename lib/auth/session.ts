@@ -10,6 +10,8 @@ export interface AppSession {
     clinicId: string;
     /** From `clinics.subdomain` — tenant slug for paths (e.g. S3 keys) without a separate clinic query. */
     clinicSubdomain: string;
+    /** From `clinics.name` — safe to pass to the client for sidebar branding. */
+    clinicName: string;
     type: "admin" | "doctor" | "staff";
     firstName: string;
     lastName: string;
@@ -32,6 +34,7 @@ export async function getSession(): Promise<AppSession> {
       id: users.id,
       clinicId: users.clinicId,
       clinicSubdomain: clinics.subdomain,
+      clinicName: clinics.name,
       type: users.type,
       firstName: users.firstName,
       lastName: users.lastName,
@@ -59,6 +62,7 @@ export async function getSession(): Promise<AppSession> {
       id: row[0].id,
       clinicId: row[0].clinicId!,
       clinicSubdomain: row[0].clinicSubdomain,
+      clinicName: row[0].clinicName,
       type: row[0].type as "admin" | "doctor" | "staff",
       firstName: row[0].firstName ?? "",
       lastName: row[0].lastName ?? "",

@@ -71,6 +71,7 @@ The general pattern for every action follows the anatomy above:
 - **Get actions**: Accept `id` + `clinicId`. Return a fully joined aggregate including nested `eventLog` and `documents` where applicable.
 - **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.
 - **Update actions**: Accept `id` + validated Zod payload. Scope the UPDATE with `clinic_id` to prevent cross-tenant writes. Example: `updateAppointment` never updates `patientId` and rejects if the client sends a different `patientId` than the row.
+- **Appointment mutations** (`createAppointment`, `updateAppointment`, `deleteAppointment`): After success, call **`revalidatePath("/appointments/dashboard")`**; client detail panels call **`router.refresh()`** after create/update/cancel so the calendar stays in sync.
 - **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
 - **Global search**: `searchGlobal` in `lib/actions/search.ts` — validate with `searchGlobalQuerySchema` (`lib/validators/search.ts`); parallel `LIMIT 5` queries per entity, all scoped by `clinicId`; return type `GroupedSearchResults` in `types/search.ts`.
 

@@ -11,7 +11,6 @@ import {
   Search,
   Bell,
   HelpCircle,
-  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,11 +157,13 @@ export function TopNav() {
         <div className="h-5 w-px bg-[var(--color-border)] mx-1" />
 
         <div
-          className="size-9 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+          className="size-9 rounded-lg flex items-center justify-center flex-shrink-0 select-none shadow-sm"
           style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-          title="App menu"
+          title="Clinicforce"
+          aria-label="Clinicforce"
+          role="img"
         >
-          <LayoutGrid size={18} strokeWidth={2} />
+          <span className="text-sm font-bold tracking-tight">CF</span>
         </div>
       </div>
     </div>

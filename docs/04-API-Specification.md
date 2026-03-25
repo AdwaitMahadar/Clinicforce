@@ -21,7 +21,7 @@ Duplicating defaults in `useForm` or forcing `z.infer` as the form generic while
 
 | Action | Purpose |
 |--------|---------|
-| `getUploadPresignedUrl` | Validates file meta; returns `{ uploadUrl, fileKey }` — no DB write. Object key uses `session.user.clinicSubdomain` and `assignedToType` / `assignedToId`. Schema: `getUploadPresignedUrlSchema` in `lib/validators/document.ts`. |
+| `getUploadPresignedUrl` | Validates file meta; returns `{ uploadUrl, fileKey }` — no DB write. Object key: `{subdomain}/docs/patients|users/{id}/…` from `session.user.clinicSubdomain` and `assignedToType` / `assignedToId` (`lib/storage/document-object-key.ts`). Schema: `getUploadPresignedUrlSchema` in `lib/validators/document.ts`. |
 | `confirmDocumentUpload` | After client PUT to storage; inserts `documents` row with `assignedToType: 'patient'`. Calls `revalidatePath` for patient and (if set) appointment detail routes. Schema: `confirmDocumentUploadSchema`. |
 | `getViewPresignedUrl` | Returns `{ url }` presigned GET for opening in a new tab. |
 | `deleteDocument` | Deletes S3 object then DB row (doctor/admin only). |
@@ -39,6 +39,8 @@ See `docs/09-File-Upload-Flow.md` for the browser sequence and Minio env vars.
 Create/update payloads use **`scheduledDate`** (`YYYY-MM-DD`) and **`scheduledTime`** (`HH:mm`, empty = start of that day). Server actions merge them into **`scheduled_at`** using a full `YYYY-MM-DDTHH:mm:ss` string before `new Date()` — never parse a bare time string alone. **`actualCheckIn`** in the payload is **time-only**; the action combines it with the server’s current calendar day (`new Date()`) when setting `actual_check_in`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema` in `lib/validators/appointment.ts`.
 
 `updateAppointment` does **not** update `patientId`. If the client sends `patientId` and it differs from the stored row, the action returns an error. The UI omits `patientId` on update and keeps the patient select disabled in edit mode.
+
+After a successful **`createAppointment`**, **`updateAppointment`**, or **`deleteAppointment`** (soft cancel), the action calls **`revalidatePath("/appointments/dashboard")`** so the appointments calendar server cache matches the database. Detail/create UIs also call **`router.refresh()`** after mutations (aligned with the patients detail panel) so the calendar updates without a full page reload.
 
 ## Patients (`lib/actions/patients.ts`)
 
