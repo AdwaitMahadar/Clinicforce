@@ -44,6 +44,7 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
       modal={modal}
       userDisplayName={displayName}
       userTypeLabel={userTypeLabel}
+      avatarSeed={session.user.id}
       initialCollapsed={initialCollapsed}
     >
       <NuqsAdapter>{children}</NuqsAdapter>

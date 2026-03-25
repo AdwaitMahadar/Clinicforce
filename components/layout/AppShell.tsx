@@ -8,6 +8,8 @@ interface AppShellProps {
   /** From `getSession()` in `app/(app)/layout.tsx` — shown in the sidebar user block. */
   userDisplayName: string;
   userTypeLabel: string;
+  /** `session.user.id` — deterministic DiceBear avatar seed in `SideNav`. */
+  avatarSeed: string;
   /** From `sidebar-collapsed` cookie in `(app)/layout.tsx` — first paint matches persisted width. */
   initialCollapsed: boolean;
 }
@@ -17,6 +19,7 @@ export function AppShell({
   modal,
   userDisplayName,
   userTypeLabel,
+  avatarSeed,
   initialCollapsed,
 }: AppShellProps) {
   return (
@@ -25,6 +28,7 @@ export function AppShell({
       <SideNav
         userDisplayName={userDisplayName}
         userTypeLabel={userTypeLabel}
+        avatarSeed={avatarSeed}
         initialCollapsed={initialCollapsed}
       />
 

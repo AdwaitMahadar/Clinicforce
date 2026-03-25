@@ -180,6 +180,7 @@ export default async function AppLayout({ children, modal }) {
         modal={modal}
         userDisplayName={displayName}
         userTypeLabel={userTypeLabel}
+        avatarSeed={session.user.id}
         initialCollapsed={initialCollapsed}
       >
         {children}

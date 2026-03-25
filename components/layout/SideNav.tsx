@@ -30,16 +30,8 @@ const SIDEBAR_VIEWS = [
   { key: "reports",   label: "Reports",   icon: BarChart2 },
 ];
 
-function initialsFromDisplayName(displayName: string): string {
-  const trimmed = displayName.trim();
-  if (!trimmed) return "?";
-  const parts = trimmed.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    const a = parts[0][0];
-    const b = parts[1][0];
-    if (a && b) return `${a}${b}`.toUpperCase();
-  }
-  return trimmed.slice(0, 2).toUpperCase();
+function dicebearAvataaarsUrl(seed: string): string {
+  return `https://api.dicebear.com/7.x/open-peeps/svg?seed=${encodeURIComponent(seed)}&skinColor=FFDBB4,EDB98A,D08B5B,AE5D29&backgroundColor=B6E3F4,C0AEDE,D1D4F9,FFD5DC,FFDFBF,B5EAD7,F8C8D4,C7E8CA`;
 }
 
 function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
@@ -70,6 +62,8 @@ interface SideNavProps {
   userDisplayName: string;
   /** Label from `USER_TYPE_LABELS` (Administrator / Doctor / Staff) */
   userTypeLabel: string;
+  /** `session.user.id` — stable seed for the sidebar DiceBear avatar */
+  avatarSeed: string;
   /** From `sidebar-collapsed` cookie via `(app)/layout` — avoids width flash on refresh */
   initialCollapsed: boolean;
 }
@@ -79,7 +73,12 @@ function writeSidebarCollapsedCookie(collapsed: boolean) {
   document.cookie = `${SIDEBAR_COLLAPSED_COOKIE_NAME}=${v}; Path=/; Max-Age=${SIDEBAR_COLLAPSED_MAX_AGE_SECONDS}; SameSite=Lax`;
 }
 
-export function SideNav({ userDisplayName, userTypeLabel, initialCollapsed }: SideNavProps) {
+export function SideNav({
+  userDisplayName,
+  userTypeLabel,
+  avatarSeed,
+  initialCollapsed,
+}: SideNavProps) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [isHovered, setIsHovered] = useState(false);
   const pathname = usePathname();
@@ -91,7 +90,7 @@ export function SideNav({ userDisplayName, userTypeLabel, initialCollapsed }: Si
 
   const entitySegment = pathname.split("/")[1] ?? "home";
 
-  const initials = initialsFromDisplayName(userDisplayName);
+  const avatarUrl = dicebearAvataaarsUrl(avatarSeed);
 
   const kebabTrigger = (
     <button
@@ -106,11 +105,10 @@ export function SideNav({ userDisplayName, userTypeLabel, initialCollapsed }: Si
   const collapsedAvatarTrigger = (
     <button
       type="button"
-      className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
-      style={{ background: "var(--color-surface-alt)" }}
+      className="size-9 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 border border-white shadow-sm p-0"
       aria-label="Open account menu"
     >
-      {initials}
+      <img src={avatarUrl} alt="" className="size-full object-cover" />
     </button>
   );
 
@@ -238,11 +236,8 @@ export function SideNav({ userDisplayName, userTypeLabel, initialCollapsed }: Si
             <AccountMenu trigger={collapsedAvatarTrigger} />
           ) : (
             <>
-              <div
-                className="size-9 rounded-lg flex items-center justify-center text-sm font-bold text-[var(--color-text-primary)] flex-shrink-0 border border-white shadow-sm"
-                style={{ background: "var(--color-surface-alt)" }}
-              >
-                {initials}
+              <div className="size-9 rounded-lg overflow-hidden flex-shrink-0 border border-white shadow-sm flex items-center justify-center">
+                <img src={avatarUrl} alt="" className="size-full object-cover" />
               </div>
               <div className="overflow-hidden flex-1 pl-0.5 min-w-0">
                 <p className="text-sm font-semibold truncate text-[var(--color-text-primary)] mb-0.5 leading-none">

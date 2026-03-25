@@ -28,6 +28,8 @@ The sidebar always shows both items for all top nav selections in the MVP. No hi
 
 **Collapsed width persistence:** The user can collapse or expand the sidebar (`components/layout/SideNav.tsx`). The preference is stored in an HTTP cookie named `sidebar-collapsed` (`1` = collapsed, `0` = expanded), with `Max-Age` of one year and `Path=/`, `SameSite=Lax`. `app/(app)/layout.tsx` reads the cookie with `cookies()` before render and passes `initialCollapsed` through `AppShell` to `SideNav` so the first HTML paint matches the saved width (no flash). Toggling updates the cookie via `document.cookie` on the client.
 
+**Sidebar user avatar:** The bottom account row shows a DiceBear **open-peeps** illustration loaded from `https://api.dicebear.com/7.x/open-peeps/svg` with `seed` set to `session.user.id` (passed as `avatarSeed` from `(app)/layout` through `AppShell`), plus constrained `skinColor` and `backgroundColor` palettes in the query string. The same user always gets the same avatar. It is rendered as a plain `<img>` (not `next/image`) inside a `size-9` rounded, overflow-hidden frame.
+
 ### Route Structure
 Routes follow the pattern `/{entity}/{view}`. All routes are **static segments** — no dynamic routing for the matrix itself.
 
