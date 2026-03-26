@@ -1,24 +1,16 @@
-"use client";
-
 /**
  * app/(app)/@modal/(.)appointments/new/page.tsx
  *
- * Intercepting modal for creating a new appointment.
- * Triggered by the "New Appt" button on the appointments dashboard.
+ * Server entry: `ModalShell` mounts immediately (no colocated loading.tsx).
  */
 
-import { useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/AppointmentDetailPanel";
 import { ModalShell } from "@/components/common/ModalShell";
+import { NewAppointmentModalClient } from "./NewAppointmentModalClient";
 
-export default function NewAppointmentModal() {
-  const router = useRouter();
-  const handleClose = useCallback(() => router.back(), [router]);
-
+export default function NewAppointmentModalPage() {
   return (
     <ModalShell size="lg" label="New Appointment">
-      <AppointmentDetailPanel mode="create" onClose={handleClose} />
+      <NewAppointmentModalClient />
     </ModalShell>
   );
 }

@@ -1,72 +1,26 @@
 /**
  * app/(app)/@modal/(.)appointments/view/[id]/page.tsx
  *
- * Intercepting modal — async Server Component.
- * Fetches appointment detail directly. No useEffect, no useState.
+ * Intercepting modal: `ModalShell` mounts immediately; data loads inside `<Suspense>`.
  */
 
-import { notFound } from "next/navigation";
-import { format } from "date-fns";
-import { getAppointmentDetail } from "@/lib/actions/appointments";
-import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/AppointmentDetailPanel";
+import { Suspense } from "react";
 import { ModalShell } from "@/components/common/ModalShell";
-import type { AppointmentDetail } from "@/types/appointment";
+import { ModalDetailPanelBodySkeleton } from "@/components/common/skeletons";
+import { AppointmentViewModalContent } from "./AppointmentViewModalContent";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-function fmtHm(v: Date | string | null | undefined): string {
-  if (!v) return "";
-  try {
-    return format(new Date(v as string), "HH:mm");
-  } catch {
-    return "";
-  }
-}
-
 export default async function InterceptedAppointmentModal({ params }: Props) {
   const { id } = await params;
-  const result = await getAppointmentDetail(id);
-
-  if (!result.success) notFound();
-
-  const r = result.data;
-  const sa = r.scheduledAt ? new Date(r.scheduledAt) : null;
-  const appointment: AppointmentDetail = {
-    id:                 r.id,
-    patientId:          r.patientId,
-    patientName:        r.patientName,
-    patientInitials:    r.patientName.slice(0, 2).toUpperCase(),
-    doctorId:           r.doctorId,
-    doctorName:         r.doctorName,
-    title:              r.title,
-    type:               r.type    as AppointmentDetail["type"],
-    status:             r.status  as AppointmentDetail["status"],
-    scheduledDate:      sa ? format(sa, "yyyy-MM-dd") : "",
-    scheduledTime:      sa ? format(sa, "HH:mm") : "",
-    duration:           Number(r.duration ?? 30),
-    actualCheckIn:      fmtHm(r.actualCheckIn),
-    description:        r.description    ?? "",
-    notes:              r.notes          ?? "",
-    activityLog:        [],
-    documents:          (r.documents ?? []).map((d) => ({
-      id: d.id,
-      title: d.title,
-      fileName: d.fileName,
-      mimeType: d.mimeType,
-      fileSize: d.fileSize,
-      type: d.type,
-      uploadedAt:
-        d.uploadedAt instanceof Date
-          ? d.uploadedAt.toISOString()
-          : String(d.uploadedAt),
-    })),
-  };
 
   return (
-    <ModalShell size="xl" label={`Edit: ${appointment.title}`}>
-      <AppointmentDetailPanel mode="edit" appointment={appointment} />
+    <ModalShell size="xl" label="Appointment">
+      <Suspense fallback={<ModalDetailPanelBodySkeleton variant="detail" />}>
+        <AppointmentViewModalContent id={id} />
+      </Suspense>
     </ModalShell>
   );
 }

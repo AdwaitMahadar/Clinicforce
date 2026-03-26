@@ -28,7 +28,7 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 **`DataTable` list views** (e.g. `/patients/dashboard`, `/medicines/dashboard`): Cell/header padding, first/last column edge insets (`first:pl-8` / `last:pr-8`), and “sort only on label + icon” behavior are implemented in `components/common/DataTable.tsx` (not `components/ui/table.tsx`). See `docs/06-UI-Design-System.md` — `<DataTable />`.
 
-**Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use `ModalShell` only and do not duplicate this pattern. **Create** intercepting modals (patients, appointments, medicines **`/new`**) use **`ModalShell size="lg"`**; **edit/view** modals use **`size="xl"`**. Matching `loading.tsx` fallbacks use **`ModalDetailSkeleton`** with the same **`size`** and **`variant="create"`** vs default **`detail`** (see `docs/06-UI-Design-System.md` §2.1).
+**Main content width:** Full-page routes under `app/(app)/` use an inner **`max-w-[1700px] mx-auto w-full`** wrapper (see `docs/06-UI-Design-System.md` §2.2). Intercepting modals (`@modal`) use **`ModalShell`** only and do not duplicate this pattern. **Create** intercepting modals (**`/new`**) use **`ModalShell size="lg"`** (server **`page.tsx`** + client panel); **edit/view** modals use **`size="xl"`** with inner **`<Suspense>`** and **`ModalDetailPanelBodySkeleton`** while detail data loads — no colocated **`loading.tsx`** on those `@modal` segments (see `docs/06-UI-Design-System.md` §2.1).
 
 **Side nav width:** Collapse/expand is persisted with the `sidebar-collapsed` cookie and server-read `initialCollapsed` in `(app)/layout` so all matrix pages paint with the correct sidebar width (see `docs/06-UI-Design-System.md`, Navigation).
 
@@ -652,11 +652,11 @@ The application provides intercepting routes to display forms seamlessly over th
 
 - **`@modal/(.)patients/view/[id]/`, `@modal/(.)patients/new/`**:
   > **Status:** UI built.
-  Intercepting routes that utilize `ModalShell` to render the view and creation flows for patients over the current dashboard.
+  Intercepting routes that utilize `ModalShell` to render the view and creation flows for patients over the current dashboard. **View** modal: server `page.tsx` wraps async data in **`<Suspense>`** with **`ModalDetailPanelBodySkeleton`** (see `docs/06-UI-Design-System.md` §2.1). **New** modal: server `page.tsx` + client inner — no segment `loading.tsx`.
 
 - **`@modal/(.)appointments/view/[id]/`, `@modal/(.)medicines/view/[id]/`**:
   > **Status:** UI built.
-  Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`.
+  Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`, using the same **`ModalShell` + inner `Suspense`** pattern as patient view.
 
 ---
 

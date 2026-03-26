@@ -1,6 +1,6 @@
 /**
- * Shared width/height presets for `ModalShell` and `ModalDetailSkeleton`.
- * Kept in a non-client module so server `loading.tsx` files can import safely.
+ * Shared width/height presets for `ModalShell` and full-stack `ModalDetailSkeleton`.
+ * Kept in a non-client module so server modules can import safely.
  */
 
 export const MODAL_SHELL_SIZE_MAP = {

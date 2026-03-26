@@ -6,8 +6,10 @@ export { ReportsPlaceholderSkeleton } from "./ReportsPlaceholderSkeleton";
 export { DetailPageSkeleton } from "./DetailPageSkeleton";
 export {
   ModalDetailSkeleton,
+  ModalDetailPanelBodySkeleton,
 } from "./ModalDetailSkeleton";
 export type {
   ModalDetailSkeletonProps,
   ModalDetailSkeletonVariant,
+  ModalDetailPanelBodySkeletonProps,
 } from "./ModalDetailSkeleton";

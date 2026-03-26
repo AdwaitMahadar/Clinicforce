@@ -6,60 +6,24 @@ import {
 
 export type ModalDetailSkeletonVariant = "detail" | "create";
 
-export interface ModalDetailSkeletonProps {
+export interface ModalDetailPanelBodySkeletonProps {
   /**
-   * Must match the `ModalShell` `size` on the loaded page (`lg` for create modals, `xl` for detail).
-   * @default "xl"
-   */
-  size?: ModalSize;
-  /**
-   * `detail` — multi-column layout like edit/view panels with sidebar zones.
-   * `create` — single-form two-column grid (matches `DetailPanel` create flows).
+   * `detail` — `DetailPanel` view/edit: header + form column + 40% sidebar + footer.
+   * `create` — `DetailPanel` create: header + full-width form grid + footer.
    * @default "detail"
    */
   variant?: ModalDetailSkeletonVariant;
 }
 
-const backdropStyle = {
-  background: "rgba(26, 26, 24, 0.35)",
-  backdropFilter: "blur(3px)",
-  WebkitBackdropFilter: "blur(3px)",
-} as const;
+const borderBottom = { borderBottom: "1px solid var(--color-border)" } as const;
+const borderTop = { borderTop: "1px solid var(--color-border)" } as const;
+const borderRight = { borderRight: "1px solid var(--color-border)" } as const;
+const headerBg = { background: "var(--color-surface-alt)" } as const;
 
-const panelChrome = {
-  background: "var(--color-surface)",
-  border: "1px solid var(--color-border)",
-  boxShadow:
-    "0 24px 64px -12px rgba(0,0,0,0.18), 0 8px 24px -4px rgba(0,0,0,0.08)",
-} as const;
-
-function DetailVariantBody() {
+function CreateFormSkeleton() {
   return (
-    <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
-      <div className="lg:col-span-4 space-y-4 overflow-y-auto min-h-0 pr-1">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-          </div>
-        ))}
-      </div>
-      <div className="lg:col-span-5 space-y-4 hidden lg:flex flex-col min-h-0">
-        <Skeleton className="h-8 w-40 shrink-0" />
-        <Skeleton className="flex-1 min-h-[240px] w-full rounded-xl" />
-      </div>
-      <div className="lg:col-span-3 space-y-4 hidden lg:flex flex-col min-h-0">
-        <Skeleton className="h-36 w-full rounded-xl" />
-        <Skeleton className="h-24 w-full rounded-xl" />
-      </div>
-    </div>
-  );
-}
-
-function CreateVariantBody() {
-  return (
-    <div className="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto pr-1">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden px-6 py-4">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
         {Array.from({ length: 10 }).map((_, i) => (
           <div key={i} className="space-y-2">
             <Skeleton className="h-3 w-24" />
@@ -75,15 +39,125 @@ function CreateVariantBody() {
   );
 }
 
+function DetailFormAndSidebarSkeleton() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-row overflow-hidden">
+      <div
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+        style={borderRight}
+      >
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-6 py-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="min-h-0 w-[40%] max-w-[40%] shrink-0 space-y-4 overflow-hidden p-4">
+        <Skeleton className="h-9 w-full rounded-lg" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
 /**
- * Matches `ModalShell` panel dimensions while async modal pages load.
- * Use `size` + `variant` with the same values as the target route’s `ModalShell`.
+ * Inner content skeleton only — matches `DetailPanel` (header / body / footer).
+ * Use inside `ModalShell` as the `<Suspense>` fallback for intercepting modal routes
+ * so the backdrop and panel mount once; only this region swaps when data resolves.
+ *
+ * No backdrop, no outer panel chrome, no enter animation.
+ */
+export function ModalDetailPanelBodySkeleton({
+  variant = "detail",
+}: ModalDetailPanelBodySkeletonProps) {
+  const isCreate = variant === "create";
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div
+        className="flex shrink-0 items-center justify-between px-6 py-4"
+        style={{ ...borderBottom, ...headerBg }}
+      >
+        {isCreate ? (
+          <>
+            <div className="min-w-0 space-y-2">
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-3 w-72 max-w-full" />
+            </div>
+            <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+          </>
+        ) : (
+          <>
+            <div className="flex min-w-0 items-center gap-4">
+              <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+              <div className="min-w-0 space-y-2">
+                <Skeleton className="h-7 w-56 max-w-full" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Skeleton className="h-5 w-24 rounded-md" />
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </div>
+              </div>
+            </div>
+            <Skeleton className="h-9 w-9 shrink-0 rounded-md" />
+          </>
+        )}
+      </div>
+
+      {isCreate ? (
+        <CreateFormSkeleton />
+      ) : (
+        <DetailFormAndSidebarSkeleton />
+      )}
+
+      <div
+        className="flex shrink-0 items-center justify-end gap-3 px-6 py-4"
+        style={borderTop}
+      >
+        <Skeleton className="h-9 w-20 rounded-md" />
+        <Skeleton className="h-9 w-28 rounded-md" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Full modal stack (legacy / rare use) ───────────────────────────────────
+
+export interface ModalDetailSkeletonProps {
+  /**
+   * Must match the `ModalShell` `size` on the loaded page (`lg` for create modals, `xl` for detail).
+   * @default "xl"
+   */
+  size?: ModalSize;
+  variant?: ModalDetailSkeletonVariant;
+}
+
+/**
+ * Standalone full-screen modal skeleton (backdrop + panel + animation).
+ * Intercepting routes should prefer `ModalShell` + `ModalDetailPanelBodySkeleton` instead
+ * to avoid double backdrop / double animation.
  */
 export function ModalDetailSkeleton({
   size = "xl",
   variant = "detail",
 }: ModalDetailSkeletonProps) {
   const { width, height } = MODAL_SHELL_SIZE_MAP[size];
+
+  const backdropStyle = {
+    background: "rgba(26, 26, 24, 0.35)",
+    backdropFilter: "blur(3px)",
+    WebkitBackdropFilter: "blur(3px)",
+  } as const;
+
+  const panelChrome = {
+    background: "var(--color-surface)",
+    border: "1px solid var(--color-border)",
+    boxShadow:
+      "0 24px 64px -12px rgba(0,0,0,0.18), 0 8px 24px -4px rgba(0,0,0,0.08)",
+  } as const;
 
   return (
     <>
@@ -95,18 +169,14 @@ export function ModalDetailSkeleton({
         aria-label="Loading"
       >
         <div
-          className="pointer-events-auto rounded-2xl overflow-hidden flex flex-col gap-4 p-6 sm:p-8 w-full animate-in fade-in-0 zoom-in-95 duration-200"
+          className="pointer-events-auto flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl animate-in fade-in-0 zoom-in-95 duration-200"
           style={{
             width,
             height,
             ...panelChrome,
           }}
         >
-          <div className="flex items-center justify-between gap-4 shrink-0">
-            <Skeleton className="h-8 w-64 max-w-[70%]" />
-            <Skeleton className="h-9 w-9 rounded-md shrink-0" />
-          </div>
-          {variant === "create" ? <CreateVariantBody /> : <DetailVariantBody />}
+          <ModalDetailPanelBodySkeleton variant={variant} />
         </div>
       </div>
     </>
