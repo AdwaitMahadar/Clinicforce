@@ -11,6 +11,7 @@
 import { format } from "date-fns";
 import type { getAppointmentDetail } from "@/lib/actions/appointments";
 import type { AppointmentDetail } from "@/types/appointment";
+import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
 
 type AppointmentDetailData = Extract<
   Awaited<ReturnType<typeof getAppointmentDetail>>,
@@ -40,7 +41,7 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     status:          r.status as AppointmentDetail["status"],
     scheduledDate:   sa ? format(sa, "yyyy-MM-dd") : "",
     scheduledTime:   sa ? format(sa, "HH:mm") : "",
-    duration:        Number(r.duration ?? 30),
+    duration:        Number(r.duration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES),
     actualCheckIn:   fmtHm(r.actualCheckIn),
     description:     r.description ?? "",
     notes:           r.notes ?? "",

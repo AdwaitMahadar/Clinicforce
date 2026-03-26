@@ -21,9 +21,8 @@ import {
 import type { FilterColumn } from "@/components/common";
 import { PatientsTable } from "../_components/PatientsTable";
 import { getPatients } from "@/lib/actions/patients";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/app";
 import type { PatientRow } from "@/types/patient";
-
-const PAGE_SIZE = 10;
 
 
 
@@ -53,7 +52,7 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
     : undefined;
   const page   = typeof sp.page   === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
 
-  const result = await getPatients({ search, status, page, pageSize: PAGE_SIZE });
+  const result = await getPatients({ search, status, page, pageSize: DEFAULT_PAGE_SIZE });
 
   if (!result.success) notFound();
 
@@ -102,7 +101,7 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
           <PatientsTable data={rows} />
         </div>
 
-        <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="patient" />
+        <TablePagination totalRows={total} pageSize={DEFAULT_PAGE_SIZE} entityLabel="patient" />
       </div>
     </div>
   );

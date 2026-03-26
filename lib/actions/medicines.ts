@@ -26,6 +26,7 @@ import {
   createMedicineSchema,
   updateMedicineSchema,
 } from "@/lib/validators/medicine";
+import { idSchema, n } from "@/lib/validators/common";
 
 // ─── Input schemas for list/filter params ─────────────────────────────────────
 // These are query-parameter shapes, not entity schemas — defined here because
@@ -41,14 +42,6 @@ const getMedicinesInputSchema = z.object({
   sortBy:    z.enum(["name", "lastPrescribedDate"]).optional().default("name"),
   sortDir:   z.enum(["asc", "desc"]).optional().default("asc"),
 });
-
-const idSchema = z.string().uuid("Invalid ID");
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Treat empty strings as null for optional nullable DB columns. */
-const n = (v?: string | null): string | null =>
-  v && v.trim() ? v.trim() : null;
 
 // ─── getMedicines ─────────────────────────────────────────────────────────────
 

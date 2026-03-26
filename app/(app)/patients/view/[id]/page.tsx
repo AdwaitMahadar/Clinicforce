@@ -9,6 +9,7 @@
 import { notFound } from "next/navigation";
 import { getPatientDetail } from "@/lib/actions/patients";
 import { buildPatientDetail } from "../../_lib/patient-detail-mapper";
+import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { PatientDetailPanel } from "../../_components/PatientDetailPanel";
 
 interface PatientDetailPageProps {
@@ -24,26 +25,8 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
   const patient = buildPatientDetail(result.data);
 
   return (
-    <div className="p-8 h-full flex flex-col">
-      <div className="max-w-[1700px] mx-auto w-full flex-1 min-h-0 flex flex-col">
-        <p
-          className="text-xs font-medium mb-6"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          Patients › {patient.firstName} {patient.lastName}
-        </p>
-
-        <div
-          className="flex-1 rounded-2xl overflow-hidden min-h-0"
-          style={{
-            background: "var(--color-glass-fill-data)",
-            border:     "1px solid var(--color-border)",
-            boxShadow:  "var(--shadow-card)",
-          }}
-        >
-          <PatientDetailPanel mode="view" patient={patient} />
-        </div>
-      </div>
-    </div>
+    <DetailPageShell breadcrumb={`Patients › ${patient.firstName} ${patient.lastName}`}>
+      <PatientDetailPanel mode="view" patient={patient} />
+    </DetailPageShell>
   );
 }

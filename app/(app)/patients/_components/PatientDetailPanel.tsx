@@ -15,7 +15,6 @@ import {
   FileText,
   CalendarDays,
   Plus,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +24,7 @@ import {
   UploadDocumentDialog,
   DetailPanel,
   DetailForm,
+  PanelCloseButton,
 } from "@/components/common";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
@@ -164,21 +164,6 @@ const EMPTY_CREATE: CreatePatientInput = {
   emergencyContactPhone: "",
   notes: "",
 };
-
-// ─── Close button ─────────────────────────────────────────────────────────────
-
-function CloseButton({ onClose }: { onClose: () => void }) {
-  return (
-    <button
-      onClick={onClose}
-      className="size-9 flex items-center justify-center rounded-lg transition-colors"
-      style={{ color: "var(--color-text-muted)" }}
-      title="Close"
-    >
-      <X size={18} />
-    </button>
-  );
-}
 
 // ─── Sidebar tab: Documents ───────────────────────────────────────────────────
 
@@ -325,7 +310,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
             Fill in the details below to register a new patient record.
           </p>
         </div>
-        {onClose && <CloseButton onClose={onClose} />}
+        {onClose && <PanelCloseButton onClose={onClose} />}
       </>
     );
 
@@ -374,7 +359,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
           </div>
         </div>
       </div>
-      {onClose && <CloseButton onClose={onClose} />}
+      {onClose && <PanelCloseButton onClose={onClose} />}
     </>
   );
 

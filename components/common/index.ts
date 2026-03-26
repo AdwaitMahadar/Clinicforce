@@ -40,6 +40,10 @@ export type { DetailPanelProps } from "./DetailPanel";
 export { ModalShell }       from "./ModalShell";
 export type { ModalShellProps, ModalSize } from "./ModalShell";
 export { ModalCloseButton } from "./ModalCloseButton";
+export { PanelCloseButton } from "./PanelCloseButton";
+
+// ─── Page-level placeholders ──────────────────────────────────────────────────
+export { ReportsComingSoon } from "./ReportsComingSoon";
 
 // ─── Documents ────────────────────────────────────────────────────────────────
 export { DocumentCard } from "./DocumentCard";

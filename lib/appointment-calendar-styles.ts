@@ -5,6 +5,7 @@
  */
 
 import type { AppointmentType } from "@/types/appointment";
+import { APPOINTMENT_TYPE_LABELS } from "@/lib/constants/appointment";
 
 export type { AppointmentType };
 
@@ -24,10 +25,9 @@ export const TYPE_COLORS: Record<
   therapy:     { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)", solid: "var(--color-purple)" },
 };
 
+// The 3 DB-canonical labels are derived from the constants so they can never drift.
 export const TYPE_LABELS: Record<AppointmentType, string> = {
-  general:     "General",
-  "follow-up": "Follow-up",
-  emergency:   "Emergency",
+  ...APPOINTMENT_TYPE_LABELS,
   vaccination: "Vaccination",
   checkup:     "Checkup",
   dental:      "Dental",

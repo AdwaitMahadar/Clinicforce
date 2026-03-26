@@ -14,6 +14,7 @@ import { getAppointments } from "@/lib/actions/appointments";
 import { VALID_APPOINTMENT_DISPLAY_TYPES } from "@/lib/appointment-calendar-styles";
 import type { AppointmentCalendarRow } from "@/lib/db/queries/appointments";
 import { getCalendarRange } from "../_lib/calendar-range";
+import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
 import { AppointmentCalendarClient } from "../_components/AppointmentCalendarClient";
 import type { AppointmentEvent } from "@/types/appointment";
 
@@ -42,7 +43,7 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
   const events: AppointmentEvent[] = result.success
     ? result.data.map((a: AppointmentCalendarRow): AppointmentEvent => {
         const start = a.scheduledAt ? new Date(a.scheduledAt) : new Date();
-        const durationMs = Number(a.duration ?? 30) * 60 * 1000;
+        const durationMs = Number(a.duration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES) * 60 * 1000;
         const end = new Date(start.getTime() + durationMs);
         const apptType = (VALID_APPOINTMENT_DISPLAY_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];
         return {

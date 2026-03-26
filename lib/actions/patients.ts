@@ -29,6 +29,7 @@ import {
   createPatientSchema,
   updatePatientSchema,
 } from "@/lib/validators/patient";
+import { idSchema, n } from "@/lib/validators/common";
 
 // ─── Input schemas for list/filter params ─────────────────────────────────────
 
@@ -41,14 +42,6 @@ const getPatientsInputSchema = z.object({
   sortBy:   z.enum(["lastName", "lastVisit"]).optional().default("lastName"),
   sortDir:  z.enum(["asc", "desc"]).optional().default("asc"),
 });
-
-const idSchema = z.string().uuid("Invalid ID");
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Treat empty/blank strings as null for nullable DB columns. */
-const n = (v?: string | null): string | null =>
-  v && v.trim() ? v.trim() : null;
 
 /**
  * Generates a unique patient chartId in the 10000–99999 range for the clinic.

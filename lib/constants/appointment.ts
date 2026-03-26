@@ -27,3 +27,6 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   cancelled: "Cancelled",
   "no-show": "No Show",
 };
+
+/** Default appointment length in minutes — used in DB schema default and form initial state. */
+export const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;

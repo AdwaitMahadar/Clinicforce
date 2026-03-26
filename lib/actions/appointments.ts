@@ -29,6 +29,7 @@ import {
   createAppointmentSchema,
   updateAppointmentSchema,
 } from "@/lib/validators/appointment";
+import { idSchema, n } from "@/lib/validators/common";
 
 // ─── Input schemas ─────────────────────────────────────────────────────────────
 
@@ -36,14 +37,6 @@ const getAppointmentsInputSchema = z.object({
   rangeStart: z.string().min(1, "rangeStart is required"),
   rangeEnd:   z.string().min(1, "rangeEnd is required"),
 });
-
-const idSchema = z.string().uuid("Invalid ID");
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-/** Treat empty/blank strings as null for nullable string DB columns. */
-const n = (v?: string | null): string | null =>
-  v && v.trim() ? v.trim() : null;
 
 /**
  * Normalizes a time segment for ISO datetime strings. Never pass a bare "HH:mm"

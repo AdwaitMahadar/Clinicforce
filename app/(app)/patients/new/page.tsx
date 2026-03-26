@@ -6,30 +6,13 @@
  * During normal in-app navigation the intercepting modal takes over.
  */
 
+import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { PatientDetailPanel } from "../_components/PatientDetailPanel";
 
 export default function NewPatientPage() {
   return (
-    <div className="p-8 h-full flex flex-col">
-      <div className="max-w-[1700px] mx-auto w-full flex-1 min-h-0 flex flex-col">
-        <p
-          className="text-xs font-medium mb-6"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          Patients › New Patient
-        </p>
-
-        <div
-          className="flex-1 rounded-2xl overflow-hidden min-h-0"
-          style={{
-            background: "var(--color-glass-fill-data)",
-            border:     "1px solid var(--color-border)",
-            boxShadow:  "var(--shadow-card)",
-          }}
-        >
-          <PatientDetailPanel mode="create" />
-        </div>
-      </div>
-    </div>
+    <DetailPageShell breadcrumb="Patients › New Patient">
+      <PatientDetailPanel mode="create" />
+    </DetailPageShell>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { clinics } from "./clinics";
 import { users } from "./auth";
 import { patients } from "./patients";
-import { APPOINTMENT_STATUSES, APPOINTMENT_TYPES } from "@/lib/constants/appointment";
+import { APPOINTMENT_STATUSES, APPOINTMENT_TYPES, DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
 
 /** Must match `lib/constants/appointment.ts` — single source for Zod + types. */
 export const appointmentStatusEnum = pgEnum("appointment_status", [
@@ -43,7 +43,7 @@ export const appointments = pgTable(
     type: appointmentTypeEnum("type").notNull().default("general"),
     /** Scheduled start instant (date + time combined). */
     scheduledAt: timestamp("scheduled_at").notNull(),
-    duration: integer("duration").notNull().default(30), // minutes
+    duration: integer("duration").notNull().default(DEFAULT_APPOINTMENT_DURATION_MINUTES),
     notes: text("notes"),
     actualCheckIn: timestamp("actual_check_in"),
     isActive: boolean("is_active").notNull().default(true),

@@ -21,10 +21,9 @@ import type { FilterColumn } from "@/components/common";
 import { MedicinesTable } from "../_components/MedicinesTable";
 import { getMedicines } from "@/lib/actions/medicines";
 import { MEDICINE_CATEGORIES } from "@/lib/constants/medicine";
+import { DEFAULT_PAGE_SIZE } from "@/lib/constants/app";
 import type { MedicineRow } from "@/types/medicine";
 import Link from "next/link";
-
-const PAGE_SIZE = 10;
 
 const MEDICINE_FILTER_COLUMNS: FilterColumn[] = [
   {
@@ -49,7 +48,7 @@ export default async function MedicinesDashboardPage({ searchParams }: PageProps
   const form     = typeof sp.form     === "string" ? sp.form     : undefined;
   const page     = typeof sp.page     === "string" ? Math.max(1, parseInt(sp.page, 10) || 1) : 1;
 
-  const result = await getMedicines({ search, category, form, page, pageSize: PAGE_SIZE });
+  const result = await getMedicines({ search, category, form, page, pageSize: DEFAULT_PAGE_SIZE });
 
   if (!result.success) notFound();
 
@@ -94,7 +93,7 @@ export default async function MedicinesDashboardPage({ searchParams }: PageProps
           <MedicinesTable data={rows} />
         </div>
 
-        <TablePagination totalRows={total} pageSize={PAGE_SIZE} entityLabel="medicine" />
+        <TablePagination totalRows={total} pageSize={DEFAULT_PAGE_SIZE} entityLabel="medicine" />
       </div>
     </div>
   );

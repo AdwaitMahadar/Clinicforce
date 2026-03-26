@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/appointments";
 import { mapAppointmentPickerResults } from "../../_lib/appointment-picker-options";
 import { buildAppointmentDetail } from "../../_lib/appointment-detail-mapper";
+import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
 
 interface AppointmentDetailPageProps {
@@ -34,31 +35,13 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
   const appointment = buildAppointmentDetail(result.data);
 
   return (
-    <div className="p-8 h-full flex flex-col">
-      <div className="max-w-[1700px] mx-auto w-full flex-1 min-h-0 flex flex-col">
-        <p
-          className="text-xs font-medium mb-6"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          Appointments › {appointment.title}
-        </p>
-
-        <div
-          className="flex-1 rounded-2xl overflow-hidden min-h-0"
-          style={{
-            background: "var(--color-glass-fill-data)",
-            border:     "1px solid var(--color-border)",
-            boxShadow:  "var(--shadow-card)",
-          }}
-        >
-          <AppointmentDetailPanel
-            mode="edit"
-            appointment={appointment}
-            patientOptions={patientOptions}
-            doctorOptions={doctorOptions}
-          />
-        </div>
-      </div>
-    </div>
+    <DetailPageShell breadcrumb={`Appointments › ${appointment.title}`}>
+      <AppointmentDetailPanel
+        mode="edit"
+        appointment={appointment}
+        patientOptions={patientOptions}
+        doctorOptions={doctorOptions}
+      />
+    </DetailPageShell>
   );
 }

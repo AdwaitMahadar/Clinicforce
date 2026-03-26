@@ -95,13 +95,13 @@ app/
 
 components/
   ui/                       ← Shadcn base components — DO NOT MODIFY
-  layout/                   ← AppShell.tsx, TopNav.tsx, SideNav.tsx, NavItem.tsx, PageHeader.tsx
+  layout/                   ← AppShell.tsx, TopNav.tsx, SideNav.tsx, NavItem.tsx, PageHeader.tsx, DetailPageShell.tsx
   common/                   ← Domain components (see below)
 
 lib/
-  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`)
+  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`), `app.ts` (`DEFAULT_PAGE_SIZE`), and `appointment.ts` (`DEFAULT_APPOINTMENT_DURATION_MINUTES`)
   db/                       ← Drizzle schema + query functions
-  validators/               ← Zod schemas (shared between forms and server actions)
+  validators/               ← Zod schemas (shared between forms and server actions); `common.ts` exports `idSchema` + `n()` helper (reused by all entity action files)
   auth/                     ← Better-Auth config
   utils/                    ← `chart-id.ts` — `#PT-` / `#STF-` display formatters (integers in DB only)
   appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
@@ -128,6 +128,8 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
+- `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
+- `ReportsComingSoon.tsx` — Placeholder used by all four Reports pages; accepts `title` + `subtitle` props
 - `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, …, `DetailPageSkeleton`); **`ModalDetailPanelBodySkeleton`** for intercept modal inner **`Suspense`** fallbacks; **`ModalDetailSkeleton`** for rare full-modal + backdrop loading (`size` / `variant`)
 
 ---
