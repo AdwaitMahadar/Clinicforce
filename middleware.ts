@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { getClinicIdBySubdomain } from "@/lib/clinic/resolve-by-subdomain";
 
+const subdomainCache = new Map<string, string>();
+const CACHE_MAX = 500;
+
 const PUBLIC_PATHS = ["/login", "/api/auth", "/api/clinic", "/_next", "/favicon.ico"];
 
 function extractSubdomain(request: NextRequest): string | null {
@@ -40,7 +43,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  const clinicId = await getClinicIdBySubdomain(subdomain);
+  let clinicId = subdomainCache.get(subdomain) ?? null;
+  if (!clinicId) {
+    clinicId = await getClinicIdBySubdomain(subdomain);
+    if (clinicId) {
+      if (subdomainCache.size >= CACHE_MAX) {
+        subdomainCache.delete(subdomainCache.keys().next().value!);
+      }
+      subdomainCache.set(subdomain, clinicId);
+    }
+  }
   if (!clinicId) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

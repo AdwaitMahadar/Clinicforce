@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { clinics, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import { cache } from "react";
 
 export interface AppSession {
   user: {
@@ -19,7 +20,7 @@ export interface AppSession {
   };
 }
 
-export async function getSession(): Promise<AppSession> {
+export const getSession = cache(async (): Promise<AppSession> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -69,4 +70,4 @@ export async function getSession(): Promise<AppSession> {
       email: row[0].email,
     },
   };
-}
+});

@@ -230,7 +230,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - All shared components in `components/common/`
 - Design system: CSS variables, typography, colour tokens fully centralised in `globals.css`
 - Intercepting modal routes for detail views
-- Authentication: Better-Auth integration, real `getSession()`, subdomain-aware middleware (Node runtime, shared `lib/clinic/resolve-by-subdomain`), `/api/auth/*` route handler, `/api/clinic` subdomain resolver
+- Authentication: Better-Auth integration, real `getSession()` (React `cache()` — one resolution per request), subdomain-aware middleware (Node runtime, in-memory subdomain→clinic cache + shared `lib/clinic/resolve-by-subdomain` on miss), `/api/auth/*` route handler, `/api/clinic` subdomain resolver; session `cookieCache` (5 min) reduces auth DB hits
 - Login page (`app/(auth)/login/page.tsx`) — split 50/50 layout, `public/clinicforce-mark.png` in brand rows, testimonial carousel (dots + auto-advance), password visibility toggle, dynamic footer year, React Hook Form + Zod, Sonner toasts, `returnUrl` redirect
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
 - Document upload: presigned URLs (`lib/actions/documents.ts`), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail

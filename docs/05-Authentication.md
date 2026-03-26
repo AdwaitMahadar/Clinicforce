@@ -9,6 +9,7 @@ This document covers the authentication strategy, session shape, middleware, and
 - **Provider:** Better-Auth with Drizzle adapter
 - **Method:** Email + password only (MVP). OAuth is deferred post-MVP.
 - **Session type:** Database-backed sessions (not JWT)
+- **Session cookie cache:** Better-Auth `session.cookieCache` is enabled (5-minute `maxAge`) so repeated session validation avoids hitting the database on every request when the signed cookie cache is still valid.
 - **Session expiry:** 7 days
 - **Password reset:** Not implemented in MVP
 - **Multi-tenancy:** Clinic context is resolved from subdomain, not from user input
@@ -35,7 +36,7 @@ export interface AppSession {
   };
 }
 
-export async function getSession(): Promise<AppSession> {
+export const getSession = cache(async (): Promise<AppSession> => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) throw new Error("UNAUTHORIZED");
 
@@ -64,8 +65,10 @@ export async function getSession(): Promise<AppSession> {
   }
 
   return { user: { id, clinicId, clinicSubdomain, clinicName, type, firstName, lastName, email } };
-}
+});
 ```
+
+(`import { cache } from "react"` in the real module.) React `cache()` deduplicates by call site within a single request: multiple `await getSession()` invocations during one render / server action chain share the first execution’s result (one Better-Auth read + one user join query per request).
 
 **Rules:**
 - Every server action must start with `const session = await getSession()`
@@ -85,7 +88,11 @@ export async function getSession(): Promise<AppSession> {
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
   emailAndPassword: { enabled: true, requireEmailVerification: false },
-  session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
   advanced: {
     crossSubDomainCookies: {
       enabled: process.env.NODE_ENV === "production",
@@ -131,7 +138,7 @@ The subdomain is the `subdomain` column in the `clinics` table. This is already 
 
 ### How it works (pipeline)
 
-1. **Middleware** (`middleware.ts`, Node runtime): reads **`x-forwarded-host`** (first, for reverse proxies such as Cloudflare) then **`host`** → subdomain → `getClinicIdBySubdomain()` (shared with `GET /api/clinic` in `lib/clinic/resolve-by-subdomain.ts`). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`.
+1. **Middleware** (`middleware.ts`, Node runtime): reads **`x-forwarded-host`** (first, for reverse proxies such as Cloudflare) then **`host`** → subdomain → resolves `clinicId` via an **in-memory `Map`** (max 500 entries, FIFO eviction on overflow) with **`getClinicIdBySubdomain()`** as fallback on cache miss (same query as `GET /api/clinic` in `lib/clinic/resolve-by-subdomain.ts`). Unknown or inactive subdomains are **not** cached (each miss still queries the DB). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`.
 2. **`getSession()`**: loads the user from the DB (joined to `clinics` for `clinicSubdomain`). If **`x-clinic-id`** is present, it must equal `user.clinicId` or **`CLINIC_MISMATCH`** is thrown — so a user cannot use a session on another tenant’s host.
 
 **Why two steps?** Middleware binds the **HTTP request** to a tenant before RSC/server actions run. The session binds the **user** to a clinic. Both are required; `clinicSubdomain` on the session is the DB slug (e.g. S3 paths), not a replacement for middleware resolution.
