@@ -2,6 +2,10 @@
 
 Server actions and route handlers: session-scoped `clinicId`, RBAC via `requireRole`, Zod validation from `lib/validators/`. Full error-handling pattern: `docs/09` / `skills/api-and-validation/SKILL.md`.
 
+## Auth Validators (`lib/validators/auth.ts`)
+
+`loginSchema` and `LoginFormValues` live in `lib/validators/auth.ts`. The login page imports from there — it does not define inline schemas.
+
 ## React Hook Form + Zod (client)
 
 When using `zodResolver(schema)` with fields that use Zod `.default()` (e.g. `rememberMe: z.boolean().default(false)`):
@@ -45,3 +49,5 @@ After a successful **`createAppointment`**, **`updateAppointment`**, or **`delet
 ## Patients (`lib/actions/patients.ts`)
 
 **`getPatients`** (via `lib/db/queries/patients.ts`): each list row includes **`status: "active" | "inactive"`** derived from `patients.is_active`. The list payload does **not** include `isActive`; dashboard and other consumers must map **`row.status`** into UI types (`types/patient.ts` `PatientRow`). **`getPatientDetail`** / `getPatientById` still expose `isActive` on the full detail aggregate. Full column contract: `docs/07-Page-Specifications.md` (Patients dashboard).
+
+**`PatientRow.chartId`** is a **`number`** (raw integer from DB). The table display layer (`PatientsTable`) is responsible for calling `formatPatientChartId` — the dashboard page must not pre-format it to a string before passing to the row shape.

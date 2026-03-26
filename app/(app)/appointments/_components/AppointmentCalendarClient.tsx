@@ -10,9 +10,12 @@
  *   rangeStart/rangeEnd → fresh events passed as props
  *
  * No server action calls happen here. No useEffect data fetching.
- * The only client state is dropdown-open booleans and the current date
- * used BEFORE the user navigates (so the calendar increments smoothly
- * via `useOptimistic` if needed). We keep it simple: just nuqs + props.
+ * Client state is limited to dropdown-open booleans and the current date.
+ *
+ * TODO(drag-to-reschedule): when the FullCalendar interaction plugin
+ * (already installed: @fullcalendar/interaction) is wired up for drag
+ * events, use `useOptimistic` here to apply the date change instantly
+ * while the `rescheduleAppointment` server action commits in the background.
  */
 
 import { useQueryStates, parseAsString } from "nuqs";

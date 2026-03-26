@@ -95,7 +95,7 @@ app/
 
 components/
   ui/                       ← Shadcn base components — DO NOT MODIFY
-  layout/                   ← AppShell.tsx, TopNav.tsx, SideNav.tsx, NavItem.tsx, PageHeader.tsx, DetailPageShell.tsx
+  layout/                   ← AppShell.tsx, TopNav.tsx, SideNav.tsx, PageHeader.tsx, DetailPageShell.tsx
   common/                   ← Domain components (see below)
 
 lib/
@@ -103,7 +103,7 @@ lib/
   db/                       ← Drizzle schema + query functions
   validators/               ← Zod schemas (shared between forms and server actions); `common.ts` exports `idSchema` + `n()` helper (reused by all entity action files)
   auth/                     ← Better-Auth config
-  utils/                    ← `chart-id.ts` — `#PT-` / `#STF-` display formatters (integers in DB only)
+  utils/                    ← `chart-id.ts` — unified `formatChartId(value, entityType)` + thin wrappers `formatPatientChartId` (`#PT-`) / `formatStaffChartId` (`#STF-`); supports `'patient' | 'staff' | 'medicine' | 'user'` entity types (`#PT-` / `#STF-` / `#MED-` / `#USR-`); DB stores integers only
   appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
 
 types/                      ← UI/view-model TypeScript types (patient, appointment, medicine, home)

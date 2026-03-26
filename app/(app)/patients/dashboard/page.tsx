@@ -59,7 +59,7 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows: PatientRow[] = (result.data.rows as any[]).map((r: any): PatientRow => ({
     id:             r.id,
-    chartId:        String(r.chartId),
+    chartId:        r.chartId as number,
     firstName:      r.firstName,
     lastName:       r.lastName,
     email:          r.email ?? "",

@@ -19,7 +19,7 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 **Typography Rules:**
 *   **DM Serif Display**: Use ONLY for `<h1>` page titles and the brand name.
 *   **DM Sans**: Use for EVERYTHING else (body, labels, buttons, tables).
-*   **Monospace**: Use for Chart IDs (`#PT-…` patients, `#STF-…` staff/users). Format with `formatPatientChartId` / `formatStaffChartId` from `lib/utils/chart-id.ts` — never hand-roll prefixes in components.
+*   **Monospace**: Use for Chart IDs. Format with `formatChartId(value, entityType)` from `lib/utils/chart-id.ts` (entity types: `'patient'` → `#PT-`, `'staff'` → `#STF-`, `'medicine'` → `#MED-`, `'user'` → `#USR-`). Convenience wrappers `formatPatientChartId` / `formatStaffChartId` are available for those two entities. Never hand-roll prefixes in components. `PatientRow.chartId` is a raw `number` — the table cell calls the formatter at render time; the server/page layer must not pre-format it.
 
 **Forms & State:**
 *   Always use **React Hook Form + Zod**. Schemas must be imported from `lib/validators/`.
@@ -53,7 +53,7 @@ Reuse existing components instead of building ad-hoc solutions.
 
 **Layouts (`components/layout/`)**
 *   `<DetailPageShell breadcrumb>` - Full-page wrapper used by all entity `/new` and `/view/[id]` pages (outer padding, max-width column, breadcrumb text, glass card container). Always use this instead of repeating the wrapper inline.
-*   `<AppShell />`, `<TopNav />`, `<SideNav />`, `<NavItem />`. `SideNav` gets `userDisplayName` / `userTypeLabel` / `avatarSeed` (`session.user.id`, DiceBear open-peeps URL with skin/background palettes) from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `clinicName` / `clinicLogoUrl` (from `buildClinicLogoPublicUrl` + `ASSETS_BASE_URL`; clinic mark: `Skeleton` while logo loads (`<img>` `opacity-0` for immediate fetch), then logo or `InitialsBadge` on error — no broken icon), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`. `TopNav` right slot: `public/clinicforce-mark.png` in `--color-ink` square. Login page: same asset in brand rows (`app/(auth)/login/page.tsx`).
+*   `<AppShell />`, `<TopNav />`, `<SideNav />`. `SideNav` gets `userDisplayName` / `userTypeLabel` / `avatarSeed` (`session.user.id`, DiceBear open-peeps URL with skin/background palettes) from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `clinicName` / `clinicLogoUrl` (from `buildClinicLogoPublicUrl` + `ASSETS_BASE_URL`; clinic mark: `Skeleton` while logo loads (`<img>` `opacity-0` for immediate fetch), then logo or `InitialsBadge` on error — no broken icon), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`. `TopNav` right slot: `public/clinicforce-mark.png` in `--color-ink` square. Login page: same asset in brand rows (`app/(auth)/login/page.tsx`).
 
 **AppShell page content:** Full-page routes in `app/(app)/` wrap primary UI in **`max-w-[1700px] mx-auto w-full`** inside `p-8` (or flex `h-full` shells); use **`flex-1 min-h-0`** on that inner wrapper when the page must fill height (tables, calendar, detail). `@modal` routes omit this — they render `<ModalShell />` only. **`appointments/dashboard`:** `p-8` lives on the page; **`AppointmentCalendarClient`** root must not use `p-8` (avoid double inset inside the max-width column).
 
@@ -73,7 +73,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   Left: **testimonial carousel** (several fake quotes), dots = nav + auto-rotate (~4.5s), same glass card styling.
     *   Password: **Eye / EyeOff** toggle (type `password` ↔ `text` only).
     *   Footer: `© {new Date().getFullYear()} Clinicforce`.
-    *   Client component. React Hook Form + Zod. Sonner toasts on error. `useForm({ resolver: zodResolver(schema) })` without a generic so types infer from the resolver; no `defaultValues` for Zod `.default()` fields (see `docs/04-API-Specification.md`).
+    *   Client component. React Hook Form + Zod. Schema: `loginSchema` from `lib/validators/auth.ts`. Sonner toasts on error. `useForm({ resolver: zodResolver(schema) })` without a generic so types infer from the resolver; no `defaultValues` for Zod `.default()` fields (see `docs/04-API-Specification.md`). Metadata (`title`, `description`) exported from `app/(auth)/layout.tsx` (not the page — page is `"use client"`).
     *   `signIn.email()` from `lib/auth/client.ts`. Redirects to `?returnUrl` or `/home/dashboard` on success.
     *   No OAuth buttons. No "Request access" link. `rememberMe` checkbox wired to form.
 *   **Home**: 

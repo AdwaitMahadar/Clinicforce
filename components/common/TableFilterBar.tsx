@@ -149,7 +149,7 @@ export function TableFilterBar({
   }
 
   function handleExport() {
-    console.log("TODO: export data");
+    // TODO: implement CSV/XLSX export once the export server action is available
   }
 
   return (
@@ -221,6 +221,8 @@ export function TableFilterBar({
             </button>
           )}
 
+          {/* TODO(server-sort): wire onClick when server-side sort params are added to
+              the URL schema; Sort will set a `sortBy` + `sortDir` nuqs param pair. */}
           <button
             className="flex items-center gap-2 px-3 py-[7px] rounded-lg text-sm font-medium transition-colors"
             style={{
@@ -275,7 +277,6 @@ export function TableFilterBar({
               return (
                 <FilterRow
                   key={idx}
-                  index={idx}
                   filter={filter}
                   selectedCol={selectedCol}
                   filterColumns={filterColumns}
@@ -331,7 +332,6 @@ export function TableFilterBar({
 // ─── Sub-component: one filter row ────────────────────────────────────────────
 
 interface FilterRowProps {
-  index:             number;
   filter:            ActiveFilter;
   selectedCol:       FilterColumn | undefined;
   filterColumns:     FilterColumn[];

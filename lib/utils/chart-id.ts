@@ -3,8 +3,14 @@
  * Use in components and page mappers — never in validators or persistence.
  */
 
-const PATIENT_PREFIX = "#PT-";
-const STAFF_PREFIX = "#STF-";
+const PREFIXES = {
+  patient:  "#PT-",
+  staff:    "#STF-",
+  medicine: "#MED-",
+  user:     "#USR-",
+} as const;
+
+export type ChartIdEntityType = keyof typeof PREFIXES;
 
 function normalizedNumericPart(value: number | string | null | undefined): string | null {
   if (value === null || value === undefined) return null;
@@ -14,14 +20,26 @@ function normalizedNumericPart(value: number | string | null | undefined): strin
   return s;
 }
 
+/**
+ * Unified chart ID formatter.
+ * e.g. formatChartId(1001, "patient") → "#PT-1001"
+ *      formatChartId(99,   "staff")   → "#STF-99"
+ *      formatChartId(null, "medicine") → "—"
+ */
+export function formatChartId(
+  value: number | string | null | undefined,
+  entityType: ChartIdEntityType,
+): string {
+  const n = normalizedNumericPart(value);
+  return n === null ? "—" : `${PREFIXES[entityType]}${n}`;
+}
+
 /** Patients: e.g. `#PT-1001`. Missing values → em dash. */
 export function formatPatientChartId(value: number | string | null | undefined): string {
-  const n = normalizedNumericPart(value);
-  return n === null ? "—" : `${PATIENT_PREFIX}${n}`;
+  return formatChartId(value, "patient");
 }
 
 /** Staff / users: e.g. `#STF-99`. Missing values → em dash. */
 export function formatStaffChartId(value: number | string | null | undefined): string {
-  const n = normalizedNumericPart(value);
-  return n === null ? "—" : `${STAFF_PREFIX}${n}`;
+  return formatChartId(value, "staff");
 }

@@ -4,18 +4,10 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "@/lib/auth/client";
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().default(false),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { loginSchema, type LoginFormValues } from "@/lib/validators/auth";
 
 const TESTIMONIALS = [
   {

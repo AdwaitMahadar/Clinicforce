@@ -13,8 +13,8 @@ export type PatientStatus = "active" | "inactive";
 
 export interface PatientRow {
   id:             string;
-  /** Raw numeric string from the server; format with `formatPatientChartId` where rendered. */
-  chartId:        string;
+  /** Raw integer from the server; formatted with `formatPatientChartId` at render time. */
+  chartId:        number;
   firstName:      string;
   lastName:       string;
   email:          string;

@@ -5,7 +5,6 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventContentArg } from "@fullcalendar/core";
-import { useRef } from "react";
 import type { AppointmentEvent } from "@/types/appointment";
 import { TYPE_COLORS } from "@/lib/appointment-calendar-styles";
 import { AppointmentEventCard } from "./AppointmentEventCard";
@@ -30,8 +29,6 @@ export function TimeGridView({
   onDateChange,
   onEventClick,
 }: TimeGridViewProps) {
-  const calendarRef = useRef<FullCalendar>(null);
-
   // Calculate an offset so the current time sits naturally inside the view
   // rather than glued to the absolute top edge. FullCalendar accepts any HH:mm
   // string for scrollTime and safely handles container boundaries.
@@ -59,7 +56,6 @@ export function TimeGridView({
   return (
     <div className="h-full flex-1 fullcalendar-clinicforce">
       <FullCalendar
-        ref={calendarRef}
         plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
         initialView={view === "week" ? "timeGridWeek" : "timeGridDay"}
         key={`${view}-${currentDate.toISOString().slice(0, 10)}`}
