@@ -59,6 +59,14 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 
 PostgreSQL `pgEnum` definitions in `lib/db/schema/` pull value arrays from `lib/constants/` (same lists as Zod `z.enum()`). **Do not** redefine the same enum literals in schema, validators, and `types/` separately.
 
+## DB Query Return Types
+
+Types exported from `lib/db/queries/` that represent raw DB row shapes are prefixed with **`Db`** to avoid collision with the UI view-model types in `types/`:
+
+- `DbPatientRow` (`lib/db/queries/patients.ts`) — chartId is `number`, dates are `Date | null`. Distinct from `PatientRow` in `types/patient.ts` (chartId formatted string, display strings).
+- `DbMedicineRow` (`lib/db/queries/medicines.ts`) — lastPrescribedDate is `Date | null`, isActive is `boolean`. Distinct from `MedicineRow` in `types/medicine.ts` (lastUsed string, status string).
+- Never import DB query types (`Db*`) in client components or UI code — they are server-only.
+
 ## Zod Validation
 
 Create/Update server actions validate payloads with Zod schemas in `lib/validators/` (see `skills/api-and-validation/SKILL.md`). Enum fields use `z.enum()` with imports from `lib/constants/`. Do not define validation schemas inline in components or actions.

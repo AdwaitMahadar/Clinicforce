@@ -67,7 +67,9 @@ app/
     home/reports/           ← Clinic reports
     appointments/dashboard/ ← Appointments calendar (Month/Week/Day views)
     appointments/_components/ ← Appointment specific components
-    appointments/_lib/ ← Server helpers (e.g. appointment form picker option mapping)
+    appointments/_lib/ ← Server helpers (picker option mapping, detail mapper)
+ patients/_lib/ ← Server helpers (patient detail mapper)
+ medicines/_lib/ ← Server helpers (medicine detail mapper)
     appointments/new/       ← New appointment page
     appointments/reports/   ← Appointments reports
     appointments/view/[id]/ ← Full-page appointment detail (direct URL fallback)

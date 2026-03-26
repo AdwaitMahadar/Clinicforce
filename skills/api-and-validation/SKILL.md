@@ -75,6 +75,16 @@ The general pattern for every action follows the anatomy above:
 - **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
 - **Global search**: `searchGlobal` in `lib/actions/search.ts` — validate with `searchGlobalQuerySchema` (`lib/validators/search.ts`); parallel `LIMIT 5` queries per entity, all scoped by `clinicId`; return type `GroupedSearchResults` in `types/search.ts`.
 
+## Detail Mapper Pattern
+
+Every entity has a shared mapper in `_lib/*-detail-mapper.ts` that converts the server action result (`Extract<Awaited<ReturnType<typeof getXxxDetail>>, { success: true }>["data"]`) to the UI detail type from `types/`. Both the full-page route and the intercepting modal content component import the same mapper:
+
+- `buildPatientDetail(r)` — `patients/_lib/patient-detail-mapper.ts`
+- `buildMedicineDetail(r)` — `medicines/_lib/medicine-detail-mapper.ts`
+- `buildAppointmentDetail(r)` — `appointments/_lib/appointment-detail-mapper.ts`
+
+Never duplicate mapping logic between `view/[id]/page.tsx` and `@modal/(.)entity/view/[id]/EntityViewModalContent.tsx`. Always import the shared mapper instead.
+
 ## ❌ DO NOT
 
 - **Do not** write server actions without retrieving and enforcing the `session`.

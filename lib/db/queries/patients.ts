@@ -16,7 +16,12 @@ import { getDocumentsByAssignment } from "./documents";
 
 // ─── Return Types ─────────────────────────────────────────────────────────────
 
-export interface PatientRow {
+/**
+ * Raw DB row returned by `getPatients` — chartId is a number, dates are Date objects.
+ * Intentionally distinct from `@/types/patient` `PatientRow` which is the UI view-model
+ * (chartId: string, dates formatted to display strings).
+ */
+export interface DbPatientRow {
   id: string;
   chartId: number;
   firstName: string;
@@ -88,7 +93,7 @@ export interface GetPatientsParams {
 export async function getPatients(
   clinicId: string,
   params: GetPatientsParams
-): Promise<{ rows: PatientRow[]; total: number }> {
+): Promise<{ rows: DbPatientRow[]; total: number }> {
   const {
     search,
     status,

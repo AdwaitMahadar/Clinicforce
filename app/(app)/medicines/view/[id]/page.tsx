@@ -8,8 +8,8 @@
 
 import { notFound } from "next/navigation";
 import { getMedicineDetail } from "@/lib/actions/medicines";
+import { buildMedicineDetail } from "../../_lib/medicine-detail-mapper";
 import { MedicineDetailPanel } from "../../_components/MedicineDetailPanel";
-import type { MedicineDetail } from "@/types/medicine";
 
 interface MedicineDetailPageProps {
   params: Promise<{ id: string }>;
@@ -21,24 +21,7 @@ export default async function MedicineDetailPage({ params }: MedicineDetailPageP
 
   if (!result.success) notFound();
 
-  // Map server action data shape → MedicineDetail shape the panel expects
-  const r = result.data;
-  const medicine: MedicineDetail = {
-    id:                 r.id,
-    name:               r.name,
-    category:           r.category ?? "",
-    brand:              r.brand ?? "",
-    form:               r.form ?? "",
-    description:        r.description ?? "",
-    lastPrescribedDate: r.lastPrescribedDate
-      ? new Date(r.lastPrescribedDate).toISOString().slice(0, 10)
-      : "",
-    isActive:  r.isActive,
-    createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : "",
-    createdBy: "",
-    // TODO: Implement when audit_log table is built.
-    activityLog: [],
-  };
+  const medicine = buildMedicineDetail(result.data);
 
   return (
     <div className="p-8 h-full flex flex-col">

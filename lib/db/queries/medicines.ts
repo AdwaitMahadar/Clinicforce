@@ -14,7 +14,12 @@ import { medicines } from "@/lib/db/schema";
 
 // ─── Return Types ─────────────────────────────────────────────────────────────
 
-export interface MedicineRow {
+/**
+ * Raw DB row returned by `getMedicines` — dates are Date objects, nullable fields are null.
+ * Intentionally distinct from `@/types/medicine` `MedicineRow` which is the UI view-model
+ * (lastUsed: string, status: "active"|"inactive", non-null display strings).
+ */
+export interface DbMedicineRow {
   id: string;
   name: string;
   category: string | null;
@@ -60,7 +65,7 @@ export interface GetMedicinesParams {
 export async function getMedicines(
   clinicId: string,
   params: GetMedicinesParams
-): Promise<{ rows: MedicineRow[]; total: number }> {
+): Promise<{ rows: DbMedicineRow[]; total: number }> {
   const {
     search,
     category,

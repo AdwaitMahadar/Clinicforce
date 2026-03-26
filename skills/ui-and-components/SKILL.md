@@ -88,7 +88,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar. After create/update/deactivate: `router.refresh()` (and full-page create pushes to dashboard), same pattern as patients.
     *   `/reports`: Placeholder view.
 
-Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** (`@modal/(.)[entity]/...` parallel routes) inside a `<ModalShell />` with a full-page fallback for direct URL access, sharing logic via entity-specific `_components/` directories.
+Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** (`@modal/(.)[entity]/...` parallel routes) inside a `<ModalShell />` with a full-page fallback for direct URL access, sharing logic via entity-specific `_components/` (UI panels) and `_lib/` (server helpers) directories. **Detail mappers:** each entity has a `_lib/*-detail-mapper.ts` that converts the server action result to the UI detail type — both the full-page route and the modal content component import the same mapper (e.g. `buildPatientDetail`, `buildAppointmentDetail`, `buildMedicineDetail`).
 
 ## ❌ DO NOT
 
