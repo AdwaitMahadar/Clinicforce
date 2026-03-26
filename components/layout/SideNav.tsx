@@ -74,8 +74,9 @@ interface SideNavProps {
 }
 
 /**
- * Shows `InitialsBadge` until the logo `<img>` fires `onLoad`. The image stays `hidden`
- * (display:none) until then so 404/CORS/network failures never show a broken icon — only initials.
+ * `InitialsBadge` on top until the logo `<img>` fires `onLoad`. The image stays in the layout
+ * with `opacity-0` (not `display:none`) so the browser fetches immediately; on failure, `onLoad`
+ * never runs and initials stay visible — no broken-icon flash.
  */
 function ClinicBrandMark({
   clinicName,
@@ -87,11 +88,14 @@ function ClinicBrandMark({
   const [logoLoaded, setLogoLoaded] = useState(false);
 
   return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center">
+    <div className="relative size-9 shrink-0">
       <InitialsBadge
         name={clinicName}
         size="md"
-        className={cn("size-9 shrink-0 rounded-lg", logoLoaded && "hidden")}
+        className={cn(
+          "absolute inset-0 z-[1] size-9 shrink-0 rounded-lg transition-opacity duration-150",
+          logoLoaded && "pointer-events-none z-0 opacity-0"
+        )}
         aria-hidden={logoLoaded}
       />
       {/* Plain <img>: public S3/R2 URL — avoid next/image remotePatterns (product rule). */}
@@ -99,10 +103,16 @@ function ClinicBrandMark({
       <img
         src={clinicLogoUrl}
         alt=""
-        className={cn("size-9 rounded-lg object-contain", !logoLoaded && "hidden")}
+        loading="eager"
+        decoding="async"
+        className={cn(
+          "absolute inset-0 z-0 size-9 rounded-lg object-contain transition-opacity duration-150",
+          logoLoaded && "z-[1] opacity-100",
+          !logoLoaded && "opacity-0"
+        )}
         onLoad={() => setLogoLoaded(true)}
         onError={() => {
-          /* keep hidden; initials remain visible */
+          /* stay opacity-0; initials remain visible */
         }}
       />
     </div>
