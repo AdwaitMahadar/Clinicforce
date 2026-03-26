@@ -511,7 +511,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 - **RBAC:** All roles.
 
 #### `updateMedicine(id, data)`
-- **Input:** `id`, `MedicineFormValues` (from `lib/validators/medicine.ts`), `clinicId` from session
+- **Input:** `id`, `UpdateMedicineInput` (from `lib/validators/medicine.ts`), `clinicId` from session
 - **Validates:** `{ name, category, brand, form, lastPrescribedDate?, description? }`
 - **Enforces:** `clinicId` and `createdBy` are immutable
 - **RBAC:** Doctor and Admin only (Staff cannot edit).
@@ -540,7 +540,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 ### Server Actions Needed
 
 #### `createMedicine(data)`
-- **Input:** `MedicineFormValues`, `clinicId` from session
+- **Input:** `CreateMedicineInput`, `clinicId` from session
 - **Validates:** Zod schema in `lib/validators/medicine.ts`
 - **Enforces:**
   - Sets `createdBy = session.userId`

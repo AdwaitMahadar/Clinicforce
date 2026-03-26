@@ -12,7 +12,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useQueryState, parseAsString, parseAsInteger } from "nuqs";
+import { useQueryState, useQueryStates, parseAsString, parseAsInteger } from "nuqs";
 import { Search, ListFilter, ArrowUpDown, Download, Plus, X, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -61,9 +61,16 @@ export function TableFilterBar({
     parseAsInteger.withDefault(1).withOptions({ shallow: false })
   );
 
-  // One nuqs state per filterable column — stored individually so each filter
-  // maps to its own clear URL param (e.g. ?category=Antibiotics&status=active).
-  // We build the per-column hooks dynamically by rendering a sub-component.
+  // Build the nuqs parser map once. filterColumns is a compile-time constant
+  // passed from each dashboard page — its shape never changes per instance.
+  // Using useRef keeps the same object identity across renders so useQueryStates
+  // sees a stable map and never desyncs from the URL.
+  const filterParsersRef = useRef(
+    Object.fromEntries(filterColumns.map((col) => [col.key, parseAsString]))
+  );
+  const [, setFilterValues] = useQueryStates(filterParsersRef.current, {
+    shallow: false,
+  });
 
   // ── UI-only state ──────────────────────────────────────────────────────────
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -104,13 +111,18 @@ export function TableFilterBar({
   function removeFilter(index: number) {
     const removed = localFilters[index];
     setLocalFilters((prev) => prev.filter((_, i) => i !== index));
-    // Clear the URL param for that column
-    if (removed) applyFilter(removed.columnKey, "");
+    if (removed) {
+      void setFilterValues({ [removed.columnKey]: null });
+      void setPage(1);
+    }
   }
 
   function updateFilterColumn(index: number, newColumnKey: string) {
     const old = localFilters[index];
-    if (old) applyFilter(old.columnKey, ""); // clear old column param
+    if (old) {
+      void setFilterValues({ [old.columnKey]: null });
+      void setPage(1);
+    }
     setLocalFilters((prev) =>
       prev.map((f, i) => (i === index ? { columnKey: newColumnKey, value: "" } : f))
     );
@@ -124,36 +136,20 @@ export function TableFilterBar({
     setLocalFilters((prev) =>
       prev.map((f, i) => (i === index ? { ...f, value: newValue } : f))
     );
-    applyFilter(filter.columnKey, newValue);
+    void setFilterValues({ [filter.columnKey]: newValue || null });
+    void setPage(1);
     setValuePickerOpen(null);
   }
 
   function clearAll() {
-    // Clear all URL filter params
-    localFilters.forEach((f) => applyFilter(f.columnKey, ""));
+    const resetAll = Object.fromEntries(filterColumns.map((c) => [c.key, null]));
+    void setFilterValues(resetAll);
+    void setPage(1);
     setLocalFilters([]);
   }
 
   function handleExport() {
     console.log("TODO: export data");
-  }
-
-  // ── URLSearchParams writer (uses router.push via nuqs pattern) ─────────────
-  // We use a simple approach: each filter key is a top-level URL param.
-  // Because nuqs hooks can't be called conditionally, we delegate the URL
-  // write to a tiny helper that uses the native history API — nuqs will pick
-  // it up on the next render.
-  function applyFilter(key: string, value: string) {
-    const url = new URL(window.location.href);
-    if (value) {
-      url.searchParams.set(key, value);
-    } else {
-      url.searchParams.delete(key);
-    }
-    url.searchParams.set("page", "1"); // reset page
-    window.history.pushState({}, "", url.toString());
-    // Trigger a Next.js navigation so the Server Component re-renders
-    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   return (

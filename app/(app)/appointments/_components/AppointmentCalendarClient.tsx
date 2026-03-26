@@ -25,18 +25,14 @@ import {
   addMonths, subMonths,
   addWeeks,  subWeeks,
   addDays,   subDays,
-  startOfMonth, endOfMonth,
-  startOfWeek,  endOfWeek,
-  startOfDay, endOfDay,
   isToday,
 } from "date-fns";
+import type { CalendarView } from "../_lib/calendar-range";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthView }    from "@/components/common/MonthView";
 import { TimeGridView } from "@/components/common/TimeGridView";
 import type { AppointmentEvent } from "@/types/appointment";
-
-export type CalendarView = "month" | "week" | "day";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,26 +46,6 @@ function navigateDate(view: CalendarView, date: Date, dir: -1 | 1): Date {
   if (view === "month") return dir === 1 ? addMonths(date, 1) : subMonths(date, 1);
   if (view === "week")  return dir === 1 ? addWeeks(date, 1)  : subWeeks(date, 1);
   return dir === 1 ? addDays(date, 1) : subDays(date, 1);
-}
-
-/** Compute the ISO date range for the given view + date. */
-export function getRangeForView(view: CalendarView, date: Date) {
-  if (view === "month") {
-    return {
-      rangeStart: startOfMonth(date).toISOString(),
-      rangeEnd:   endOfMonth(date).toISOString(),
-    };
-  }
-  if (view === "week") {
-    return {
-      rangeStart: startOfWeek(date).toISOString(),
-      rangeEnd:   endOfWeek(date).toISOString(),
-    };
-  }
-  return {
-    rangeStart: startOfDay(date).toISOString(),
-    rangeEnd:   endOfDay(date).toISOString(),
-  };
 }
 
 // ─── View+Date control ────────────────────────────────────────────────────────

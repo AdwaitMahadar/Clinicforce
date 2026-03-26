@@ -9,32 +9,16 @@
  * No "use client", no useState, no useEffect, no data fetching in client.
  */
 
-import {
-  parseISO,
-  startOfMonth, endOfMonth,
-  startOfWeek,  endOfWeek,
-  startOfDay, endOfDay,
-  isValid,
-} from "date-fns";
+import { parseISO, isValid } from "date-fns";
 import { getAppointments } from "@/lib/actions/appointments";
 import { VALID_APPOINTMENT_DISPLAY_TYPES } from "@/lib/appointment-calendar-styles";
 import type { AppointmentCalendarRow } from "@/lib/db/queries/appointments";
+import { getCalendarRange } from "../_lib/calendar-range";
 import { AppointmentCalendarClient } from "../_components/AppointmentCalendarClient";
 import type { AppointmentEvent } from "@/types/appointment";
 
 interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function getRange(view: string, date: Date) {
-  if (view === "week") {
-    return { rangeStart: startOfWeek(date), rangeEnd: endOfWeek(date) };
-  }
-  if (view === "day") {
-    return { rangeStart: startOfDay(date), rangeEnd: endOfDay(date) };
-  }
-  // default: month
-  return { rangeStart: startOfMonth(date), rangeEnd: endOfMonth(date) };
 }
 
 export default async function AppointmentsDashboardPage({ searchParams }: PageProps) {
@@ -48,11 +32,11 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
     if (isValid(parsed)) currentDate = parsed;
   } catch { /* use today */ }
 
-  const { rangeStart, rangeEnd } = getRange(view, currentDate);
+  const { rangeStart, rangeEnd } = getCalendarRange(view, currentDate);
 
   const result = await getAppointments({
-    rangeStart: rangeStart.toISOString(),
-    rangeEnd:   rangeEnd.toISOString(),
+    rangeStart,
+    rangeEnd,
   });
 
   const events: AppointmentEvent[] = result.success

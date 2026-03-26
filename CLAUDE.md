@@ -67,7 +67,7 @@ app/
     home/reports/           ← Clinic reports
     appointments/dashboard/ ← Appointments calendar (Month/Week/Day views)
     appointments/_components/ ← Appointment specific components
-    appointments/_lib/ ← Server helpers (picker option mapping, detail mapper)
+    appointments/_lib/ ← Server helpers (picker option mapping, detail mapper, calendar-range.ts)
  patients/_lib/ ← Server helpers (patient detail mapper)
  medicines/_lib/ ← Server helpers (medicine detail mapper)
     appointments/new/       ← New appointment page

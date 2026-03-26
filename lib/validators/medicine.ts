@@ -86,12 +86,3 @@ export type CreateMedicineInput = z.infer<typeof createMedicineSchema>;
 /** Import this type for the update medicine form values. */
 export type UpdateMedicineInput = z.infer<typeof updateMedicineSchema>;
 
-// ─── Legacy alias (for backward compatibility with existing form usages) ──────
-// TODO: Migrate all usages of `medicineSchema` / `MedicineFormValues` to the
-// create/update schemas above in Phase 3 when wiring UI to server actions.
-
-/** @deprecated Use createMedicineSchema or updateMedicineSchema instead. */
-export const medicineSchema = createMedicineSchema;
-
-/** @deprecated Use CreateMedicineInput or UpdateMedicineInput instead. */
-export type MedicineFormValues = CreateMedicineInput;

@@ -25,10 +25,10 @@ import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import type { MedicineDetail } from "@/types/medicine";
 import type { MedicineIcon } from "@/types/medicine";
 import {
-  medicineSchema,
+  createMedicineSchema,
   MEDICINE_CATEGORIES,
   MEDICINE_FORMS,
-  type MedicineFormValues,
+  type CreateMedicineInput,
 } from "@/lib/validators/medicine";
 import {
   createMedicine,
@@ -58,7 +58,7 @@ function guessIcon(form?: string): MedicineIcon {
 
 // ─── Field definitions ────────────────────────────────────────────────────────
 
-const MEDICINE_FIELDS: FormFieldDescriptor<MedicineFormValues>[] = [
+const MEDICINE_FIELDS: FormFieldDescriptor<CreateMedicineInput>[] = [
   {
     name: "name",
     label: "Medicine Name",
@@ -101,7 +101,7 @@ const MEDICINE_FIELDS: FormFieldDescriptor<MedicineFormValues>[] = [
 
 // ─── Blank defaults for create mode ──────────────────────────────────────────
 
-const EMPTY_VALUES: MedicineFormValues = {
+const EMPTY_VALUES: CreateMedicineInput = {
   name:               "",
   category:           MEDICINE_CATEGORIES[0],
   brand:              "",
@@ -165,18 +165,18 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
 
   const iconName = guessIcon(medicine?.form);
 
-  const defaultValues: MedicineFormValues = isCreate
+  const defaultValues: CreateMedicineInput = isCreate
     ? EMPTY_VALUES
     : {
         name:               medicine!.name,
-        category:           medicine!.category as MedicineFormValues["category"],
+        category:           medicine!.category as CreateMedicineInput["category"],
         brand:              medicine!.brand,
-        form:               medicine!.form as MedicineFormValues["form"],
+        form:               medicine!.form as CreateMedicineInput["form"],
         lastPrescribedDate: medicine!.lastPrescribedDate ?? "",
         description:        medicine!.description ?? "",
       };
 
-  const handleSubmit = async (values: MedicineFormValues) => {
+  const handleSubmit = async (values: CreateMedicineInput) => {
     if (isCreate) {
       const result = await createMedicine(values);
       if (result.success) {
@@ -243,9 +243,9 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
   );
 
   const form = (
-    <DetailForm<MedicineFormValues>
+    <DetailForm<CreateMedicineInput>
       ref={formRef}
-      schema={medicineSchema}
+      schema={createMedicineSchema}
       defaultValues={defaultValues}
       fields={MEDICINE_FIELDS}
       onSubmit={handleSubmit}
