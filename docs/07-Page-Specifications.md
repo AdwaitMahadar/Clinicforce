@@ -669,7 +669,7 @@ The application provides intercepting routes to display forms seamlessly over th
 | `/appointments/dashboard` | Calendar view | `MonthView`, `TimeGridView` | `getAppointments` |
 | `/appointments/new` | New appt form | `AppointmentDetailPanel mode="create"` | `createAppointment`, `getActivePatients`, `getActiveDoctors` |
 | `/appointments/reports` | Appt Reports | Placeholder | `—` |
-| `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `updateAppointment`, `deleteAppointment` |
+| `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `getActivePatients`, `getActiveDoctors` (parallel with detail), `updateAppointment`, `deleteAppointment` |
 | `/patients/dashboard` | Patient list | `DataTable` | `getPatients` |
 | `/patients/new` | New patient form | `PatientDetailPanel mode="create"` | `createPatient` |
 | `/patients/reports` | Patient Reports | Placeholder | `—` |
@@ -748,4 +748,4 @@ Create or complete validators in `lib/validators/`. These are the single source 
 ### Step 6 — Wire UI to Actions
 Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.
 
-**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers.
+**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` / `getActiveDoctors` where applicable) and passed as props so selects are populated on first paint.

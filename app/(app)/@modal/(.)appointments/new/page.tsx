@@ -5,12 +5,18 @@
  */
 
 import { ModalShell } from "@/components/common/ModalShell";
+import { loadAppointmentFormSelectOptions } from "@/app/(app)/appointments/_lib/appointment-picker-options";
 import { NewAppointmentModalClient } from "./NewAppointmentModalClient";
 
-export default function NewAppointmentModalPage() {
+export default async function NewAppointmentModalPage() {
+  const { patientOptions, doctorOptions } = await loadAppointmentFormSelectOptions();
+
   return (
     <ModalShell size="lg" label="New Appointment">
-      <NewAppointmentModalClient />
+      <NewAppointmentModalClient
+        patientOptions={patientOptions}
+        doctorOptions={doctorOptions}
+      />
     </ModalShell>
   );
 }

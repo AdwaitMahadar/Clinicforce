@@ -43,6 +43,9 @@ export interface AppointmentEvent {
 
 // ─── Detail record (single appointment view/edit panel) ───────────────────────
 
+/** Label/value pair for patient/doctor selects in `AppointmentDetailPanel`. */
+export type AppointmentSelectOption = { label: string; value: string };
+
 export interface AppointmentActivityEntry {
   id:        string;
   action:    string;

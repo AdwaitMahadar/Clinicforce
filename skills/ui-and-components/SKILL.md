@@ -77,7 +77,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — one form column (all appointment fields); **patient select disabled in edit**; edit mode: sidebar Documents tab + activity log; create mode: full-width form.
+    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` (with `getActivePatients`/`getActiveDoctors`; **view** uses `Promise.all` with `getAppointmentDetail`); **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).
@@ -85,7 +85,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
     *   `/dashboard`: DataTable (Search by name, filter by category/form); first column = category-mapped Lucide icon in `surface-alt` square + name/brand (same flex pattern as patients + `InitialsBadge`); row click → `/medicines/view/[id]` (intercepting modal).
-    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar.
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar. After create/update/deactivate: `router.refresh()` (and full-page create pushes to dashboard), same pattern as patients.
     *   `/reports`: Placeholder view.
 
 Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** (`@modal/(.)[entity]/...` parallel routes) inside a `<ModalShell />` with a full-page fallback for direct URL access, sharing logic via entity-specific `_components/` directories.

@@ -16,6 +16,7 @@
  */
 
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Pill, Beaker, Syringe, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { DetailPanel, DetailForm } from "@/components/common";
@@ -159,6 +160,7 @@ function CloseButton({ onClose }: { onClose: () => void }) {
 
 export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: MedicineDetailPanelProps) {
   const isCreate = mode === "create";
+  const router = useRouter();
   const formRef = useRef<DetailFormHandle | null>(null);
 
   const iconName = guessIcon(medicine?.form);
@@ -179,7 +181,12 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       const result = await createMedicine(values);
       if (result.success) {
         toast.success("Medicine added successfully.");
-        onClose?.();
+        if (onClose) {
+          onClose();
+        } else {
+          router.push("/medicines/dashboard");
+        }
+        router.refresh();
       } else {
         toast.error(result.error ?? "Failed to add medicine.");
       }
@@ -187,6 +194,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       const result = await updateMedicine({ id: medicine!.id, ...values });
       if (result.success) {
         toast.success("Medicine updated successfully.");
+        router.refresh();
       } else {
         toast.error(result.error ?? "Failed to update medicine.");
       }
@@ -198,6 +206,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
     if (result.success) {
       toast.success("Medicine deactivated.");
       onClose?.();
+      router.refresh();
     } else {
       toast.error(result.error ?? "Failed to deactivate medicine.");
     }

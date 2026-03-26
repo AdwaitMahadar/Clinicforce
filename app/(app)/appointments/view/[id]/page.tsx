@@ -8,7 +8,12 @@
 
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { getAppointmentDetail } from "@/lib/actions/appointments";
+import {
+  getAppointmentDetail,
+  getActivePatients,
+  getActiveDoctors,
+} from "@/lib/actions/appointments";
+import { mapAppointmentPickerResults } from "../../_lib/appointment-picker-options";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
 import type { AppointmentDetail } from "@/types/appointment";
 
@@ -27,7 +32,12 @@ function fmtHm(v: Date | string | null | undefined): string {
 
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
   const { id } = await params;
-  const result = await getAppointmentDetail(id);
+  const [result, patientsRes, doctorsRes] = await Promise.all([
+    getAppointmentDetail(id),
+    getActivePatients(),
+    getActiveDoctors(),
+  ]);
+  const { patientOptions, doctorOptions } = mapAppointmentPickerResults(patientsRes, doctorsRes);
 
   if (!result.success) notFound();
 
@@ -84,7 +94,12 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
             boxShadow:  "var(--shadow-card)",
           }}
         >
-          <AppointmentDetailPanel mode="edit" appointment={appointment} />
+          <AppointmentDetailPanel
+            mode="edit"
+            appointment={appointment}
+            patientOptions={patientOptions}
+            doctorOptions={doctorOptions}
+          />
         </div>
       </div>
     </div>

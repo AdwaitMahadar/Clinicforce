@@ -6,7 +6,7 @@
  * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, FileText, Upload } from "lucide-react";
@@ -20,7 +20,7 @@ import {
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import type { AppointmentDetail } from "@/types/appointment";
+import type { AppointmentDetail, AppointmentSelectOption } from "@/types/appointment";
 import {
   createAppointmentSchema,
   updateAppointmentSchema,
@@ -36,10 +36,7 @@ import {
   createAppointment,
   updateAppointment,
   deleteAppointment,
-  getActivePatients,
-  getActiveDoctors,
 } from "@/lib/actions/appointments";
-import { formatPatientChartId } from "@/lib/utils/chart-id";
 
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
@@ -190,8 +187,8 @@ const EMPTY_VALUES: CreateAppointmentInput = {
 // ─── Field definitions (single scrollable column; pickers filled at runtime) ───
 
 function buildAppointmentFormFields(
-  patientOptions: { label: string; value: string }[],
-  doctorOptions: { label: string; value: string }[],
+  patientOptions: AppointmentSelectOption[],
+  doctorOptions: AppointmentSelectOption[],
   patientSelectDisabled: boolean
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
   return [
@@ -271,12 +268,16 @@ function buildAppointmentFormFields(
 type EditProps = {
   mode: "edit";
   appointment: AppointmentDetail;
+  patientOptions: AppointmentSelectOption[];
+  doctorOptions: AppointmentSelectOption[];
   onClose?: () => void;
 };
 
 type CreateProps = {
   mode: "create";
   appointment?: never;
+  patientOptions: AppointmentSelectOption[];
+  doctorOptions: AppointmentSelectOption[];
   onClose?: () => void;
 };
 
@@ -287,37 +288,13 @@ type AppointmentDetailPanelProps = EditProps | CreateProps;
 export function AppointmentDetailPanel({
   mode = "edit",
   appointment,
+  patientOptions,
+  doctorOptions,
   onClose,
 }: AppointmentDetailPanelProps) {
   const isCreate = mode === "create";
   const router   = useRouter();
   const formRef  = useRef<DetailFormHandle | null>(null);
-
-  const [patientOptions, setPatientOptions] = useState<{ label: string; value: string }[]>([]);
-  const [doctorOptions, setDoctorOptions] = useState<{ label: string; value: string }[]>([]);
-
-  useEffect(() => {
-    void Promise.all([getActivePatients(), getActiveDoctors()]).then(
-      ([patientsRes, doctorsRes]) => {
-        if (patientsRes.success && patientsRes.data) {
-          setPatientOptions(
-            patientsRes.data.map((p) => ({
-              label: `${p.firstName} ${p.lastName} (${formatPatientChartId(p.chartId)})`,
-              value: p.id,
-            }))
-          );
-        }
-        if (doctorsRes.success && doctorsRes.data) {
-          setDoctorOptions(
-            doctorsRes.data.map((d) => ({
-              label: [d.firstName, d.lastName].filter(Boolean).join(" ") || d.name,
-              value: d.id,
-            }))
-          );
-        }
-      }
-    );
-  }, []);
 
   const defaultValues: CreateAppointmentInput | UpdateAppointmentInput = isCreate
     ? EMPTY_VALUES

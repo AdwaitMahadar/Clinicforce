@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { getAppointmentDetail } from "@/lib/actions/appointments";
+import {
+  getAppointmentDetail,
+  getActivePatients,
+  getActiveDoctors,
+} from "@/lib/actions/appointments";
+import { mapAppointmentPickerResults } from "@/app/(app)/appointments/_lib/appointment-picker-options";
 import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/AppointmentDetailPanel";
 import type { AppointmentDetail } from "@/types/appointment";
 
@@ -14,7 +19,12 @@ function fmtHm(v: Date | string | null | undefined): string {
 }
 
 export async function AppointmentViewModalContent({ id }: { id: string }) {
-  const result = await getAppointmentDetail(id);
+  const [result, patientsRes, doctorsRes] = await Promise.all([
+    getAppointmentDetail(id),
+    getActivePatients(),
+    getActiveDoctors(),
+  ]);
+  const { patientOptions, doctorOptions } = mapAppointmentPickerResults(patientsRes, doctorsRes);
 
   if (!result.success) notFound();
 
@@ -51,5 +61,12 @@ export async function AppointmentViewModalContent({ id }: { id: string }) {
     })),
   };
 
-  return <AppointmentDetailPanel mode="edit" appointment={appointment} />;
+  return (
+    <AppointmentDetailPanel
+      mode="edit"
+      appointment={appointment}
+      patientOptions={patientOptions}
+      doctorOptions={doctorOptions}
+    />
+  );
 }

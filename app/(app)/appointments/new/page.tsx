@@ -6,9 +6,12 @@
  * During normal in-app navigation the intercepting modal takes over.
  */
 
+import { loadAppointmentFormSelectOptions } from "../_lib/appointment-picker-options";
 import { AppointmentDetailPanel } from "../_components/AppointmentDetailPanel";
 
-export default function NewAppointmentPage() {
+export default async function NewAppointmentPage() {
+  const { patientOptions, doctorOptions } = await loadAppointmentFormSelectOptions();
+
   return (
     <div className="p-8 h-full flex flex-col">
       <div className="max-w-[1700px] mx-auto w-full flex-1 min-h-0 flex flex-col">
@@ -27,7 +30,11 @@ export default function NewAppointmentPage() {
             boxShadow:  "var(--shadow-card)",
           }}
         >
-          <AppointmentDetailPanel mode="create" />
+          <AppointmentDetailPanel
+            mode="create"
+            patientOptions={patientOptions}
+            doctorOptions={doctorOptions}
+          />
         </div>
       </div>
     </div>
