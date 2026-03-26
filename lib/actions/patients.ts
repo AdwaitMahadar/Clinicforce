@@ -9,9 +9,8 @@
  * Never throw.
  *
  * RBAC (docs/08-Business-Rules.md §3, §8):
- *   View   : all roles
- *   Create : all roles
- *   Edit   : doctor, admin
+ *   View / Create / Edit : all roles
+ *   Deactivate           : admin and doctor only
  */
 
 import { z } from "zod";

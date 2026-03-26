@@ -66,8 +66,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - A deactivated patient can be reactivated by an Admin or Doctor at any time.
 
 ### Editing
-- Admin and Doctor can edit all patient fields.
-- Staff can only view patients — they cannot edit patient records.
+- All roles can edit patient fields.
 
 ---
 
@@ -96,7 +95,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ### Deletion (Soft)
 - Appointments are never hard-deleted. Set `isActive = false`.
-- Only Admin and Doctor roles can deactivate an appointment.
+- All roles can deactivate an appointment.
 - Inactive appointments are hidden from all default views and calendar displays.
 - Documents linked to an inactive appointment via `appointmentId` remain accessible through the patient's document list.
 
@@ -109,8 +108,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 ## 5. Document Rules
 
 ### Creation
-- Admin and Doctor can create and delete documents.
-- Staff can only upload (create) documents — they cannot delete them.
+- All roles can upload (create) and view documents. Only Admin and Doctor can delete documents.
 - Every document must have an `assignedToId` and `assignedToType` (`patient` or `user`). A document must always belong to someone.
 - **Clinic-boundary enforcement:** `confirmDocumentUpload` verifies that `assignedToId` belongs to the session's `clinicId` before inserting the DB record. For `assignedToType: "patient"` this queries the `patients` table; for `"user"` it queries the `users` table. A mismatch returns an error and prevents cross-clinic attachment.
 - `appointmentId` is optional. It is used to surface relevant documents when viewing an appointment's detail — there is no behavioural restriction based on it.
@@ -132,20 +130,19 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 ## 6. Medicine Rules
 
 ### Creation
-- Admin and Doctor can create, edit, and delete medicines.
-- Staff can only view and add medicines (create, no edit or delete).
+- All roles can create, edit, and deactivate medicines.
 - Medicine names are **not required to be unique** — the same drug can exist multiple times with different details (e.g. different brand, different form).
 - The medicine's `id` (UUID) is unique within the clinic. The `name` field has no uniqueness constraint.
 
 ### `lastPrescribedDate`
 - This field is **manually updated** in MVP — there is no automatic trigger.
-- It can be updated by Admin or Doctor when recording that a medicine was prescribed.
+- It can be updated by any role when recording that a medicine was prescribed.
 - It is nullable — a medicine with no `lastPrescribedDate` has simply never been recorded as prescribed.
 
 ### Deactivation
 - Medicines are soft-deleted via `isActive = false`.
 - Inactive medicines are hidden from the default medicine list and from any medicine pickers in forms.
-- Only Admin and Doctor can deactivate a medicine.
+- All roles can deactivate a medicine.
 
 ---
 
@@ -171,18 +168,18 @@ The following matrix defines what each role can do at the server layer. UI hidin
 | Deactivate user | ✗ | ✗ | ✓ |
 | View patients | ✓ | ✓ | ✓ |
 | Create patient | ✓ | ✓ | ✓ |
-| Edit patient | ✗ | ✓ | ✓ |
+| Edit patient | ✓ | ✓ | ✓ |
 | Deactivate patient | ✗ | ✓ | ✓ |
 | Create appointment | ✓ | ✓ | ✓ |
 | Edit appointment | ✓ | ✓ | ✓ |
-| Deactivate appointment | ✗ | ✓ | ✓ |
+| Deactivate appointment | ✓ | ✓ | ✓ |
 | View documents | ✓ | ✓ | ✓ |
 | Upload document | ✓ | ✓ | ✓ |
 | Delete document | ✗ | ✓ | ✓ |
 | View medicines | ✓ | ✓ | ✓ |
 | Add medicine | ✓ | ✓ | ✓ |
-| Edit medicine | ✗ | ✓ | ✓ |
-| Deactivate medicine | ✗ | ✓ | ✓ |
+| Edit medicine | ✓ | ✓ | ✓ |
+| Deactivate medicine | ✓ | ✓ | ✓ |
 
 **Enforcement rule:** Every server action must call a role-check helper at the top of the function before any database operation. If the role check fails, throw an `Unauthorized` error immediately.
 

@@ -39,7 +39,7 @@ import {
 } from "@/lib/actions/documents";
 
 export interface UploadDocumentDialogProps {
-  patientId: string;
+  patientId: string; 
   appointmentId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -85,7 +85,7 @@ export function UploadDocumentDialog({
       fileName: file.name,
       mimeType: file.type,
       fileSize: file.size,
-      assignedToType: "patient",
+      assignedToType: "patient", // TODO: make dynamic when user document uploads are supported (schema already handles "patient" | "user")
       assignedToId: patientId,
       ...(appointmentId ? { appointmentId } : {}),
     });
@@ -122,8 +122,8 @@ export function UploadDocumentDialog({
       mimeType:       file.type,
       title:          titleTrim || undefined,
       type:           values.type,
-      assignedToId:   patientId,
-      assignedToType: "patient",
+      assignedToId:   patientId, 
+      assignedToType: "patient", // TODO: make dynamic when user document uploads are supported (schema already handles "patient" | "user")
       ...(appointmentId ? { appointmentId } : {}),
       description: values.description?.trim() || undefined,
     });

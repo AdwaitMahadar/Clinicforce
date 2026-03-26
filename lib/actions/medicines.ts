@@ -9,9 +9,7 @@
  * Never throw.
  *
  * RBAC (docs/08-Business-Rules.md §6):
- *   View / Add : all roles
- *   Edit       : doctor, admin
- *   Deactivate : doctor, admin
+ *   View / Add / Edit / Deactivate : all roles
  */
 
 import { z } from "zod";
@@ -155,7 +153,7 @@ export async function createMedicine(input: unknown) {
 export async function updateMedicine(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor"]);
+    requireRole(session, ["admin", "doctor", "staff"]);
 
     const parsed = updateMedicineSchema.safeParse(input);
     if (!parsed.success) {
@@ -205,7 +203,7 @@ export async function updateMedicine(input: unknown) {
 export async function deactivateMedicine(id: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor"]);
+    requireRole(session, ["admin", "doctor", "staff"]);
 
     const parsed = idSchema.safeParse(id);
     if (!parsed.success) {

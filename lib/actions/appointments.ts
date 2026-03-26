@@ -9,8 +9,7 @@
  * Never throw.
  *
  * RBAC (docs/08-Business-Rules.md §4, §8):
- *   Create / Edit : all roles
- *   Soft-delete   : doctor, admin
+ *   Create / Edit / Deactivate : all roles
  */
 
 import { revalidatePath } from "next/cache";

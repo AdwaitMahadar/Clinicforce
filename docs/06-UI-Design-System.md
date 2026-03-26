@@ -433,9 +433,10 @@ UI elements are shown or hidden based on the current user's role. The role is av
 | Feature | Staff | Doctor | Admin |
 |---|---|---|---|
 | Users management link (top nav) | Hidden | Hidden | Visible |
-| "Delete" actions on Patients | Hidden | Visible | Visible |
+| "Delete / Deactivate" action on Patients | Hidden | Visible | Visible |
 | "Delete" actions on Documents | Hidden | Visible | Visible |
-| "Delete" actions on Medicines | Hidden | Visible | Visible |
+| "Edit / Deactivate" actions on Medicines | Visible | Visible | Visible |
+| "Deactivate" action on Appointments | Visible | Visible | Visible |
 | New Patient button | Visible | Visible | Visible |
 | New Appointment button | Visible | Visible | Visible |
 

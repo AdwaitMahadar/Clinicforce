@@ -719,8 +719,8 @@ Create or complete validators in `lib/validators/`. These are the single source 
    - [x] `getMedicines`
    - [x] `getMedicineDetail`
    - [x] `createMedicine`
-   - [x] `updateMedicine` — roles: `["admin", "doctor"]`
-   - [x] `deactivateMedicine` — roles: `["admin", "doctor"]`
+   - [x] `updateMedicine` — roles: `["admin", "doctor", "staff"]`
+   - [x] `deactivateMedicine` — roles: `["admin", "doctor", "staff"]`
 
 2. **Patients**
    - [x] `getPatients`

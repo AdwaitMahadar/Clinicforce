@@ -43,9 +43,9 @@ The system utilizes Role-Based Access Control (RBAC) across three primary person
 | **Appointments** | Full CRUD | Full CRUD | Full CRUD |
 | **Patients** | View / Add / Edit | Full CRUD | Full CRUD |
 | **Documents** | View / Add | Full CRUD | Full CRUD |
-| **Medicines** | View / Add | Full CRUD | Full CRUD |
+| **Medicines** | Full CRUD | Full CRUD | Full CRUD |
 
-*Note: "Full CRUD" includes Create, Read, Update, and Delete.*
+*Note: "Full CRUD" includes Create, Read, Update, and Delete. Staff cannot delete patients or documents, but have full access to medicines and appointments.*
 
 ---
 

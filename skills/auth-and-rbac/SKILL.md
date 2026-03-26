@@ -81,9 +81,9 @@ export interface AppSession {
 | **Appointments** | Full CRUD | Full CRUD | Full CRUD |
 | **Patients** | View / Create / Update | Full CRUD | Full CRUD |
 | **Documents** | View / Upload | Full CRUD | Full CRUD |
-| **Medicines** | View / Create | Update / Delete | Full CRUD |
+| **Medicines** | Full CRUD | Full CRUD | Full CRUD |
 
-Staff **can** cancel/delete appointments. Staff **cannot** delete patients, documents, or medicines.
+Staff **cannot** delete patients or documents. Staff has full access to appointments and medicines (same as Doctor).
 
 ### `requireRole()` Usage
 
