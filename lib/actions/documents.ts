@@ -41,7 +41,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
-import { documents } from "@/lib/db/schema";
+import { documents, patients, users } from "@/lib/db/schema";
 import { getDocumentById } from "@/lib/db/queries/documents";
 import { s3Client, S3_BUCKET_NAME } from "@/lib/storage/s3-client";
 import { buildDocumentObjectKey } from "@/lib/storage/document-object-key";
@@ -138,6 +138,27 @@ export async function confirmDocumentUpload(input: unknown) {
     const { clinicId, id: userId } = session.user;
     const v = parsed.data;
 
+    // Verify the assignedToId belongs to this clinic (prevents cross-clinic document attachment).
+    if (v.assignedToType === "patient") {
+      const [exists] = await db
+        .select({ id: patients.id })
+        .from(patients)
+        .where(and(eq(patients.clinicId, clinicId), eq(patients.id, v.assignedToId)))
+        .limit(1);
+      if (!exists) {
+        return { success: false as const, error: "Patient not found." };
+      }
+    } else {
+      const [exists] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.clinicId, clinicId), eq(users.id, v.assignedToId)))
+        .limit(1);
+      if (!exists) {
+        return { success: false as const, error: "User not found." };
+      }
+    }
+
     const title = (v.title?.trim()) || v.fileName;
 
     const [created] = await db
@@ -148,7 +169,7 @@ export async function confirmDocumentUpload(input: unknown) {
         description:    v.description?.trim() ?? null,
         type:           v.type,
         assignedToId:   v.assignedToId,
-        assignedToType: "patient",
+        assignedToType: v.assignedToType,
         appointmentId:  v.appointmentId ?? null,
         fileKey:        v.fileKey,
         fileName:       v.fileName,

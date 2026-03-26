@@ -61,11 +61,12 @@ Two server-side operations are required:
 - **Never** saves anything to the DB at this step
 
 ### `confirmDocumentUpload` (Server Action; same role as “save metadata” below)
-- **Input:** `fileKey`, `fileName`, `fileSize`, `mimeType`, `title`, `description`, `type` (document type enum), `assignedToId` (patient row UUID in this flow; Zod: `z.string().min(1)` — not `.uuid()` — for consistency with polymorphic / Better-Auth id shapes), `appointmentId` (optional)
+- **Input:** `fileKey`, `fileName`, `fileSize`, `mimeType`, `title`, `description`, `type` (document type enum), `assignedToId` (patient row UUID when `assignedToType` is `patient`, or Better-Auth user id when `assignedToType` is `user`; Zod: `z.string().min(1)`), `assignedToType` (`"patient" | "user"`), `appointmentId` (optional)
 - **What it does:**
   - Calls `getSession()` — auth + clinicId check
   - Enforces RBAC — staff, doctor, and admin can all upload
-  - Inserts into `documents` table with `assignedToType: 'patient'` always
+  - **Clinic-boundary check:** verifies `assignedToId` belongs to the session's `clinicId` by querying `patients` (for `"patient"`) or `users` (for `"user"`) before any DB write. Returns `"Patient not found."` / `"User not found."` on mismatch. Prevents cross-clinic document attachment.
+  - Inserts into `documents` table with `assignedToType` from the validated input
   - Sets `appointmentId` only if provided (i.e. uploaded from appointment page)
   - Sets `uploadedBy` from `session.user.id`
   - Sets `clinicId` from `session.user.clinicId`
@@ -167,7 +168,7 @@ The S3 client should be initialised in `lib/storage/s3-client.ts` and reused acr
 
 Implemented in `lib/validators/document.ts`:
 - `getUploadPresignedUrlSchema` — presigned PUT step (includes `assignedToType` + `assignedToId` for the object key). `assignedToId` is `z.string().min(1)` (not `.uuid()`) because it may be a patient UUID or a Better-Auth user id.
-- `confirmDocumentUploadSchema` — metadata insert (server always sets `assignedToType: 'patient'` for this flow). `assignedToId` uses the same non-empty string rule for consistency.
+- `confirmDocumentUploadSchema` — metadata insert. Includes `assignedToType: z.enum(["patient", "user"])` — the client must send the same `assignedToType` used in the presign step; the server uses it for both the clinic-boundary check and the DB insert. `assignedToId` uses the same non-empty string rule for consistency.
 - `uploadDocumentDialogSchema` — React Hook Form + file refinements for `<UploadDocumentDialog />`
 
 Document type enum values live in `lib/constants/` aligned with the `documents` table `pgEnum`.

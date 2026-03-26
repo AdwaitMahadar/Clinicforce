@@ -259,7 +259,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       form={form}
       events={isCreate ? [] : medicine!.activityLog}
       isCreate={isCreate}
-      onCancel={onClose}
+      onCancel={onClose ?? (() => router.back())}
       onDelete={isCreate ? undefined : handleDelete}
       submitLabel={isCreate ? "Add Medicine" : "Save Changes"}
       deleteLabel="Delete Medicine"

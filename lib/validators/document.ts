@@ -20,17 +20,18 @@ export const getUploadPresignedUrlSchema = z.object({
   appointmentId:   z.string().uuid().optional(),
 });
 
-/** Step 2 — persist metadata after successful PUT to storage. `assignedToType` is always `patient` on the server. */
+/** Step 2 — persist metadata after successful PUT to storage. */
 export const confirmDocumentUploadSchema = z.object({
-  fileKey:       z.string().min(1, "fileKey is required"),
-  fileName:      z.string().min(1, "File name is required"),
-  fileSize:      z.number().int().min(1),
-  mimeType:      z.string().min(1),
-  title:         z.string().max(255).optional(),
-  type:          documentTypeEnum.default("other"),
-  assignedToId:  z.string().min(1, "Invalid patient or user ID"),
-  appointmentId: z.string().uuid().optional(),
-  description:   z.string().optional(),
+  fileKey:        z.string().min(1, "fileKey is required"),
+  fileName:       z.string().min(1, "File name is required"),
+  fileSize:       z.number().int().min(1),
+  mimeType:       z.string().min(1),
+  title:          z.string().max(255).optional(),
+  type:           documentTypeEnum.default("other"),
+  assignedToId:   z.string().min(1, "Invalid patient or user ID"),
+  assignedToType: assignedToTypeEnum,
+  appointmentId:  z.string().uuid().optional(),
+  description:    z.string().optional(),
 });
 
 export const documentIdSchema = z.string().uuid("Invalid ID");

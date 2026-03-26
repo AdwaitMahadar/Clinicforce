@@ -20,26 +20,18 @@ import {
 import type { FilterColumn } from "@/components/common";
 import { MedicinesTable } from "../_components/MedicinesTable";
 import { getMedicines } from "@/lib/actions/medicines";
+import { MEDICINE_CATEGORIES } from "@/lib/constants/medicine";
 import type { MedicineRow } from "@/types/medicine";
 import Link from "next/link";
 
 const PAGE_SIZE = 10;
-
-
 
 const MEDICINE_FILTER_COLUMNS: FilterColumn[] = [
   {
     key: "category",
     label: "Category",
     type: "select",
-    options: [
-      { label: "Antibiotics",   value: "Antibiotics"   },
-      { label: "Painkillers",   value: "Painkillers"   },
-      { label: "Diabetes Care", value: "Diabetes Care" },
-      { label: "Antihistamines",value: "Antihistamines"},
-      { label: "Vitamins",      value: "Vitamins"      },
-      { label: "Cardiovascular",value: "Cardiovascular"},
-    ],
+    options: MEDICINE_CATEGORIES.map((c) => ({ label: c, value: c })),
   },
   { key: "form", label: "Form", type: "text" },
 ];

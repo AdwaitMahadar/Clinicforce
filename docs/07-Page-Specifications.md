@@ -578,9 +578,10 @@ This flow spans multiple pages and is described here once.
 - **Output:** `{ uploadUrl: string, fileKey: string }` — the `fileKey` is the S3 object key to be confirmed after upload
 - **RBAC:** All roles.
 
-#### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, appointmentId? })`
+#### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, assignedToType, appointmentId? })`
 - Creates the `documents` record in DB after the S3 upload confirms success
-- Sets `assignedToType = 'patient'`, `uploadedBy = session.userId`, `clinicId = session.clinicId`; revalidates patient/appointment detail paths
+- **Clinic-boundary check:** verifies `assignedToId` belongs to the session `clinicId` before inserting (`patients` table for `"patient"`, `users` table for `"user"`)
+- Sets `assignedToType` from the validated input; sets `uploadedBy = session.userId`, `clinicId = session.clinicId`; revalidates patient/appointment detail paths
 - **RBAC:** All roles.
 
 #### `getViewPresignedUrl(documentId)`

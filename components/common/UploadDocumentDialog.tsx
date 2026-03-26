@@ -117,12 +117,13 @@ export function UploadDocumentDialog({
     const titleTrim = values.title?.trim();
     const confirm = await confirmDocumentUpload({
       fileKey,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
-      title: titleTrim || undefined,
-      type: values.type,
-      assignedToId: patientId,
+      fileName:       file.name,
+      fileSize:       file.size,
+      mimeType:       file.type,
+      title:          titleTrim || undefined,
+      type:           values.type,
+      assignedToId:   patientId,
+      assignedToType: "patient",
       ...(appointmentId ? { appointmentId } : {}),
       description: values.description?.trim() || undefined,
     });

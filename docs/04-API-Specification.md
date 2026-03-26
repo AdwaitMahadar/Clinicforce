@@ -22,7 +22,7 @@ Duplicating defaults in `useForm` or forcing `z.infer` as the form generic while
 | Action | Purpose |
 |--------|---------|
 | `getUploadPresignedUrl` | Validates file meta; returns `{ uploadUrl, fileKey }` — no DB write. Object key: `{subdomain}/docs/patients|users/{id}/…` from `session.user.clinicSubdomain` and `assignedToType` / `assignedToId` (`lib/storage/document-object-key.ts`). Schema: `getUploadPresignedUrlSchema` in `lib/validators/document.ts`. |
-| `confirmDocumentUpload` | After client PUT to storage; inserts `documents` row with `assignedToType: 'patient'`. Calls `revalidatePath` for patient and (if set) appointment detail routes. Schema: `confirmDocumentUploadSchema`. |
+| `confirmDocumentUpload` | After client PUT to storage; validates `assignedToType` (`"patient" \| "user"`) and `assignedToId` from input; verifies `assignedToId` belongs to the session `clinicId` before insert (clinic-boundary check). Inserts `documents` row using the client-supplied `assignedToType`. Calls `revalidatePath` for patient and (if set) appointment detail routes. Schema: `confirmDocumentUploadSchema`. |
 | `getViewPresignedUrl` | Returns `{ url }` presigned GET for opening in a new tab. |
 | `deleteDocument` | Deletes S3 object then DB row (doctor/admin only). |
 

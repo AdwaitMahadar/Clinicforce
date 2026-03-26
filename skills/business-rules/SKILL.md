@@ -15,6 +15,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Appointment Statuses:** `scheduled`, `completed`, `cancelled`, `no-show`. (Default on creation is `scheduled`. In MVP, any transition between statuses is freely permitted).
 - **Appointment Types:** `general`, `follow-up`, `emergency`.
 - **Document Mime Types:** Accepted types are limited to `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
+- **Document clinic-boundary:** `confirmDocumentUpload` must verify `assignedToId` belongs to the session `clinicId` before inserting. Query `patients` for `assignedToType: "patient"`, `users` for `"user"`.
 
 ## 📏 Field-Level Constraints
 
