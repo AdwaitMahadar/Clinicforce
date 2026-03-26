@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -25,6 +25,7 @@ import {
   SIDEBAR_COLLAPSED_MAX_AGE_SECONDS,
 } from "@/lib/constants/sidebar";
 import { InitialsBadge } from "@/components/common/InitialsBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -73,10 +74,15 @@ interface SideNavProps {
   clinicLogoUrl: string;
 }
 
+type ClinicLogoState = "loading" | "ready" | "failed";
+
 /**
- * `InitialsBadge` on top until the logo `<img>` fires `onLoad`. The image stays in the layout
- * with `opacity-0` (not `display:none`) so the browser fetches immediately; on failure, `onLoad`
- * never runs and initials stay visible — no broken-icon flash.
+ * Loading: `Skeleton` in a `size-9 rounded-lg` slot; `<img>` is mounted with `opacity-0` so the
+ * browser fetches immediately (not `display:none`). Ready: logo only. Failed: `InitialsBadge` only
+ * (image unmounted — no broken icon).
+ *
+ * Cached images may decode before `onLoad` is attached; the img ref checks `complete` +
+ * `naturalWidth` on mount to transition to ready immediately.
  */
 function ClinicBrandMark({
   clinicName,
@@ -85,36 +91,55 @@ function ClinicBrandMark({
   clinicName: string;
   clinicLogoUrl: string;
 }) {
-  const [logoLoaded, setLogoLoaded] = useState(false);
+  const [state, setState] = useState<ClinicLogoState>("loading");
+
+  useEffect(() => {
+    setState("loading");
+  }, [clinicLogoUrl]);
+
+  const clinicLogoImgRef = useCallback((img: HTMLImageElement | null) => {
+    if (!img) return;
+    if (img.complete && img.naturalWidth > 0) {
+      setState((s) => (s === "loading" ? "ready" : s));
+    }
+  }, []);
 
   return (
-    <div className="relative size-9 shrink-0">
-      <InitialsBadge
-        name={clinicName}
-        size="md"
-        className={cn(
-          "absolute inset-0 z-[1] size-9 shrink-0 rounded-lg transition-opacity duration-150",
-          logoLoaded && "pointer-events-none z-0 opacity-0"
-        )}
-        aria-hidden={logoLoaded}
-      />
-      {/* Plain <img>: public S3/R2 URL — avoid next/image remotePatterns (product rule). */}
-      {/* eslint-disable-next-line @next/next/no-img-element -- external tenant logo URL */}
-      <img
-        src={clinicLogoUrl}
-        alt=""
-        loading="eager"
-        decoding="async"
-        className={cn(
-          "absolute inset-0 z-0 size-9 rounded-lg object-contain transition-opacity duration-150",
-          logoLoaded && "z-[1] opacity-100",
-          !logoLoaded && "opacity-0"
-        )}
-        onLoad={() => setLogoLoaded(true)}
-        onError={() => {
-          /* stay opacity-0; initials remain visible */
-        }}
-      />
+    <div
+      className="relative size-9 shrink-0 overflow-hidden rounded-lg"
+      aria-busy={state === "loading"}
+    >
+      {state === "loading" && (
+        <Skeleton
+          className="pointer-events-none absolute inset-0 z-[2] size-full rounded-lg"
+          aria-hidden
+        />
+      )}
+      {state !== "failed" && (
+        // eslint-disable-next-line @next/next/no-img-element -- external tenant logo URL
+        <img
+          ref={clinicLogoImgRef}
+          key={clinicLogoUrl}
+          src={clinicLogoUrl}
+          alt=""
+          loading="eager"
+          decoding="async"
+          className={cn(
+            "absolute inset-0 size-9 rounded-lg object-contain",
+            state === "loading" && "z-0 opacity-0",
+            state === "ready" && "z-[1] opacity-100"
+          )}
+          onLoad={() => setState("ready")}
+          onError={() => setState("failed")}
+        />
+      )}
+      {state === "failed" && (
+        <InitialsBadge
+          name={clinicName}
+          size="md"
+          className="absolute inset-0 z-[1] size-9 shrink-0 rounded-lg"
+        />
+      )}
     </div>
   );
 }
