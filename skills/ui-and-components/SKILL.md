@@ -45,7 +45,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
 *   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`.
 *   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete).
-*   `<ModalShell />` - Universal modal envelope used for intercepting route modals.
+*   `<ModalShell />` - Intercepting route modals: shadcn `Dialog` / Radix (focus trap, scroll lock, `router.back()` on dismiss); sizes from `modal-shell-sizes.ts`.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — type colours/labels in `lib/appointment-calendar-styles.ts` (`TYPE_COLORS`: general=blue emphasis tokens, follow-up=amber, emergency=red; not the DB enum alone — display superset in `@/types/appointment`). Month chips: `patientFirstName`; chip time + day bucket = `format(parseISO(start), …)` (local TZ). Week/day: FullCalendar + `patientName` on title. Appointments dashboard day-view fetch: `startOfDay`/`endOfDay` (`docs/07-Page-Specifications.md` §3).
 
 **Layouts (`components/layout/`)**

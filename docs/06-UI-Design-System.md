@@ -320,7 +320,7 @@ Optional top **tabs** (`sidebarTabs`) and a persistent bottom **events** list (`
 ### `<ModalShell />` — Intercepting Modal Wrapper
 **Location:** `components/common/ModalShell.tsx`
 
-A universal modal shell used for intercepting route modals, providing a blurred backdrop, entry animations, and escape/click-outside dismissal.
+Wrapper for intercepting route modals, built on shadcn **`Dialog`** (Radix) without modifying `components/ui/dialog.tsx`. It composes **`Dialog`**, **`DialogPortal`**, **`DialogOverlay`**, **`DialogTitle`** (screen-reader-only name from the `label` prop), and Radix **`Dialog.Content`** with clinic sizing and styling. **Radix provides:** focus trap, focus restoration on close, scroll lock, `aria-modal` / dialog role, and escape / outside-pointer dismissal (with optional `closeOnEscape` / `closeOnBackdropClick` overrides). The shell is **always `open`** while the route is active; closing calls `onClose` or **`router.back()`**. Overlay fill uses **`var(--color-modal-overlay)`**; panel shadow uses **`var(--shadow-modal)`** (both defined in `globals.css`). Width/height presets match **`modal-shell-sizes.ts`** (shared with **`ModalDetailSkeleton`**).
 
 ---
 
@@ -379,6 +379,8 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 --blue:     #2563EB  --blue-bg:   #EFF6FF
 --purple:   #7C3AED  --purple-bg: #F5F3FF
 ```
+
+**Intercepting modal (`ModalShell`):** `--color-modal-overlay` (scrim, `color-mix` on text primary) and `--shadow-modal` (panel elevation). Declared in `globals.css` `@theme inline`; consume only via `var(…)` in components.
 
 ### Typography
 - **Display / Page titles:** DM Serif Display — used for `<h1>` page titles and the brand name only.
