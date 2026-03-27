@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -25,7 +25,6 @@ import {
   SIDEBAR_COLLAPSED_MAX_AGE_SECONDS,
 } from "@/lib/constants/sidebar";
 import { InitialsBadge } from "@/components/common/InitialsBadge";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,16 +77,7 @@ interface SideNavProps {
   clinicLogoUrl: string;
 }
 
-type ClinicLogoState = "loading" | "ready" | "failed";
-
-/**
- * Loading: `Skeleton` in a `size-9 rounded-lg` slot; `<img>` is mounted with `opacity-0` so the
- * browser fetches immediately (not `display:none`). Ready: logo only. Failed: `InitialsBadge` only
- * (image unmounted — no broken icon).
- *
- * Cached images may decode before `onLoad` is attached; the img ref checks `complete` +
- * `naturalWidth` on mount to transition to ready immediately.
- */
+/** Clinic logo as `background-image` over a permanent `InitialsBadge` — browser cache only; failed or missing image leaves initials visible. */
 function ClinicBrandMark({
   clinicName,
   clinicLogoUrl,
@@ -95,55 +85,18 @@ function ClinicBrandMark({
   clinicName: string;
   clinicLogoUrl: string;
 }) {
-  const [state, setState] = useState<ClinicLogoState>("loading");
-
-  useEffect(() => {
-    setState("loading");
-  }, [clinicLogoUrl]);
-
-  const clinicLogoImgRef = useCallback((img: HTMLImageElement | null) => {
-    if (!img) return;
-    if (img.complete && img.naturalWidth > 0) {
-      setState((s) => (s === "loading" ? "ready" : s));
-    }
-  }, []);
-
   return (
-    <div
-      className="relative size-9 shrink-0 overflow-hidden rounded-lg"
-      aria-busy={state === "loading"}
-    >
-      {state === "loading" && (
-        <Skeleton
-          className="pointer-events-none absolute inset-0 z-[2] size-full rounded-lg"
-          aria-hidden
-        />
-      )}
-      {state !== "failed" && (
-        // eslint-disable-next-line @next/next/no-img-element -- external tenant logo URL
-        <img
-          ref={clinicLogoImgRef}
-          key={clinicLogoUrl}
-          src={clinicLogoUrl}
-          alt=""
-          loading="eager"
-          decoding="async"
-          className={cn(
-            "absolute inset-0 size-9 rounded-lg object-contain",
-            state === "loading" && "z-0 opacity-0",
-            state === "ready" && "z-[1] opacity-100"
-          )}
-          onLoad={() => setState("ready")}
-          onError={() => setState("failed")}
-        />
-      )}
-      {state === "failed" && (
-        <InitialsBadge
-          name={clinicName}
-          size="md"
-          className="absolute inset-0 z-[1] size-9 shrink-0 rounded-lg"
-        />
-      )}
+    <div className="relative size-9 shrink-0 overflow-hidden rounded-lg">
+      <InitialsBadge
+        name={clinicName}
+        size="md"
+        className="absolute inset-0 z-0 size-9 shrink-0 rounded-lg"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-contain bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${JSON.stringify(clinicLogoUrl)})` }}
+      />
     </div>
   );
 }
@@ -215,11 +168,7 @@ export function SideNav({
         >
           {!collapsed && (
             <div className="flex items-center gap-2 pl-1.5 min-w-0">
-              <ClinicBrandMark
-                key={clinicLogoUrl}
-                clinicName={clinicName}
-                clinicLogoUrl={clinicLogoUrl}
-              />
+              <ClinicBrandMark clinicName={clinicName} clinicLogoUrl={clinicLogoUrl} />
               <span className="text-sm font-bold tracking-tight text-[var(--color-text-primary)] whitespace-nowrap truncate">
                 {clinicName}
               </span>
@@ -251,11 +200,7 @@ export function SideNav({
                     transition={sidebarLogoSwapSpring}
                     className="size-9 rounded-lg shadow-sm flex-shrink-0 overflow-hidden flex items-center justify-center"
                   >
-                    <ClinicBrandMark
-                      key={clinicLogoUrl}
-                      clinicName={clinicName}
-                      clinicLogoUrl={clinicLogoUrl}
-                    />
+                    <ClinicBrandMark clinicName={clinicName} clinicLogoUrl={clinicLogoUrl} />
                   </motion.div>
                 )}
               </AnimatePresence>
