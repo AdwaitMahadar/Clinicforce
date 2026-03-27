@@ -24,7 +24,7 @@ import {
   SIDEBAR_COLLAPSED_COOKIE_NAME,
   SIDEBAR_COLLAPSED_MAX_AGE_SECONDS,
 } from "@/lib/constants/sidebar";
-import { InitialsBadge } from "@/components/common/InitialsBadge";
+import { ClinicBrandMark } from "@/components/common/ClinicBrandMark";
 
 const SIDEBAR_VIEWS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -75,30 +75,6 @@ interface SideNavProps {
   clinicName: string;
   /** Public URL for `{subdomain}/assets/logo/logo.png` */
   clinicLogoUrl: string;
-}
-
-/** Clinic logo as `background-image` over a permanent `InitialsBadge` — browser cache only; failed or missing image leaves initials visible. */
-function ClinicBrandMark({
-  clinicName,
-  clinicLogoUrl,
-}: {
-  clinicName: string;
-  clinicLogoUrl: string;
-}) {
-  return (
-    <div className="relative size-9 shrink-0 overflow-hidden rounded-lg">
-      <InitialsBadge
-        name={clinicName}
-        size="md"
-        className="absolute inset-0 z-0 size-9 shrink-0 rounded-lg"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] rounded-lg bg-contain bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${JSON.stringify(clinicLogoUrl)})` }}
-      />
-    </div>
-  );
 }
 
 function writeSidebarCollapsedCookie(collapsed: boolean) {

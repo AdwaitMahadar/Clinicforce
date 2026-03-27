@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { extractSubdomainFromHost } from "@/lib/clinic/extract-subdomain-from-host";
 import { getClinicIdBySubdomain } from "@/lib/clinic/resolve-by-subdomain";
 
 const subdomainCache = new Map<string, string>();
@@ -12,21 +13,7 @@ function extractSubdomain(request: NextRequest): string | null {
     request.headers.get("x-forwarded-host") ??
     request.headers.get("host") ??
     "";
-  const hostWithoutPort = host.split(":")[0];
-  // Remove known apex domains to isolate the subdomain
-  const stripped = hostWithoutPort
-    .replace(/\.clinicforce\.app$/, "")
-    .replace(/\.localhost$/, "");
-  // If nothing was stripped, we're on the bare apex domain — no subdomain
-  if (stripped === hostWithoutPort.replace(/:\d+$/, "")) {
-    const parts = hostWithoutPort.split(".");
-    if (parts.length < 2 || parts[0] === "www" || parts[0] === "localhost") {
-      return null;
-    }
-    return parts[0];
-  }
-  if (!stripped || stripped === "www") return null;
-  return stripped;
+  return extractSubdomainFromHost(host);
 }
 
 export async function middleware(request: NextRequest) {

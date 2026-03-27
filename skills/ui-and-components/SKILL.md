@@ -38,6 +38,7 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<TablePagination />` - Reusable pagination footer.
 *   `<Badge />` / `<StatusBadge />` - Unified badge for statuses, types, and chart IDs. Appointment statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `components/common/StatusBadge.tsx`).
 *   `<PatientAvatar />` / `<InitialsBadge />` - Deterministic initials avatar.
+*   `<ClinicBrandMark />` - `InitialsBadge` + clinic logo `background-image` (`components/common/ClinicBrandMark.tsx`); `SideNav` + login right panel.
 *   `<PageHeader />` - Title block for *every* page.
 *   `<EventLog />` - Activity log list.
 *   `<DocumentMimeTypeIcon />` - MIME-based file icon (PDF / image / generic); used in `<DocumentCard />` and `<UniversalSearch />`.
@@ -53,7 +54,7 @@ Reuse existing components instead of building ad-hoc solutions.
 
 **Layouts (`components/layout/`)**
 *   `<DetailPageShell breadcrumb>` - Full-page wrapper used by all entity `/new` and `/view/[id]` pages (outer padding, max-width column, breadcrumb text, glass card container). Always use this instead of repeating the wrapper inline.
-*   `<AppShell />`, `<TopNav />`, `<SideNav />`. `SideNav` gets `userDisplayName` / `userTypeLabel` / `avatarSeed` (`session.user.id`, DiceBear open-peeps URL with skin/background palettes + `face` allowlist for professional expressions only — `DICEBEAR_OPEN_PEEPS_FACE_ALLOWLIST` in `SideNav.tsx`) from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `clinicName` / `clinicLogoUrl` (from `buildClinicLogoPublicUrl` + `ASSETS_BASE_URL`; clinic mark: `InitialsBadge` + logo as CSS `background-image` layer — initials visible if asset missing/fails), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`. `TopNav` right slot: `public/clinicforce-mark.png` in `--color-ink` square. Login page: same asset in brand rows (`app/(auth)/login/page.tsx`).
+*   `<AppShell />`, `<TopNav />`, `<SideNav />`. `SideNav` gets `userDisplayName` / `userTypeLabel` / `avatarSeed` (`session.user.id`, DiceBear open-peeps URL with skin/background palettes + `face` allowlist for professional expressions only — `DICEBEAR_OPEN_PEEPS_FACE_ALLOWLIST` in `SideNav.tsx`) from `(app)/layout` (`getSession()` + `USER_TYPE_LABELS` in `lib/constants/user.ts`), plus `clinicName` / `clinicLogoUrl` (from `buildClinicLogoPublicUrl` + `ASSETS_BASE_URL`; clinic mark: shared `<ClinicBrandMark />`), plus `initialCollapsed` from the `sidebar-collapsed` cookie (`cookies()` in layout → `AppShell`); toggling updates the cookie via `document.cookie` (1y `Max-Age`). Constants: `lib/constants/sidebar.ts`. Account menu uses Better Auth `signOut` → `/login`. `TopNav` right slot: `public/clinicforce-mark.png` in `--color-ink` square. Login: server `login/page.tsx` passes branding into `login-page-client.tsx`; same Clinicforce asset in left / mobile rows.
 
 **AppShell page content:** Full-page routes in `app/(app)/` wrap primary UI in **`max-w-[1700px] mx-auto w-full`** inside `p-8` (or flex `h-full` shells); use **`flex-1 min-h-0`** on that inner wrapper when the page must fill height (tables, calendar, detail). `@modal` routes omit this — they render `<ModalShell />` only. **`appointments/dashboard`:** `p-8` lives on the page; **`AppointmentCalendarClient`** root must not use `p-8` (avoid double inset inside the max-width column).
 
@@ -69,11 +70,11 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
 ## 📄 Per-Page Requirements (Summary)
 
 *   **Login (`/login`):**
-    *   Split 50/50 layout — left brand panel (hidden mobile), right form panel; increased padding/rhythm vs a flat stack; stronger heading weights on hero + “Welcome back”.
+    *   Split 50/50 layout — left brand panel (hidden mobile), right form panel; **`login/page.tsx`** (server) resolves subdomain + `getActiveClinicBySubdomain` + `buildClinicLogoPublicUrl`; **`login-page-client.tsx`** renders UI. Right panel **`lg:p-14`** (same inset as left for the top brand row); form band **`flex-1 justify-center`** + **`lg:px-10`**. Mobile: Clinicforce row, optional clinic row, then form.
     *   Left: **testimonial carousel** (several fake quotes), dots = nav + auto-rotate (~4.5s), same glass card styling.
     *   Password: **Eye / EyeOff** toggle (type `password` ↔ `text` only).
     *   Footer: `© {new Date().getFullYear()} Clinicforce`.
-    *   Client component. React Hook Form + Zod. Schema: `loginSchema` from `lib/validators/auth.ts`. Sonner toasts on error. `useForm({ resolver: zodResolver(schema) })` without a generic so types infer from the resolver; no `defaultValues` for Zod `.default()` fields (see `docs/04-API-Specification.md`). Metadata (`title`, `description`) exported from `app/(auth)/layout.tsx` (not the page — page is `"use client"`).
+    *   Form client: React Hook Form + Zod. Schema: `loginSchema` from `lib/validators/auth.ts`. Sonner toasts on error. `useForm({ resolver: zodResolver(schema) })` without a generic; no `defaultValues` for Zod `.default()` fields (see `docs/04-API-Specification.md`). Metadata (`title`, `description`) exported from `app/(auth)/layout.tsx`.
     *   `signIn.email()` from `lib/auth/client.ts`. Redirects to `?returnUrl` or `/home/dashboard` on success.
     *   No OAuth buttons. No "Request access" link. `rememberMe` checkbox wired to form.
 *   **Home**: 

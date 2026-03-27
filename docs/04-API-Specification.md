@@ -4,14 +4,20 @@ Server actions and route handlers: session-scoped `clinicId`, RBAC via `requireR
 
 ## Auth Validators (`lib/validators/auth.ts`)
 
-`loginSchema` and `LoginFormValues` live in `lib/validators/auth.ts`. The login page imports from there — it does not define inline schemas.
+`loginSchema` and `LoginFormValues` live in `lib/validators/auth.ts`. The login client module imports from there — it does not define inline schemas.
+
+## Public route handlers (no session)
+
+| Handler | Contract |
+|--------|----------|
+| `GET /api/clinic?subdomain=` | Query param `subdomain` required. Resolves an **active** clinic row (`getActiveClinicBySubdomain`). **200:** `{ clinicId, name }`. **400** if `subdomain` missing. **404** if unknown or inactive. No auth — for tooling or external clients; the login page resolves branding server-side instead of calling this. |
 
 ## React Hook Form + Zod (client)
 
 When using `zodResolver(schema)` with fields that use Zod `.default()` (e.g. `rememberMe: z.boolean().default(false)`):
 
 1. **Do not** set `defaultValues` in `useForm` for those keys — the schema already supplies the default.
-2. **Do not** combine `useForm<z.infer<typeof schema>>()` with that pattern unless you also align input vs output types (e.g. `z.input`). Prefer **`useForm({ resolver: zodResolver(schema) })` without an explicit generic** so `react-hook-form` infers from the resolver, and keep a separate `z.infer<typeof schema>` alias for the submit handler (see `app/(auth)/login/page.tsx`).
+2. **Do not** combine `useForm<z.infer<typeof schema>>()` with that pattern unless you also align input vs output types (e.g. `z.input`). Prefer **`useForm({ resolver: zodResolver(schema) })` without an explicit generic** so `react-hook-form` infers from the resolver, and keep a separate `z.infer<typeof schema>` alias for the submit handler (see `app/(auth)/login/login-page-client.tsx`).
 
 Duplicating defaults in `useForm` or forcing `z.infer` as the form generic while the resolver’s input type still treats optional keys can produce a TypeScript mismatch (`boolean | undefined` vs `boolean`).
 

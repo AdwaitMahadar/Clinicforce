@@ -20,14 +20,16 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `lib/auth/rbac.ts` | `requireRole()` + `ForbiddenError` |
 | `lib/auth/client.ts` | `authClient`, `signIn`, `signOut`, `signUp`, `useSession` for client components |
 | `app/api/auth/[...all]/route.ts` | Better-Auth catch-all route handler |
-| `app/api/clinic/route.ts` | Optional `GET ?subdomain=` → `{ clinicId }` — same query as middleware; not used by in-app navigation |
-| `lib/clinic/resolve-by-subdomain.ts` | Shared Drizzle lookup for active clinic by subdomain |
-| `middleware.ts` | Node runtime; extracts subdomain, calls resolver, guards routes, sets `x-clinic-id` + `x-subdomain`; matcher skips `_next/static`, `_next/image`, `favicon.ico`, and paths ending in common static extensions (png/jpg/jpeg/gif/svg/ico/webp/font/css/js) so `public/` assets bypass middleware |
-| `app/(auth)/login/page.tsx` | Login page — client component, React Hook Form + Zod, Sonner toasts; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`) |
+| `app/api/clinic/route.ts` | Optional `GET ?subdomain=` → `{ clinicId, name }` — same `getActiveClinicBySubdomain` as middleware; tooling / external clients |
+| `lib/clinic/resolve-by-subdomain.ts` | `getActiveClinicBySubdomain` / `getClinicIdBySubdomain` — active clinic by subdomain |
+| `lib/clinic/extract-subdomain-from-host.ts` | Host header → subdomain (shared: `middleware` + login server page) |
+| `middleware.ts` | Node runtime; `extractSubdomainFromHost` → resolver → guards routes → `x-clinic-id` + `x-subdomain`; matcher skips static paths so `public/` assets bypass middleware |
+| `app/(auth)/login/page.tsx` | Server: host → subdomain → clinic name + logo URL props |
+| `app/(auth)/login/login-page-client.tsx` | Client UI + RHF/Zod/Sonner; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`) |
 
 ### Request pipeline
 
-- **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → subdomain → `clinicId` via in-memory cache, DB on miss); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
+- **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → **`extractSubdomainFromHost`** → `clinicId` via in-memory cache, DB on miss); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
 - **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Deduplicated per request via React `cache()`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour

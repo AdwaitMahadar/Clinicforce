@@ -63,6 +63,8 @@ Zod schemas are the **single source of truth for validation rules**, shared iden
 
 ## 📌 API Contracts and Requirements
 
+- **Public:** `GET /api/clinic?subdomain=` — no session; returns `{ clinicId, name }` for an active clinic (see `docs/04-API-Specification.md`). Login branding uses the same DB helper server-side, not this route.
+
 For full action contracts per entity — exact input shapes, output shapes, and which actions belong to which pages — always read `docs/04-API-Specification.md` before implementing. Do not guess at shapes or infer them from the page specs.
 
 The general pattern for every action follows the anatomy above:

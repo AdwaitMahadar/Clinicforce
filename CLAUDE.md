@@ -91,7 +91,8 @@ app/
       (.)patients/view/[id]/      ← Patient detail modal
       (.)patients/new/            ← New patient modal
   (auth)/
-    login/page.tsx
+    login/page.tsx              ← Server Component: host → subdomain → clinic branding props
+    login/login-page-client.tsx ← Client: split layout, form, carousel
 
 components/
   ui/                       ← Shadcn base components — DO NOT MODIFY
@@ -115,6 +116,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `TablePagination.tsx` — Reusable pagination footer
 - `StatusBadge.tsx` — Unified badge for appointment status, patient status, types, chart IDs
 - `InitialsBadge.tsx` — Deterministic initials avatar (hashed colour from ID)
+- `ClinicBrandMark.tsx` — Clinic logo as CSS `background-image` over `InitialsBadge` (sidebar + login)
 - `AppointmentEventCard.tsx` — FullCalendar custom event renderer
 - `MonthView.tsx` — Custom two-panel month layout for appointments
 - `TimeGridView.tsx` — FullCalendar timeGridWeek/timeGridDay wrapper
@@ -236,7 +238,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - Design system: CSS variables, typography, colour tokens fully centralised in `globals.css`
 - Intercepting modal routes for detail views
 - Authentication: Better-Auth integration, real `getSession()` (React `cache()` — one resolution per request), subdomain-aware middleware (Node runtime, in-memory subdomain→clinic cache + shared `lib/clinic/resolve-by-subdomain` on miss), `/api/auth/*` route handler, `/api/clinic` subdomain resolver; session `cookieCache` (5 min) reduces auth DB hits
-- Login page (`app/(auth)/login/page.tsx`) — split 50/50 layout, `public/clinicforce-mark.png` in brand rows, testimonial carousel (dots + auto-advance), password visibility toggle, dynamic footer year, React Hook Form + Zod, Sonner toasts, `returnUrl` redirect
+- Login (`app/(auth)/login/page.tsx` + `login-page-client.tsx`) — server-resolved tenant name + logo URL from host subdomain (`extractSubdomainFromHost`, `getActiveClinicBySubdomain`, `buildClinicLogoPublicUrl`); split 50/50 layout, `ClinicBrandMark` on the right when resolved; `public/clinicforce-mark.png` in Clinicforce rows; testimonial carousel (dots + auto-advance); password visibility toggle; dynamic footer year; React Hook Form + Zod in client; Sonner toasts; `returnUrl` redirect
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
 - Document upload: presigned URLs (`lib/actions/documents.ts`), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail
 
