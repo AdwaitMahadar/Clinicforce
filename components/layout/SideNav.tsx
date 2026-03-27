@@ -32,8 +32,12 @@ const SIDEBAR_VIEWS = [
   { key: "reports",   label: "Reports",   icon: BarChart2 },
 ];
 
+/** Allowed `face` values for DiceBear open-peeps — excludes aggressive or unprofessional expressions. */
+const DICEBEAR_OPEN_PEEPS_FACE_ALLOWLIST =
+  "calm,smile,smileBig,serious,driven,cute,solemn,awe,cheeky,concerned,contempt,eatingHappy,explaining,eyesClosed,lovingGrin1,lovingGrin2,smileLOL,smileTeethGap,suspicious,tired,blank";
+
 function dicebearAvataaarsUrl(seed: string): string {
-  return `https://api.dicebear.com/7.x/open-peeps/svg?seed=${encodeURIComponent(seed)}&skinColor=FFDBB4,EDB98A,D08B5B,AE5D29&backgroundColor=B6E3F4,C0AEDE,D1D4F9,FFD5DC,FFDFBF,B5EAD7,F8C8D4,C7E8CA`;
+  return `https://api.dicebear.com/7.x/open-peeps/svg?seed=${encodeURIComponent(seed)}&skinColor=FFDBB4,EDB98A,D08B5B,AE5D29&backgroundColor=B6E3F4,C0AEDE,D1D4F9,FFD5DC,FFDFBF,B5EAD7,F8C8D4,C7E8CA&face=${DICEBEAR_OPEN_PEEPS_FACE_ALLOWLIST}`;
 }
 
 function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
