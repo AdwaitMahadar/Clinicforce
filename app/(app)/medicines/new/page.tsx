@@ -6,10 +6,13 @@
  * During normal in-app navigation the intercepting modal takes over.
  */
 
+import { requirePermission } from "@/lib/auth/require-permission";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { MedicineDetailPanel } from "../_components/MedicineDetailPanel";
 
-export default function NewMedicinePage() {
+export default async function NewMedicinePage() {
+  await requirePermission("viewMedicines");
+
   return (
     <DetailPageShell breadcrumb="Medicines › New Medicine">
       <MedicineDetailPanel mode="create" />

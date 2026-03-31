@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { UniversalSearch } from "@/components/common/UniversalSearch";
 import { navPillSpring, topNavLabelOpacity } from "./nav-motion";
+import { usePermission } from "@/lib/auth/session-context";
 
 const NAV_ITEMS = [
   { href: "/home/dashboard",         label: "Home",         icon: Home },
@@ -27,6 +28,11 @@ const NAV_ITEMS = [
 export function TopNav() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
+  const canViewMedicines = usePermission("viewMedicines");
+
+  const visibleNavItems = canViewMedicines
+    ? NAV_ITEMS
+    : NAV_ITEMS.filter((item) => item.href !== "/medicines/dashboard");
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -58,7 +64,7 @@ export function TopNav() {
         >
           {/* Nav links */}
           <div className="flex items-center gap-0.5 pr-1 mr-1 border-r border-[var(--color-border)]">
-            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            {visibleNavItems.map(({ href, label, icon: Icon }) => {
               const segment = href.split("/")[1];
               const isActive = pathname.startsWith(`/${segment}`);
               return (

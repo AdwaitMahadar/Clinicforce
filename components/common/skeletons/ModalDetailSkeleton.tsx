@@ -1,15 +1,24 @@
+"use client";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MODAL_SHELL_SIZE_MAP,
   type ModalSize,
 } from "@/components/common/modal-shell-sizes";
+import { usePermission } from "@/lib/auth/session-context";
 
 export type ModalDetailSkeletonVariant = "detail" | "create";
 
 export interface ModalDetailPanelBodySkeletonProps {
   /**
-   * `detail` — `DetailPanel` view/edit: header + form column + 40% sidebar + footer.
-   * `create` — `DetailPanel` create: header + full-width form grid + footer.
+   * Controls the **header** shape only:
+   * - `detail` — view/edit header: avatar circle + name + badge chips.
+   * - `create` — create header: title text + subtitle line.
+   *
+   * The **body** layout (form-only vs. form + sidebar) is derived from
+   * `usePermission("viewDetailSidebar")`, mirroring `DetailPanel`'s own logic.
+   * Staff always receives the full-width form skeleton regardless of variant.
+   *
    * @default "detail"
    */
   variant?: ModalDetailSkeletonVariant;
@@ -75,6 +84,11 @@ export function ModalDetailPanelBodySkeleton({
   variant = "detail",
 }: ModalDetailPanelBodySkeletonProps) {
   const isCreate = variant === "create";
+  const canViewSidebar = usePermission("viewDetailSidebar");
+  // Mirror DetailPanel's exact logic: hide sidebar when creating OR when role
+  // lacks viewDetailSidebar (staff). Keeps skeleton layout in sync with the
+  // content that replaces it after data loads.
+  const noSidebar = isCreate || !canViewSidebar;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -107,7 +121,7 @@ export function ModalDetailPanelBodySkeleton({
         )}
       </div>
 
-      {isCreate ? (
+      {noSidebar ? (
         <CreateFormSkeleton />
       ) : (
         <DetailFormAndSidebarSkeleton />

@@ -10,6 +10,7 @@
 
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
+import { requirePermission } from "@/lib/auth/require-permission";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -42,6 +43,8 @@ interface PageProps {
 }
 
 export default async function MedicinesDashboardPage({ searchParams }: PageProps) {
+  await requirePermission("viewMedicines");
+
   const sp       = await searchParams;
   const search   = typeof sp.search   === "string" ? sp.search   : undefined;
   const category = typeof sp.category === "string" ? sp.category : undefined;

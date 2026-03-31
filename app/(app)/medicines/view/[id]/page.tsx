@@ -7,6 +7,7 @@
  */
 
 import { notFound } from "next/navigation";
+import { requirePermission } from "@/lib/auth/require-permission";
 import { getMedicineDetail } from "@/lib/actions/medicines";
 import { buildMedicineDetail } from "../../_lib/medicine-detail-mapper";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
@@ -17,6 +18,8 @@ interface MedicineDetailPageProps {
 }
 
 export default async function MedicineDetailPage({ params }: MedicineDetailPageProps) {
+  await requirePermission("viewMedicines");
+
   const { id } = await params;
   const result = await getMedicineDetail(id);
 

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { getSession } from "@/lib/auth/session";
+import { AppSessionProvider } from "@/lib/auth/session-context";
 import { buildClinicLogoPublicUrl } from "@/lib/clinic/build-clinic-logo-url";
 import {
   SIDEBAR_COLLAPSED_COOKIE_NAME,
@@ -43,16 +44,26 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
   );
 
   return (
-    <AppShell
-      modal={modal}
-      userDisplayName={displayName}
-      userTypeLabel={userTypeLabel}
-      avatarSeed={session.user.id}
-      initialCollapsed={initialCollapsed}
-      clinicName={session.user.clinicName}
-      clinicLogoUrl={clinicLogoUrl}
+    <AppSessionProvider
+      user={{
+        type: session.user.type,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+        email: session.user.email,
+        clinicName: session.user.clinicName,
+      }}
     >
-      <NuqsAdapter>{children}</NuqsAdapter>
-    </AppShell>
+      <AppShell
+        modal={modal}
+        userDisplayName={displayName}
+        userTypeLabel={userTypeLabel}
+        avatarSeed={session.user.id}
+        initialCollapsed={initialCollapsed}
+        clinicName={session.user.clinicName}
+        clinicLogoUrl={clinicLogoUrl}
+      >
+        <NuqsAdapter>{children}</NuqsAdapter>
+      </AppShell>
+    </AppSessionProvider>
   );
 }

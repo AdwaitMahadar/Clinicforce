@@ -9,7 +9,7 @@
  * Never throw.
  *
  * RBAC (docs/08-Business-Rules.md §6):
- *   View / Add / Edit / Deactivate : all roles
+ *   All medicines actions: admin + doctor only (staff has no access)
  */
 
 import { z } from "zod";
@@ -48,7 +48,7 @@ const getMedicinesInputSchema = z.object({
 export async function getMedicines(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = getMedicinesInputSchema.safeParse(input);
     if (!parsed.success) {
@@ -70,7 +70,7 @@ export async function getMedicines(input: unknown) {
 export async function getMedicineDetail(id: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = idSchema.safeParse(id);
     if (!parsed.success) {
@@ -104,7 +104,7 @@ export async function getMedicineDetail(id: unknown) {
 export async function createMedicine(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = createMedicineSchema.safeParse(input);
     if (!parsed.success) {
@@ -146,7 +146,7 @@ export async function createMedicine(input: unknown) {
 export async function updateMedicine(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = updateMedicineSchema.safeParse(input);
     if (!parsed.success) {
@@ -196,7 +196,7 @@ export async function updateMedicine(input: unknown) {
 export async function deactivateMedicine(id: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = idSchema.safeParse(id);
     if (!parsed.success) {

@@ -205,7 +205,37 @@ export default async function AppLayout({ children, modal }) {
 
 ---
 
-## 6. Using Session in Server Actions
+## 6. Server-Side Permission Guard — `requirePermission()`
+
+**Location:** `lib/auth/require-permission.ts`
+
+Use this utility in Server Component page files to enforce page-level access control. It combines `getSession()` and `hasPermission()` in one call — no hardcoded role strings in page files.
+
+```typescript
+import { requirePermission } from "@/lib/auth/require-permission";
+
+// Guard only — session not needed:
+await requirePermission("viewMedicines");
+
+// Guard + session reuse — avoids a second getSession() call:
+const session = await requirePermission("manageUsers");
+// session.user.clinicId, session.user.type, etc. are available
+```
+
+**Behaviour:**
+1. Calls `getSession()` (React-`cache()`-memoised — no extra DB hit if already resolved in the same request).
+2. Calls `hasPermission(session.user.type, permission)` from `lib/permissions.ts`.
+3. If the user lacks the permission: calls `redirect(redirectTo)` (default `"/home/dashboard"`).
+4. Returns the `AppSession` so callers can read session fields without a second `getSession()`.
+
+**Rules:**
+- All medicines pages use `await requirePermission("viewMedicines")` — no inline `session.user.type === "staff"` checks anywhere in page files.
+- Use `requirePermission` for any future page that must be fully locked to a subset of roles.
+- The custom `redirectTo` parameter lets you redirect to a different destination if needed (e.g. a dedicated "access denied" page in the future).
+
+---
+
+## 7. Using Session in Server Actions
 
 Every server action must retrieve the session as its first operation. Never trust data from the client for `clinicId` or role.
 
@@ -250,7 +280,108 @@ export async function createPatient(input: CreatePatientInput) {
 
 ---
 
-## 8. Implementation Status
+## 8. Client-Side Session Context & Permissions
+
+### `AppSessionProvider` + `useAppSession()`
+
+**Location:** `lib/auth/session-context.tsx`
+
+The layout already resolves the session server-side. To avoid extra server round-trips, the layout passes a safe subset of the session user into a React context that any client component can consume via `useAppSession()`.
+
+```typescript
+// app/(app)/layout.tsx (excerpt)
+import { AppSessionProvider } from "@/lib/auth/session-context";
+
+// Inside AppLayout:
+<AppSessionProvider
+  user={{
+    type: session.user.type,
+    firstName: session.user.firstName,
+    lastName: session.user.lastName,
+    email: session.user.email,
+    clinicName: session.user.clinicName,
+  }}
+>
+  ...
+</AppSessionProvider>
+```
+
+The `AppSessionUser` type (exported from `lib/auth/session-context.tsx`) contains only the fields that are safe and useful client-side — it deliberately excludes `id`, `clinicId`, and `clinicSubdomain` which must remain server-only.
+
+```typescript
+export interface AppSessionUser {
+  type: "admin" | "doctor" | "staff";
+  firstName: string;
+  lastName: string;
+  email: string;
+  clinicName: string;
+}
+```
+
+### `usePermission()` Hook
+
+```typescript
+import { usePermission } from "@/lib/auth/session-context";
+
+function DeleteButton() {
+  const canDelete = usePermission("deletePatient");
+  if (!canDelete) return null;
+  return <button>Delete</button>;
+}
+```
+
+### `<RoleGate />` Component
+
+**Location:** `components/common/RoleGate.tsx`
+
+```tsx
+import { RoleGate } from "@/components/common/RoleGate";
+
+// Renders nothing when role lacks permission:
+<RoleGate permission="manageUsers">
+  <UserManagementPanel />
+</RoleGate>
+
+// Optional fallback:
+<RoleGate permission="deleteDocument" fallback={<p>Admin/Doctor only</p>}>
+  <DeleteDocumentButton />
+</RoleGate>
+```
+
+### `lib/permissions.ts` — Permission Map
+
+**Location:** `lib/permissions.ts`
+
+This file is the **single source of truth for all UI permission decisions**. It exports:
+- `PERMISSIONS` — a `const` object mapping each `Permission` key to an array of allowed `UserType` values.
+- `Permission` — the union of all permission keys.
+- `hasPermission(role, permission)` — pure utility used internally by `usePermission()`.
+
+The full permission map reflects the PRD RBAC table:
+
+| Permission | staff | doctor | admin |
+| :--- | :---: | :---: | :---: |
+| `manageUsers` | — | — | ✓ |
+| `viewPatients` / `createPatient` / `editPatient` | ✓ | ✓ | ✓ |
+| `deletePatient` | — | ✓ | ✓ |
+| `viewClinicalNotes` / `editClinicalNotes` | — | ✓ | ✓ |
+| `viewDetailSidebar` | — | ✓ | ✓ |
+| `viewAppointments` / `createAppointment` / `editAppointment` / `deleteAppointment` | ✓ | ✓ | ✓ |
+| `viewDocuments` / `uploadDocument` | ✓ | ✓ | ✓ |
+| `editDocument` / `deleteDocument` | — | ✓ | ✓ |
+| `viewMedicines` / `createMedicine` / `editMedicine` / `deleteMedicine` | — | ✓ | ✓ |
+
+**Rules:**
+- UI gating (`RoleGate`, `usePermission`) is for UX only. Server actions must still call `requireRole()` independently.
+- `clinicId` and `clinicSubdomain` are never passed to the client context — always resolve them server-side from `getSession()`.
+- `useAppSession()` and `usePermission()` throw if called outside `app/(app)/` (i.e. outside `AppSessionProvider`).
+- **Medicines — full staff lockout:** All medicines server actions use `requireRole(session, ["admin", "doctor"])`. All medicines pages (full-page and `@modal` intercepting routes) call `getSession()` and `redirect("/home/dashboard")` for staff before rendering. The Medicines tab in `TopNav` is hidden via `usePermission("viewMedicines")`.
+- **Clinical notes — staff hidden:** `viewClinicalNotes` is `["admin", "doctor"]`. `PatientDetailPanel` and `AppointmentDetailPanel` filter the `notes` field from their form `fields` array when the user lacks this permission.
+- **Detail sidebar — staff hidden:** `viewDetailSidebar` is `["admin", "doctor"]`. `DetailPanel` internally calls `usePermission("viewDetailSidebar")` and computes `noSidebar = isCreate || !canViewSidebar`. When `noSidebar` is true, the form is full-width (same layout as create mode). View modal pages (`@modal/(.)patients/view/[id]` and `@modal/(.)appointments/view/[id]`) call `getSession()` and use `size="lg"` for staff (vs. `"xl"` for other roles) so the narrower modal matches the full-width form. `ModalDetailPanelBodySkeleton` (the `<Suspense>` fallback) applies the same `noSidebar = isCreate || !canViewSidebar` logic via `usePermission` so the loading skeleton layout matches the final render for all roles with no layout shift.
+
+---
+
+## 9. Implementation Status
 
 Auth integration is complete. All items below are done.
 
@@ -264,6 +395,11 @@ Auth integration is complete. All items below are done.
 - [x] `app/api/clinic/route.ts` subdomain resolver (shared query with middleware via `lib/clinic/resolve-by-subdomain.ts`)
 - [x] RBAC: `requireRole()` + `ForbiddenError` in `lib/auth/rbac.ts`
 - [x] All server actions gate-checked with `getSession()` + `requireRole()`
+- [x] `lib/permissions.ts` — `PERMISSIONS` map, `Permission` type, `hasPermission()` utility
+- [x] `lib/auth/session-context.tsx` — `AppSessionProvider`, `useAppSession()`, `usePermission()` hooks
+- [x] `lib/auth/require-permission.ts` — `requirePermission()` server-side page guard
+- [x] `components/common/RoleGate.tsx` — declarative permission-gating component
+- [x] `app/(app)/layout.tsx` — `AppSessionProvider` wraps the app tree (no extra server calls)
 
 **Remaining (post-MVP):**
 - [ ] Password reset flow

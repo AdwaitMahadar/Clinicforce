@@ -38,6 +38,7 @@ import {
 } from "@/lib/validators/patient";
 import { PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
 import { createPatient, updatePatient } from "@/lib/actions/patients";
+import { usePermission } from "@/lib/auth/session-context";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -252,6 +253,10 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
   const handleClose = useCallback(() => onClose?.(), [onClose]);
 
   const isCreate = mode === "create";
+  const canViewClinicalNotes = usePermission("viewClinicalNotes");
+  const visibleFields = canViewClinicalNotes
+    ? PATIENT_FIELDS
+    : PATIENT_FIELDS.filter((f) => f.name !== "notes");
 
   const viewDefaultValues: UpdatePatientInput | null = patient
     ? ({
@@ -319,7 +324,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         ref={formRef}
         schema={createPatientSchema}
         defaultValues={EMPTY_CREATE}
-        fields={PATIENT_FIELDS}
+        fields={visibleFields}
         onSubmit={handleSubmitCreate}
       />
     );
@@ -368,7 +373,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
       ref={formRef}
       schema={updatePatientSchema}
       defaultValues={viewDefaultValues}
-      fields={PATIENT_FIELDS as FormFieldDescriptor<UpdatePatientInput>[]}
+      fields={visibleFields as FormFieldDescriptor<UpdatePatientInput>[]}
       onSubmit={handleSubmitUpdate}
     />
   );

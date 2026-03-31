@@ -5,6 +5,7 @@
  */
 
 import { Suspense } from "react";
+import { requirePermission } from "@/lib/auth/require-permission";
 import { ModalShell } from "@/components/common/ModalShell";
 import { ModalDetailPanelBodySkeleton } from "@/components/common/skeletons";
 import { MedicineViewModalContent } from "./MedicineViewModalContent";
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export default async function InterceptedMedicineModal({ params }: Props) {
+  await requirePermission("viewMedicines");
+
   const { id } = await params;
 
   return (

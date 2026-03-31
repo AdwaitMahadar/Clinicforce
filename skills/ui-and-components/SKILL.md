@@ -45,12 +45,13 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<DocumentCard />` / `<UploadDocumentDialog />` - Patient/appointment document list + presigned upload (see `skills/file-upload/SKILL.md`).
 *   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
 *   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`.
-*   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete).
+*   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete). Sidebar is hidden when `isCreate=true` OR when the user lacks `viewDetailSidebar` permission (staff) — `DetailPanel` reads this internally via `usePermission`, no extra prop needed in entity panels. View modal pages pass `size="lg"` instead of `"xl"` for staff so the narrower modal matches the full-width form.
 *   `<PanelCloseButton />` - Shared X close button for all detail panels; uses Lucide `X` with CSS `:hover` (no imperative DOM). Always pass `onClose` explicitly — panels decide whether to call `router.back()` or a custom callback.
 *   `<ModalShell />` - Intercepting route modals: shadcn `Dialog` / Radix (focus trap, scroll lock, `router.back()` on dismiss); sizes from `modal-shell-sizes.ts`.
 *   **Calendar**: `<MonthView />`, `<TimeGridView />`, `<AppointmentEventCard />` — type colours/labels in `lib/appointment-calendar-styles.ts` (`TYPE_COLORS`: general=blue emphasis tokens, follow-up=amber, emergency=red; not the DB enum alone — display superset in `@/types/appointment`). Month chips: `patientFirstName`; chip time + day bucket = `format(parseISO(start), …)` (local TZ). Week/day: FullCalendar + `patientName` on title. Appointments dashboard day-view fetch: `startOfDay`/`endOfDay` (`docs/07-Page-Specifications.md` §3). **Date-range computation** (month/week/day boundaries → ISO strings) is shared via `getCalendarRange(view, date)` in `app/(app)/appointments/_lib/calendar-range.ts` — import this in both the server dashboard page and any client code that needs the range; never duplicate the boundary logic.
 
 *   `<ReportsComingSoon title subtitle />` - Placeholder for all Reports views (all 4 pages delegate to this). Never copy-paste the dashed-box stub — import from `@/components/common`.
+*   `<RoleGate permission fallback? />` - Declarative permission gate; renders `children` when current user holds the named permission, `fallback` (default `null`) otherwise. Uses `usePermission` from `lib/auth/session-context`. For imperative checks use `usePermission("...")` directly. Never inline role arrays in components — add a named permission to `lib/permissions.ts`.
 
 **Layouts (`components/layout/`)**
 *   `<DetailPageShell breadcrumb>` - Full-page wrapper used by all entity `/new` and `/view/[id]` pages (outer padding, max-width column, breadcrumb text, glass card container). Always use this instead of repeating the wrapper inline.
@@ -105,6 +106,7 @@ Forms and detail views (`/new`, `/view/[id]`) render as **Intercepting Modals** 
 *   **Do not modify Shadcn UI components directly** in `components/ui/` unless making a globally required baseline fix (like adding `cursor-pointer` to buttons).
 *   **Do not implement client-side data tables.** The client never holds the full dataset. Pagination and filtering must be handled via URL state + Server Actions.
 *   **Do not use Shadcn's default toast.** Use Sonner.
+*   **Do not inline role arrays for UI gating.** Add a named permission to `lib/permissions.ts` and use `<RoleGate>` or `usePermission()`.
 
 ## 📚 References
 For deeper implementation details, consult the canonical documentation:

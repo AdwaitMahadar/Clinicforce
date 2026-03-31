@@ -103,7 +103,8 @@ lib/
   constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`), `app.ts` (`DEFAULT_PAGE_SIZE`), and `appointment.ts` (`DEFAULT_APPOINTMENT_DURATION_MINUTES`)
   db/                       ← Drizzle schema + query functions
   validators/               ← Zod schemas (shared between forms and server actions); `common.ts` exports `idSchema` + `n()` helper (reused by all entity action files)
-  auth/                     ← Better-Auth config
+  auth/                     ← Better-Auth config; `session-context.tsx` — `AppSessionProvider` + `useAppSession()` + `usePermission()` client hooks (no extra server calls); `require-permission.ts` — `requirePermission(permission, redirectTo?)` server-side page guard (calls `getSession()` + `hasPermission()`, redirects if unauthorised, returns session)
+  permissions.ts            ← `PERMISSIONS` map + `Permission` type + `hasPermission(role, permission)` — single source of truth for all UI role decisions; consumed by `usePermission` and `<RoleGate>`
   utils/                    ← `chart-id.ts` — unified `formatChartId(value, entityType)` + thin wrappers `formatPatientChartId` (`#PT-`) / `formatStaffChartId` (`#STF-`); supports `'patient' | 'staff' | 'medicine' | 'user'` entity types (`#PT-` / `#STF-` / `#MED-` / `#USR-`); DB stores integers only
   appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
 
@@ -123,7 +124,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`). No footer — parent uses `DetailPanel` or composes actions.
-- `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`).
+- `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`). Sidebar hidden when `isCreate=true` OR when user lacks `viewDetailSidebar` permission — computed internally via `usePermission`, no extra prop needed from entity panels.
 - `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
@@ -132,6 +133,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
 - `ReportsComingSoon.tsx` — Placeholder used by all four Reports pages; accepts `title` + `subtitle` props
+- `RoleGate.tsx` — Declarative permission gate: `<RoleGate permission="...">` renders children when the current user holds the permission, `fallback` (default `null`) otherwise; uses `usePermission` from `lib/auth/session-context`
 - `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, …, `DetailPageSkeleton`); **`ModalDetailPanelBodySkeleton`** for intercept modal inner **`Suspense`** fallbacks; **`ModalDetailSkeleton`** for rare full-modal + backdrop loading (`size` / `variant`)
 
 ---
@@ -170,6 +172,9 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - Three roles: `admin` | `doctor` | `staff`
 - UI hiding is for UX only — all server actions must enforce role checks independently
 - See `docs/01-PRD.md` for the full permission matrix
+- **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`), all pages redirect (`getSession()` + `redirect`), all server actions use `requireRole(session, ["admin", "doctor"])`
+- **Clinical notes — staff excluded:** `PatientDetailPanel` and `AppointmentDetailPanel` filter the `notes` form field when `usePermission("viewClinicalNotes")` returns false
+- **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`

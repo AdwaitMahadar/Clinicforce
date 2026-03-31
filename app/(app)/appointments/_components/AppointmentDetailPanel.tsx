@@ -39,6 +39,7 @@ import {
   updateAppointment,
   deleteAppointment,
 } from "@/lib/actions/appointments";
+import { usePermission } from "@/lib/auth/session-context";
 
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
@@ -166,9 +167,10 @@ const EMPTY_VALUES: CreateAppointmentInput = {
 function buildAppointmentFormFields(
   patientOptions: AppointmentSelectOption[],
   doctorOptions: AppointmentSelectOption[],
-  patientSelectDisabled: boolean
+  patientSelectDisabled: boolean,
+  includeNotes: boolean
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
-  return [
+  const all: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
     {
       name:        "patientId",
       label:       "Patient",
@@ -238,6 +240,7 @@ function buildAppointmentFormFields(
       renderControl: (field) => <ClinicalNotesControl field={field} />,
     },
   ];
+  return includeNotes ? all : all.filter((f) => f.name !== "notes");
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -272,6 +275,7 @@ export function AppointmentDetailPanel({
   const isCreate = mode === "create";
   const router   = useRouter();
   const formRef  = useRef<DetailFormHandle | null>(null);
+  const canViewClinicalNotes = usePermission("viewClinicalNotes");
 
   const defaultValues: CreateAppointmentInput | UpdateAppointmentInput = isCreate
     ? EMPTY_VALUES
@@ -416,7 +420,8 @@ export function AppointmentDetailPanel({
       fields={buildAppointmentFormFields(
         patientOptions,
         doctorOptions,
-        !isCreate
+        !isCreate,
+        canViewClinicalNotes
       )}
       onSubmit={handleSubmit}
     />

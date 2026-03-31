@@ -13,6 +13,7 @@ import { DetailSidebar } from "@/components/common/DetailSidebar";
 import type { DetailSidebarTab } from "@/components/common/DetailSidebar";
 import type { LogEvent } from "@/components/common/EventLog";
 import { cn } from "@/lib/utils";
+import { usePermission } from "@/lib/auth/session-context";
 
 export interface DetailPanelProps {
   header: ReactNode;
@@ -50,6 +51,10 @@ export function DetailPanel({
   deleteLabel = "Delete",
   className,
 }: DetailPanelProps) {
+  const canViewSidebar = usePermission("viewDetailSidebar");
+  // Hide sidebar when in create mode OR when the user's role lacks sidebar access (staff).
+  const noSidebar = isCreate || !canViewSidebar;
+
   const handleSave = () => {
     if (onSave) {
       void onSave();
@@ -76,10 +81,10 @@ export function DetailPanel({
         <div
           className={cn(
             "flex min-h-0 flex-col overflow-hidden",
-            isCreate ? "w-full min-w-0 flex-1" : "min-w-0 flex-1"
+            noSidebar ? "w-full min-w-0 flex-1" : "min-w-0 flex-1"
           )}
           style={
-            !isCreate
+            !noSidebar
               ? { borderRight: "1px solid var(--color-border)" }
               : undefined
           }
@@ -89,7 +94,7 @@ export function DetailPanel({
           </div>
         </div>
 
-        {!isCreate && (
+        {!noSidebar && (
           <div
             className="min-h-0 w-[40%] max-w-[40%] shrink-0"
             style={{ minWidth: 0 }}
