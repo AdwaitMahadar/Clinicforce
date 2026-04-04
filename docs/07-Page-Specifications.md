@@ -290,7 +290,7 @@ Both needed to populate the patient and doctor pickers in the form:
 ### Layout
 `PatientDetailPanel` uses `<DetailPanel />`:
 - **Header:** Initials badge, name, chart ID pill, status badge, close
-- **Form column:** `<DetailForm />` with all patient fields, including **Date of Birth** and a synced **Age** field (UI-only; only DOB is stored) and, for admin/doctor, **Patient's Past History** (`pastHistoryNotes`) at the bottom. Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`. `PatientDobAgeSync` keeps DOB and age aligned inside the form (`DetailForm` `insideForm` slot).
+- **Form column:** `<DetailForm />` with all patient fields, including **Date of Birth** and **Age** (synced; UI-only age), then **Gender** on its own row (`colSpan: 2` + `constrainControlToHalfRow` so the control matches one column width), then **Phone** and **Email** side-by-side, then **Blood Group** and **Allergies**, and, for admin/doctor, a tall **Patient's Past History** (`pastHistoryNotes`) textarea (`rows` + `min-height` via `DetailForm` textarea `className`) at the bottom. Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`. `PatientDobAgeSync` keeps DOB and age aligned inside the form (`DetailForm` `insideForm` slot).
 - **Sidebar:** `DetailSidebar` tabbed — Documents | Appointments (same list/upload behaviour as before). In **create** mode (`isCreate`), the sidebar column is hidden
 - **Activity log:** `events` prop on `DetailPanel` (always-visible bottom zone in the sidebar)
 - **After save:** On successful `updatePatient`, the **intercepting modal** closes via `onClose` (`router.back()`) + `router.refresh()` so the user returns to the patients table with the same URL state. The **full-page** `/patients/view/[id]` route stays on the same URL and only `router.refresh()` runs.
@@ -352,6 +352,7 @@ Both needed to populate the patient and doctor pickers in the form:
 - **Validates:** Zod schema (to be created at `lib/validators/patient.ts`)
 - **Enforces:**
   - `phone` must be non-empty; `email` optional
+  - `gender` required (`male` | `female` | `other`)
   - Either `dateOfBirth` (after trim) or `age` (UI) must be provided; server normalizes to `date_of_birth` only
   - `clinicId` and `createdBy` are immutable
 - **RBAC:** All roles may submit; `pastHistoryNotes` is only applied for admin/doctor (see `docs/05-Authentication.md`).

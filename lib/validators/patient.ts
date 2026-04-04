@@ -134,11 +134,9 @@ export const updatePatientSchema = z
 
     age: optionalAgeSchema,
 
-    gender: z
-      .enum(PATIENT_GENDERS, {
-        error: "Please select a gender",
-      })
-      .optional(),
+    gender: z.enum(PATIENT_GENDERS, {
+      error: "Please select a gender",
+    }),
 
     address: z.string().optional(),
 

@@ -121,20 +121,20 @@ const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
     name: "gender",
     label: "Gender",
     type: "select",
+    colSpan: 2,
+    constrainControlToHalfRow: true,
     options: GENDER_SELECT_OPTIONS,
   },
   {
     name: "phone",
     label: "Phone",
     type: "text",
-    colSpan: 2,
     placeholder: "(555) 123-4567",
   },
   {
     name: "email",
     label: "Email",
     type: "email",
-    colSpan: 2,
     placeholder: "patient@example.com",
   },
   {
@@ -166,8 +166,9 @@ const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
     name: "pastHistoryNotes",
     label: "Patient's Past History",
     type: "textarea",
-    rows: 5,
+    rows: 12,
     colSpan: 2,
+    className: "min-h-[220px]",
     placeholder:
       "Relevant medical history, referrals, or background for clinical context…",
   },

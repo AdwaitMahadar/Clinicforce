@@ -9,8 +9,9 @@
  * ─── Layout ───────────────────────────────────────────────────────────────────
  *
  * Pass `fields`: a single scrollable 2-column grid (col-span via `colSpan` on each
- * descriptor). Entity side columns (e.g. documents) are composed by the parent
- * next to this component (e.g. via `DetailPanel`).
+ * descriptor; optional `constrainControlToHalfRow` with `colSpan: 2` for a full-width
+ * row whose control is only as wide as one column). Entity side columns (e.g. documents)
+ * are composed by the parent next to this component (e.g. via `DetailPanel`).
  *
  * ─── Imperative API ────────────────────────────────────────────────────────────
  *
@@ -20,7 +21,7 @@
  * ─── Field types ──────────────────────────────────────────────────────────────
  *
  *   "text" | "date" | "email" | "number" | "time"  → <Input type={…} />
- *   "textarea"                                      → <Textarea />
+ *   "textarea"                                      → <Textarea /> (optional `rows`, `className` on descriptor)
  *   "select"                                        → Radix <Select /> (controlled: `value` + `key` so external resets sync)
  *   "custom"  (requires renderControl)              → caller-supplied JSX
  *
@@ -73,6 +74,11 @@ interface BaseField<TValues extends FieldValues> {
   /** Span 1 or 2 columns in the grid. Default: 1 */
   colSpan?: 1 | 2;
   disabled?: boolean;
+  /**
+   * Use with `colSpan: 2`: the grid cell spans the full row, but the control is
+   * limited to ~one column width (left half), leaving the right half empty.
+   */
+  constrainControlToHalfRow?: boolean;
 }
 
 export interface TextField<TValues extends FieldValues> extends BaseField<TValues> {
@@ -82,6 +88,8 @@ export interface TextField<TValues extends FieldValues> extends BaseField<TValue
 export interface TextareaField<TValues extends FieldValues> extends BaseField<TValues> {
   type: "textarea";
   rows?: number;
+  /** Merged with the default textarea classes (e.g. `min-h-[…]` for a taller control). */
+  className?: string;
 }
 
 export interface SelectField<TValues extends FieldValues> extends BaseField<TValues> {
@@ -151,12 +159,13 @@ function renderFieldControl<TValues extends FieldValues>(
   }
 
   if (descriptor.type === "textarea") {
+    const ta = descriptor as TextareaField<TValues>;
     return (
       <Textarea
-        rows={(descriptor as TextareaField<TValues>).rows ?? 5}
+        rows={ta.rows ?? 5}
         placeholder={descriptor.placeholder}
         disabled={descriptor.disabled ?? isSaving}
-        className="resize-none"
+        className={cn("resize-none", ta.className)}
         {...field}
         value={String(field.value ?? "")}
       />
@@ -231,7 +240,13 @@ function FieldGrid<TValues extends FieldValues>({
               <FormItem>
                 <FormLabel>{descriptor.label}</FormLabel>
                 <FormControl>
-                  {renderFieldControl(descriptor, field, isSaving)}
+                  {descriptor.constrainControlToHalfRow ? (
+                    <div className="w-full max-w-[calc(50%-0.625rem)]">
+                      {renderFieldControl(descriptor, field, isSaving)}
+                    </div>
+                  ) : (
+                    renderFieldControl(descriptor, field, isSaving)
+                  )}
                 </FormControl>
                 <FormMessage className="text-xs" />
               </FormItem>
