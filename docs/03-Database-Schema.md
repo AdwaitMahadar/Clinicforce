@@ -175,7 +175,5 @@ Better-Auth email/token verification records.
 
 ---
 
-## 6. Zod Validation Integration
-Every table above will have a corresponding Zod schema generated using `drizzle-zod`. 
-*   **Insert Schemas**: Used for validation during Create/Update operations.
-*   **Select Schemas**: Used for typing responses from the database.
+## 6. Zod validation integration
+Create/update and API boundaries are validated with **Zod** schemas in **`lib/validators/`**, aligned with **`lib/constants/`** for enums shared with Drizzle `pgEnum`. The repo includes **`drizzle-zod`** for optional generated helpers, but **most validation is hand-written** next to server actions — do not assume every table has an auto-generated Zod schema; follow existing entity files as the pattern.

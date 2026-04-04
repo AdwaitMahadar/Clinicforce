@@ -5,7 +5,7 @@ For each page it specifies: the URL, which server actions to write, what data go
 filtering/sorting/pagination requirements, and which RBAC rules apply.
 
 Use `docs/03-Database-Schema.md` for field definitions, `docs/08-Business-Rules.md` for
-validation rules, and `docs/04-API-Specification.md` (when written) for the action signatures.
+validation rules, and `docs/04-API-Specification.md` for server action and handler contracts.
 
 ---
 
@@ -36,52 +36,48 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 ## 1. Home Dashboard — `/home/dashboard`
 
-> **Status:** Not yet built.
+> **Status:** **Built** (stats + today’s schedule). **Recent activity** is a placeholder: `EventLog` renders with `events={[]}` until an audit/activity data source exists (`lib/actions/home.ts` / `app/(app)/home/dashboard/page.tsx`).
 
 ### Purpose
-High-level clinic overview — metrics, recent activity, quick-action shortcuts.
+High-level clinic overview — metric cards, today’s appointments strip, link to new appointment, reserved slot for future activity feed.
 
-### Server Actions Needed
+### Server actions (`lib/actions/home.ts`)
 
 #### `getHomeStats()`
-- **Input:** `clinicId` from session
+- **Input:** `clinicId` from session (via `getSession()` inside the action).
 - **Output:**
   ```ts
   {
-    totalPatients:          number;   // COUNT patients WHERE is_active = true
-    appointmentsToday:      number;   // COUNT appointments WHERE scheduled_at::date = today AND is_active = true
-    appointmentsScheduled:  number;   // COUNT appointments WHERE status = 'scheduled' AND is_active = true
-    appointmentsCompleted:  number;   // COUNT appointments WHERE status = 'completed' last 30 days
-    newPatientsThisMonth:   number;   // COUNT patients created in current calendar month
+    totalPatients:          number;   // active patients only
+    appointmentsToday:      number;   // active appts whose scheduled_at date = CURRENT_DATE (clinic DB)
+    appointmentsScheduled:  number;   // status = 'scheduled', active
+    appointmentsCompleted:  number;   // status = 'completed', active, scheduled_at >= now - 30 days
+    newPatientsThisMonth:   number;   // patients created since start of current calendar month
   }
   ```
+- **RBAC:** All roles (`requireRole` admin | doctor | staff).
+
+#### `getRecentAppointments(limit?)`
+- **Default `limit`:** 5 (validated 1–50).
+- **Output:** `{ id, title, patientName, doctorName, scheduledAt, status, type }` (patient/doctor names from joins).
+- **Sort:** `scheduled_at DESC`.
+- **Filter:** `clinic_id`, `is_active = true`.
 - **RBAC:** All roles.
 
-#### `getRecentAppointments()`
-- **Input:** `clinicId`, `limit = 5`
-- **Output:** Array of `{ id, title, patientName, doctorName, date, status, type }`
-  - `patientName` = JOIN patients on `patient_id`
-  - `doctorName`  = JOIN users on `doctor_id`
-- **Sort:** `date DESC`
-- **RBAC:** All roles.
-
-#### `getRecentPatients()`
-- **Input:** `clinicId`, `limit = 5`
-- **Output:** Array of `{ id, chartId, firstName, lastName, status, createdAt }`
-- **Sort:** `created_at DESC`
-- **RBAC:** All roles.
+#### `getRecentPatients(limit?)`
+- **Implemented** for reuse elsewhere; the home page **does not** call it yet. Returns `{ id, chartId, firstName, lastName, status: 'active'|'inactive', createdAt }`, `created_at DESC`.
 
 ---
 
 ## 2. Home Reports — `/home/reports`
 
-> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
+> **Status:** UI built (placeholder only). No reporting backend yet.
 
 ---
 
 ## 3. Appointments Dashboard — `/appointments/dashboard`
 
-> **Status:** UI built (calendar Month/Week/Day views). Server actions pending.
+> **Status:** Built — calendar UI + `getAppointments` / mutations in `lib/actions/appointments.ts`.
 
 ### Views
 The dashboard has three calendar sub-views controlled by a view-switcher pill:
@@ -92,16 +88,16 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 | Week | `TimeGridView` + FullCalendar | `timeGridWeek` with custom event cards |
 | Day | `TimeGridView` + FullCalendar | `timeGridDay` with custom event cards |
 
-### Server Actions Needed
+### Server actions (`lib/actions/appointments.ts`)
 
-#### `getAppointments({ view, rangeStart, rangeEnd })`
-- **Input:**
+#### `getAppointments({ rangeStart, rangeEnd })`
+- **Input (Zod):** `{ rangeStart: string, rangeEnd: string }` — each a non-empty ISO datetime string; the server parses with `new Date(...)`. The calendar **`view`** is client-only for layout; it is **not** sent to this action.
+- **Equivalent conceptual window:**
   ```ts
   {
-    clinicId:   string;   // from session — never from client
-    rangeStart: Date;     // start of the visible window (month: startOfMonth; week: startOfWeek; day: startOfDay)
-    rangeEnd:   Date;     // end of the visible window (month: endOfMonth; week: endOfWeek; day: endOfDay)
-    view:       "month" | "week" | "day";
+    clinicId:   string;   // from session inside the action — never from the client
+    rangeStart: Date;     // derived from parsed string — start of visible window (month/week/day via `getCalendarRange` on the server page)
+    rangeEnd:   Date;     // end of visible window
   }
   ```
 - **Output:** DB rows as `AppointmentCalendarRow` (joined names, `scheduled_at`, duration). The dashboard page maps them to `AppointmentEvent` for the calendar client:
@@ -137,7 +133,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ## 4. Appointment Detail Modal / Page — `/appointments/view/[id]`
 
-> **Status:** UI built (modal + full-page fallback). Server actions pending.
+> **Status:** Built (modal + full-page fallback + `getAppointmentDetail` / create / update / delete actions).
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
@@ -187,13 +183,13 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 #### `deleteAppointment(id)` *(soft delete)*
 - **Input:** `id`, `clinicId` from session
 - **Action:** `SET is_active = false`
-- **RBAC:** Doctor and Admin only.
+- **RBAC:** All roles (admin, doctor, staff).
 
 ---
 
 ## 5. New Appointment Modal / Page — `/appointments/new`
 
-> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` and `getActiveDoctors`.
+> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` (from `lib/actions/patients.ts`, re-exported `lib/actions/appointments.ts`) and `getActiveDoctors`.
 
 ### Server Actions
 
@@ -220,13 +216,13 @@ Both needed to populate the patient and doctor pickers in the form:
 
 ## 6. Appointments Reports — `/appointments/reports`
 
-> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
+> **Status:** UI built (placeholder only). No reporting backend yet.
 
 ---
 
 ## 7. Patients Dashboard — `/patients/dashboard`
 
-> **Status:** UI built (DataTable with search + filter). Server actions pending.
+> **Status:** Built — list + filters + `getPatients` / related actions in `lib/actions/patients.ts`.
 
 ### Table Columns
 | Column | DB Field | Sortable? | Filterable? |
@@ -289,7 +285,7 @@ Both needed to populate the patient and doctor pickers in the form:
 
 ## 8. Patient Detail Modal / Page — `/patients/view/[id]`
 
-> **Status:** UI built (`DetailPanel` + `DetailForm` + RHF/Zod; modal + full-page fallback). Server actions pending.
+> **Status:** Built — `getPatientDetail` / create / update + documents in `lib/actions/patients.ts` (and documents actions).
 
 ### Layout
 `PatientDetailPanel` uses `<DetailPanel />`:
@@ -360,7 +356,7 @@ Both needed to populate the patient and doctor pickers in the form:
 
 #### `getNoteForPatient(id)` / `saveNoteForPatient(id, note)`
 The clinical notes field in the right column is a freeform textarea backed by `patients.notes`.
-- Update happens on save / blur (debounced or explicit save button — TBD in Phase 3).
+- Update happens on save / blur (debounced or explicit save button — refine when a dedicated notes UX is scheduled).
 - **RBAC:** Doctor and Admin only.
 
 #### `getPresignedUrl(documentId)`
@@ -373,7 +369,7 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 ## 9. New Patient Modal / Page — `/patients/new`
 
-> **Status:** UI built (form modal + full-page fallback). Server actions pending.
+> **Status:** Built — `createPatient` and related validators in `lib/actions/patients.ts`.
 
 ### Form Fields
 | Field | Required | DB Column | Validation |
@@ -414,13 +410,13 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 
 ## 10. Patients Reports — `/patients/reports`
 
-> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
+> **Status:** UI built (placeholder only). No reporting backend yet.
 
 ---
 
 ## 11. Medicines Dashboard — `/medicines/dashboard`
 
-> **Status:** UI built (DataTable with search + filter). Server actions pending.
+> **Status:** Built — list + filters + `getMedicines` in `lib/actions/medicines.ts` (admin + doctor only).
 
 ### Table Columns
 | Column | DB Field | Sortable? | Filterable? |
@@ -473,13 +469,13 @@ The clinical notes field in the right column is a freeform textarea backed by `p
     isActive:           boolean;
   }
   ```
-- **RBAC:** All roles.
+- **RBAC:** Admin and Doctor only (**staff** has no medicines access — routes redirect, actions use `requireRole(session, ["admin", "doctor"])`).
 
 ---
 
 ## 12. Medicine Detail Modal / Page — `/medicines/view/[id]`
 
-> **Status:** UI built (modal + full-page fallback). Server actions pending.
+> **Status:** Built — `getMedicineDetail` / CRUD in `lib/actions/medicines.ts` (admin + doctor only; see `lib/permissions.ts`).
 
 ### Layout
 `MedicineDetailPanel` uses **`DetailPanel`** + **`DetailForm`**:
@@ -495,7 +491,6 @@ The clinical notes field in the right column is a freeform textarea backed by `p
   {
     id:                 string;
     name:               string;
-    sku:                string;
     category:           string;
     brand:              string;
     form:               string;
@@ -508,24 +503,24 @@ The clinical notes field in the right column is a freeform textarea backed by `p
   }
   ```
 - **Security:** Verify `clinic_id = session.clinicId`.
-- **RBAC:** All roles.
+- **RBAC:** Admin and Doctor only.
 
 #### `updateMedicine(id, data)`
 - **Input:** `id`, `UpdateMedicineInput` (from `lib/validators/medicine.ts`), `clinicId` from session
 - **Validates:** `{ name, category, brand, form, lastPrescribedDate?, description? }`
 - **Enforces:** `clinicId` and `createdBy` are immutable
-- **RBAC:** Doctor and Admin only (Staff cannot edit).
+- **RBAC:** Admin and Doctor only.
 
 #### `deactivateMedicine(id)` *(soft delete)*
 - **Input:** `id`, `clinicId` from session
 - **Action:** `SET is_active = false`
-- **RBAC:** Doctor and Admin only.
+- **RBAC:** Admin and Doctor only.
 
 ---
 
 ## 13. New Medicine Modal / Page — `/medicines/new`
 
-> **Status:** UI built (form modal + full-page fallback). Server actions pending.
+> **Status:** Built — `createMedicine` in `lib/actions/medicines.ts` + `lib/validators/medicine.ts`.
 
 ### Form Fields
 | Field | Required | DB Column | Validation |
@@ -547,13 +542,13 @@ The clinical notes field in the right column is a freeform textarea backed by `p
   - Sets `clinicId = session.clinicId`
   - Sets `is_active = true`
 - **Returns:** `{ id }` — client navigates to `/medicines/view/${id}`
-- **RBAC:** All roles (Staff can add, but cannot edit or delete).
+- **RBAC:** Admin and Doctor only.
 
 ---
 
 ## 14. Medicines Reports — `/medicines/reports`
 
-> **Status:** UI built (placeholder). Contains a placeholder view for Phase 3.
+> **Status:** UI built (placeholder only). No reporting backend yet.
 
 ---
 
@@ -600,7 +595,7 @@ This flow spans multiple pages and is described here once.
 
 The activity log appears in: Appointment Detail, Patient Detail, Medicine Detail.
 
-In Phase 3 this will be a real `audit_log` table. For now it is mock data.
+When an `audit_log` (or equivalent) table exists, wire real rows into `EventLog` / detail sidebars. Until then, activity areas may be empty or placeholder data.
 
 ### Planned Schema (`audit_log`)
 ```
@@ -709,9 +704,9 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [x] `lib/auth/rbac.ts` — `ForbiddenError` class + `requireRole(session, allowed[])`. Throws `ForbiddenError` if `session.user.type` is not in `allowed`. All server actions call this before any DB work.
 
 ### Step 4 — Shared Supporting Actions (no UI dependency)
-- [x] `getActivePatients()` — patients action file
-- [x] `getActiveDoctors()` — appointments action file
-- [ ] `appendActivityLog()` — pending (audit_log table not yet built)
+- [x] `getActivePatients()` — **`lib/actions/patients.ts`** (canonical); also `export` from `lib/actions/appointments.ts` for routes that batch with `getActiveDoctors`)
+- [x] `getActiveDoctors()` — `lib/actions/appointments.ts`
+- [ ] `appendActivityLog()` — not implemented (`audit_log` / activity persistence not yet built)
 
 ### Step 5 — Page Actions (build in this order)
 
@@ -719,8 +714,8 @@ Create or complete validators in `lib/validators/`. These are the single source 
    - [x] `getMedicines`
    - [x] `getMedicineDetail`
    - [x] `createMedicine`
-   - [x] `updateMedicine` — roles: `["admin", "doctor", "staff"]`
-   - [x] `deactivateMedicine` — roles: `["admin", "doctor", "staff"]`
+   - [x] `updateMedicine` — roles: `["admin", "doctor"]`
+   - [x] `deactivateMedicine` — roles: `["admin", "doctor"]`
 
 2. **Patients**
    - [x] `getPatients`
@@ -749,4 +744,4 @@ Create or complete validators in `lib/validators/`. These are the single source 
 ### Step 6 — Wire UI to Actions
 Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.
 
-**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` / `getActiveDoctors` where applicable) and passed as props so selects are populated on first paint.
+**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` / `getActiveDoctors` where applicable — both may be imported from `@/lib/actions/appointments`; `getActivePatients` is implemented in `patients.ts` and re-exported) and passed as props so selects are populated on first paint.

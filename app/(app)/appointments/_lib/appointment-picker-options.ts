@@ -1,5 +1,6 @@
 /**
  * Maps `getActivePatients` / `getActiveDoctors` action results to DetailForm select options.
+ * Both actions are imported from `@/lib/actions/appointments` (`getActivePatients` is implemented in `patients.ts` and re-exported).
  * Used by server entry points; keeps mapping logic in one place.
  */
 

@@ -97,7 +97,7 @@ A single reusable `<UploadDocumentDialog />` component used in both contexts.
 **Error handling:**
 - If presigned URL generation fails — show a Sonner toast error, do not proceed
 - If Minio PUT fails — show a Sonner toast error, do not call `saveDocumentMetadata`
-- If metadata save fails — show a Sonner toast error, note that the file is in storage but untracked (acceptable for MVP)
+- If metadata save fails — show a Sonner toast error, note that the file is in storage but untracked (operational follow-up may be needed)
 - Show upload progress if possible (track via `XMLHttpRequest` or fetch with `ReadableStream`)
 
 ---

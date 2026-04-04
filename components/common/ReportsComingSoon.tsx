@@ -22,7 +22,7 @@ export function ReportsComingSoon({ title, subtitle }: ReportsComingSoonProps) {
           className="flex items-center justify-center h-64 rounded-xl border-2 border-dashed"
           style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}
         >
-          <p className="text-sm">Reports — coming in Phase 3</p>
+          <p className="text-sm">Reports — coming soon</p>
         </div>
       </div>
     </div>

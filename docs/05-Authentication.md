@@ -7,11 +7,11 @@ This document covers the authentication strategy, session shape, middleware, and
 ## 1. Strategy Overview
 
 - **Provider:** Better-Auth with Drizzle adapter
-- **Method:** Email + password only (MVP). OAuth is deferred post-MVP.
+- **Method:** Email + password only. OAuth is not implemented (future if needed).
 - **Session type:** Database-backed sessions (not JWT)
 - **Session cookie cache:** Better-Auth `session.cookieCache` is enabled (5-minute `maxAge`) so repeated session validation avoids hitting the database on every request when the signed cookie cache is still valid.
 - **Session expiry:** 7 days
-- **Password reset:** Not implemented in MVP
+- **Password reset:** Not implemented yet
 - **Multi-tenancy:** Clinic context is resolved from subdomain, not from user input
 
 ---
@@ -275,7 +275,7 @@ export async function createPatient(input: CreatePatientInput) {
 - On success: redirect to `/home/dashboard`
 - On failure: show inline error message — do not use a toast for auth errors, show them next to the form
 - No "remember me" toggle — session is always 7 days
-- No "forgot password" link in MVP — can be added later as a single isolated feature
+- No "forgot password" link yet — can be added later as a single isolated feature
 - The login page must be the only page accessible without a session
 
 ---
@@ -401,6 +401,6 @@ Auth integration is complete. All items below are done.
 - [x] `components/common/RoleGate.tsx` — declarative permission-gating component
 - [x] `app/(app)/layout.tsx` — `AppSessionProvider` wraps the app tree (no extra server calls)
 
-**Remaining (post-MVP):**
+**Not implemented yet:**
 - [ ] Password reset flow
 - [ ] Email verification

@@ -27,7 +27,7 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 ### Shared / System Tables
 - **`clinics`**: The tenant record. Provides the boundary.
   - Key fields: `id` (uuid), `subdomain` (unique), `name`
-  - Local/staging provisioning: `scripts/seed.ts` (`pnpm tsx scripts/seed.ts` — see `docs/11-Environments-and-Dev-Workflow.md`)
+  - Local/staging provisioning: `scripts/seed.ts` (`pnpm db:seed` / `pnpm tsx scripts/seed.ts` — see `docs/10-Environments-and-Dev-Workflow.md`)
 
 ### Better-Auth Auth Tables
 *(Extended with `clinic_id`)*

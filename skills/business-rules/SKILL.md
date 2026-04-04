@@ -12,7 +12,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Canonical lists:** Appointment status/type and patient gender values are defined once in `lib/constants/` and reused by Zod and Drizzle — do not duplicate literals elsewhere.
 - **User Roles:** `admin`, `doctor`, `staff`. (There is no default role; it must be explicitly set on creation).
 - **Patient Status:** Evaluated purely by the `is_active` boolean field (maps to active or inactive).
-- **Appointment Statuses:** `scheduled`, `completed`, `cancelled`, `no-show`. (Default on creation is `scheduled`. In MVP, any transition between statuses is freely permitted).
+- **Appointment Statuses:** `scheduled`, `completed`, `cancelled`, `no-show`. (Default on creation is `scheduled`. Any transition between statuses is currently permitted.)
 - **Appointment Types:** `general`, `follow-up`, `emergency`.
 - **Document Mime Types:** Accepted types are limited to `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - **Document clinic-boundary:** `confirmDocumentUpload` must verify `assignedToId` belongs to the session `clinicId` before inserting. Query `patients` for `assignedToType: "patient"`, `users` for `"user"`.
@@ -38,7 +38,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Soft vs. Hard Deletes:**
   - Users, Patients, Appointments, and Medicines are **never** hard-deleted (`is_active = false`).
   - **Documents** are the exception: They are hard-deleted. If deleting the S3 object fails remotely, the database record must NOT be deleted. (Treat S3 and DB deletion as a unified transaction).
-- **Actual time:** UI sends time-only; server stores full `actual_check_in` using the server calendar day (`new Date()` — no clinic TZ in MVP). Optional; end-of-visit implied by `duration` (no check-out column).
+- **Actual time:** UI sends time-only; server stores full `actual_check_in` using the server calendar day (`new Date()` — no per-clinic TZ yet). Optional; end-of-visit implied by `duration` (no check-out column).
 - **Uniqueness Limits:** Medicine names are **not uniquely constrained**. The exact same drug can exist multiple times. (This is intentional — clinics may stock multiple brands or formulations of the same drug.)
 
 ## ❌ DO NOT

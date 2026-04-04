@@ -3,7 +3,8 @@
 This document outlines the enterprise-grade technical foundation for the Clinicforce SaaS platform. The stack is optimized for maximum type safety, scalability, and developer control, moving away from "magic" platforms in favor of explicit, portable architecture.
 
 ## 1. Core Frameworks & Language
-*   **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
+*   **Framework:** [Next.js 15](https://nextjs.org/) (App Router; `pnpm dev` / `pnpm build` use Turbopack)
+*   **UI:** [React 19](https://react.dev/)
 *   **Language:** [TypeScript](https://www.typescriptlang.org/) (Strict mode enabled)
 *   **Runtime:** Node.js 20+
 
@@ -14,19 +15,23 @@ This document outlines the enterprise-grade technical foundation for the Clinicf
 *   **Authentication:** [Better-Auth](https://www.better-auth.com/)
     *   *Strategy:* Database-session based.
     *   *Integration:* Drizzle-adapter.
-*   **Validation:** [Zod](https://zod.dev/)
-    *   Used for form validation, API request parsing, and shared schema definitions with Drizzle.
+*   **Validation:** [Zod 4](https://zod.dev/)
+    *   Used for form validation, server action input, and shared schemas under `lib/validators/`.
     *   **Shared enums:** String lists that must match PostgreSQL enums and UI types live in `lib/constants/` (`as const`, no Zod). Validators import them for `z.enum()`; Drizzle `pgEnum()` uses the same arrays — avoids drift between DB, Zod, and `types/`.
 *   **File Storage:** S3 Compatible Storage
     *   *Local:* [Minio](https://min.io/) (via Docker Compose)
     *   *Client SDK:* AWS SDK v3 (S3 Client)
 
 ## 3. UI & Frontend
-*   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+*   **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
 *   **Component Library:** [Shadcn/UI](https://ui.shadcn.com/) (Radix UI)
 *   **Icons:** [Lucide React](https://lucide.dev/)
-*   **Calendar:** [FullCalendar React](https://fullcalendar.io/docs/react)
+*   **Command palette:** [cmdk](https://cmdk.paco.me/) (global search dialog)
+*   **Motion:** [Framer Motion](https://www.framer.com/motion/) (select transitions)
+*   **Calendar:** [FullCalendar React](https://fullcalendar.io/docs/react); date pickers via **react-day-picker** / Shadcn Calendar
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) + Zod integration.
+*   **URL state:** [nuqs](https://nuqs.47ng.com/)
+*   **Toasts:** [Sonner](https://sonner.emilkowal.ski/)
 
 ## 4. Development Environment (Local)
 *   **Containerization:** `docker-compose.yml` for PostgreSQL and Minio.

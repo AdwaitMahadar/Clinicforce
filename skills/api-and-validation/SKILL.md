@@ -76,6 +76,7 @@ The general pattern for every action follows the anatomy above:
 - **Appointment mutations** (`createAppointment`, `updateAppointment`, `deleteAppointment`): After success, call **`revalidatePath("/appointments/dashboard")`**; client detail panels call **`router.refresh()`** after create/update/cancel so the calendar stays in sync.
 - **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
 - **Global search**: `searchGlobal` in `lib/actions/search.ts` — validate with `searchGlobalQuerySchema` (`lib/validators/search.ts`); parallel `LIMIT 5` queries per entity, all scoped by `clinicId`; return type `GroupedSearchResults` in `types/search.ts`.
+- **Appointment pickers:** `getActivePatients()` is implemented only in `lib/actions/patients.ts` and **re-exported** from `lib/actions/appointments.ts` next to `getActiveDoctors()` — import both from `@/lib/actions/appointments` in appointment routes; do not duplicate the action body.
 
 ## Detail Mapper Pattern
 

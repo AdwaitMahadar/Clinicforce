@@ -52,6 +52,8 @@ Create/update payloads use **`scheduledDate`** (`YYYY-MM-DD`) and **`scheduledTi
 
 After a successful **`createAppointment`**, **`updateAppointment`**, or **`deleteAppointment`** (soft cancel), the action calls **`revalidatePath("/appointments/dashboard")`** so the appointments calendar server cache matches the database. Detail/create UIs also call **`router.refresh()`** after mutations (aligned with the patients detail panel) so the calendar updates without a full page reload.
 
+**Picker helpers:** `getActiveDoctors()` lives in `lib/actions/appointments.ts`. **`getActivePatients()`** is implemented in **`lib/actions/patients.ts`** (single source of truth) and **re-exported** from `lib/actions/appointments.ts` so appointment routes can `Promise.all` both pickers from `@/lib/actions/appointments`. RBAC: `requireRole(session, ["admin", "doctor", "staff"])` on both.
+
 ## Patients (`lib/actions/patients.ts`)
 
 **`getPatients`** (via `lib/db/queries/patients.ts`): each list row includes **`status: "active" | "inactive"`** derived from `patients.is_active`. The list payload does **not** include `isActive`; dashboard and other consumers must map **`row.status`** into UI types (`types/patient.ts` `PatientRow`). **`getPatientDetail`** / `getPatientById` still expose `isActive` on the full detail aggregate. Full column contract: `docs/07-Page-Specifications.md` (Patients dashboard).

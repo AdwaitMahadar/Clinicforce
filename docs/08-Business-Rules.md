@@ -82,11 +82,11 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - `createdBy` is set to the authenticated user's ID at creation and is immutable.
 
 ### Status Transitions
-In the MVP, all status transitions are permitted freely. Any status can be changed to any other status without restriction.
+Currently, all appointment status transitions are permitted freely. Any status can be changed to any other status without restriction.
 
 Valid statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `lib/constants/appointment.ts` — single source with DB + Zod)
 
-Future versions may enforce transition logic (e.g. preventing a `completed` appointment from returning to `scheduled`), but this is explicitly out of scope for MVP.
+Future versions may enforce transition logic (e.g. preventing a `completed` appointment from returning to `scheduled`).
 
 ### Editing
 - All roles can edit appointments.
@@ -100,8 +100,8 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - Documents linked to an inactive appointment via `appointmentId` remain accessible through the patient's document list.
 
 ### Actual time
-- `actual_check_in` is an optional timestamp for when the patient was seen. The UI collects **time only**; server actions combine it with the **server’s current calendar day** (`new Date()` — no clinic timezone handling in MVP).
-- No validation is enforced between scheduled time and actual time in MVP.
+- `actual_check_in` is an optional timestamp for when the patient was seen. The UI collects **time only**; server actions combine it with the **server’s current calendar day** (`new Date()` — no per-clinic timezone handling yet).
+- No validation is enforced between scheduled time and actual time beyond business rules above.
 
 ---
 
@@ -129,20 +129,23 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ## 6. Medicine Rules
 
+### Access
+- **Admin** and **Doctor** can list, create, edit, and deactivate medicines (`requireRole(session, ["admin", "doctor"])` in `lib/actions/medicines.ts`; UI: `viewMedicines` et al. in `lib/permissions.ts`).
+- **Staff** has **no** medicines module access (top nav hidden, routes redirect, actions return forbidden).
+
 ### Creation
-- All roles can create, edit, and deactivate medicines.
 - Medicine names are **not required to be unique** — the same drug can exist multiple times with different details (e.g. different brand, different form).
 - The medicine's `id` (UUID) is unique within the clinic. The `name` field has no uniqueness constraint.
 
 ### `lastPrescribedDate`
-- This field is **manually updated** in MVP — there is no automatic trigger.
-- It can be updated by any role when recording that a medicine was prescribed.
+- This field is **manually updated** — there is no automatic trigger from prescribing workflows yet.
+- It is editable by **admin** and **doctor** when maintaining the catalog.
 - It is nullable — a medicine with no `lastPrescribedDate` has simply never been recorded as prescribed.
 
 ### Deactivation
 - Medicines are soft-deleted via `isActive = false`.
 - Inactive medicines are hidden from the default medicine list and from any medicine pickers in forms.
-- All roles can deactivate a medicine.
+- **Admin** and **Doctor** can deactivate a medicine.
 
 ---
 
@@ -176,12 +179,12 @@ The following matrix defines what each role can do at the server layer. UI hidin
 | View documents | ✓ | ✓ | ✓ |
 | Upload document | ✓ | ✓ | ✓ |
 | Delete document | ✗ | ✓ | ✓ |
-| View medicines | ✓ | ✓ | ✓ |
-| Add medicine | ✓ | ✓ | ✓ |
-| Edit medicine | ✓ | ✓ | ✓ |
-| Deactivate medicine | ✓ | ✓ | ✓ |
+| View medicines | ✗ | ✓ | ✓ |
+| Add medicine | ✗ | ✓ | ✓ |
+| Edit medicine | ✗ | ✓ | ✓ |
+| Deactivate medicine | ✗ | ✓ | ✓ |
 
-**Enforcement rule:** Every server action must call a role-check helper at the top of the function before any database operation. If the role check fails, throw an `Unauthorized` error immediately.
+**Enforcement rule:** Every server action must call a role-check helper (`requireRole` in `lib/auth/rbac.ts`) at the top of the function before any database operation. On failure, actions return a forbidden result or throw per the action’s contract — never proceed without a check. Canonical named capabilities: `lib/permissions.ts`.
 
 ---
 

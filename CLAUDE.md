@@ -9,11 +9,13 @@
 
 **Clinicforce** is a multi-tenant SaaS **Clinic Management System (CMS)** for small healthcare practices. It is **staff-only** — no patient portal. The app centralizes patient records, appointment scheduling, and document management, replacing paper-based workflows.
 
-**Scope constraints (MVP):**
+**Product stage:** Baseline CMS features are **shipped**; the codebase is in **active maintenance and feature expansion** for small clinics (same non-goals until deliberately changed).
+
+**Scope constraints (current):**
 - No patient self-service or external-facing portal
 - No automated booking or patient notifications
 - No prescription/report generation (documents are uploaded, not generated)
-- Medicines module is a reference library only (future automation hook)
+- Medicines module remains a reference library (future automation hook)
 
 ---
 
@@ -32,7 +34,7 @@ Read the relevant doc before working on any area. These are the authoritative so
 | `docs/07-Page-Specifications.md` | Per-page layout and feature requirements |
 | `docs/08-Business-Rules.md` | Validation rules, constraints, edge cases |
 | `docs/09-File-Upload-Flow.md` | Document upload, S3/Minio presigned URL flow |
-| `docs/10-Development-Phases.md` | Build order and current progress |
+| `docs/10-Environments-and-Dev-Workflow.md` | Local/staging/prod, env vars, migrations, seed, hosting |
 
 ---
 
@@ -40,13 +42,15 @@ Read the relevant doc before working on any area. These are the authoritative so
 
 | Area | Choice |
 |---|---|
-| Framework | Next.js 15 App Router, TypeScript strict mode |
+| Framework | Next.js 15 App Router, TypeScript strict mode; `pnpm dev` / `pnpm build` use **Turbopack** |
+| UI runtime | React 19 |
 | Database | PostgreSQL + Drizzle ORM |
 | Auth | Better-Auth (Drizzle adapter, database sessions) |
-| Validation | Zod — schemas in `lib/validators/`, shared client ↔ server |
-| UI Base | Shadcn/UI (Radix) + Tailwind CSS + Lucide icons |
+| Validation | Zod 4 — schemas in `lib/validators/`, shared client ↔ server |
+| UI Base | Shadcn/UI (Radix) + **Tailwind CSS 4** + Lucide icons |
+| Motion / cmdk | Framer Motion (select flows); cmdk (command palette) |
 | Tables | TanStack Table v8 — always server-side mode |
-| Calendar | Shadcn `<Calendar />` for date pickers; FullCalendar for time-grid views |
+| Calendar | Shadcn `<Calendar />` / react-day-picker for date pickers; FullCalendar for time-grid views |
 | Forms | React Hook Form + Zod |
 | Toasts | Sonner (not Shadcn's built-in toast) |
 | URL state | nuqs |
@@ -65,11 +69,11 @@ app/
     layout.tsx              ← AppShell: TopNav + SideNav + main content
     home/dashboard/         ← Clinic overview
     home/reports/           ← Clinic reports
-    appointments/dashboard/ ← Appointments calendar (Month/Week/Day views)
-    appointments/_components/ ← Appointment specific components
-    appointments/_lib/ ← Server helpers (picker option mapping, detail mapper, calendar-range.ts)
- patients/_lib/ ← Server helpers (patient detail mapper)
- medicines/_lib/ ← Server helpers (medicine detail mapper)
+    appointments/dashboard/     ← Appointments calendar (Month/Week/Day views)
+    appointments/_components/   ← Appointment-specific components
+    appointments/_lib/          ← Server helpers (picker options, detail mapper, calendar-range.ts)
+    patients/_lib/              ← Server helpers (patient detail mapper)
+    medicines/_lib/             ← Server helpers (medicine detail mapper)
     appointments/new/       ← New appointment page
     appointments/reports/   ← Appointments reports
     appointments/view/[id]/ ← Full-page appointment detail (direct URL fallback)
@@ -105,7 +109,7 @@ lib/
   validators/               ← Zod schemas (shared between forms and server actions); `common.ts` exports `idSchema` + `n()` helper (reused by all entity action files)
   auth/                     ← Better-Auth config; `session-context.tsx` — `AppSessionProvider` + `useAppSession()` + `usePermission()` client hooks (no extra server calls); `require-permission.ts` — `requirePermission(permission, redirectTo?)` server-side page guard (calls `getSession()` + `hasPermission()`, redirects if unauthorised, returns session)
   permissions.ts            ← `PERMISSIONS` map + `Permission` type + `hasPermission(role, permission)` — single source of truth for all UI role decisions; consumed by `usePermission` and `<RoleGate>`
-  utils/                    ← `chart-id.ts` — unified `formatChartId(value, entityType)` + thin wrappers `formatPatientChartId` (`#PT-`) / `formatStaffChartId` (`#STF-`); supports `'patient' | 'staff' | 'medicine' | 'user'` entity types (`#PT-` / `#STF-` / `#MED-` / `#USR-`); DB stores integers only
+  utils/                    ← `chart-id.ts` — `formatChartId(value, entityType)` plus `formatPatientChartId` / `formatStaffChartId`; `'medicine'` / `'user'` prefixes exist for `formatChartId` but **medicines have no `chart_id` in DB** — use chart formatting for patients and staff only in practice
   appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
 
 types/                      ← UI/view-model TypeScript types (patient, appointment, medicine, home)
@@ -132,6 +136,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
+- `ModalCloseButton.tsx` — Shared dialog/modal close control where a distinct control from `PanelCloseButton` is needed
 - `ReportsComingSoon.tsx` — Placeholder used by all four Reports pages; accepts `title` + `subtitle` props
 - `RoleGate.tsx` — Declarative permission gate: `<RoleGate permission="...">` renders children when the current user holds the permission, `fallback` (default `null`) otherwise; uses `usePermission` from `lib/auth/session-context`
 - `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, …, `DetailPageSkeleton`); **`ModalDetailPanelBodySkeleton`** for intercept modal inner **`Suspense`** fallbacks; **`ModalDetailSkeleton`** for rare full-modal + backdrop loading (`size` / `variant`)
@@ -142,7 +147,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 
 Two-axis matrix: **top navbar** (entity/domain) × **left sidebar** (view within domain).
 
-- **Top nav:** Home | Appointments | Patients | Medicines
+- **Top nav:** Home | Appointments | Patients | Medicines (**Medicines** hidden for **staff** — `usePermission("viewMedicines")` in `TopNav.tsx`)
 - **Side nav:** Dashboard | Reports
 - **Active state:** Driven by `usePathname()` — never managed manually
 - **Active item rule:** Only the active top-nav item shows its label; inactive items show icon only
@@ -165,8 +170,8 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - `clinicId` is never exposed in URLs or client state
 
 ### Identification
-- Never show raw UUIDs in the UI — use `chartId` only
-- `chartId` is unique per entity per clinic
+- In lists and labels, prefer **chart ids** for **patients** and **staff** (`#PT-…`, `#STF-…`); do not surface raw UUIDs as the primary identifier in the UI.
+- Numeric `chartId` is unique per **entity type** per clinic for **users** and **patients** (medicines have no chart id column).
 
 ### RBAC
 - Three roles: `admin` | `doctor` | `staff`
@@ -248,9 +253,10 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - Document upload: presigned URLs (`lib/actions/documents.ts`), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail
 
 **Not yet built (planned):**
-- All Reports views
+- All **Reports** views (placeholder UI only; no analytics backend yet)
+- **Home** “Recent activity” / global **audit log** (UI shell `EventLog` exists; data is empty until an `audit_log` table and actions exist)
 
-> For build order and phase breakdown → `docs/10-Development-Phases.md`
+> Environments, migrations, seed, and hosting → `docs/10-Environments-and-Dev-Workflow.md`
 
 ---
 

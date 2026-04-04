@@ -4,7 +4,7 @@
  * Zod schema for the patient form (create + update).
  * Single source of truth for validation — used by:
  *   - <PatientDetailPanel> component (client-side React Hook Form)
- *   - Server actions: createPatient, updatePatient (Phase 3 — server-side enforcement)
+ *   - Server actions: createPatient, updatePatient (`lib/actions/patients.ts`)
  *
  * Rule: Never define validation inline in a component. Always import from here.
  * Rule: Never include clinicId, createdBy, createdAt, updatedAt, or id in create schemas.

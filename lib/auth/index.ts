@@ -16,7 +16,7 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // disable for internal staff app MVP
+    requireEmailVerification: false, // internal staff-only app; no verification flow yet
   },
 
   session: {

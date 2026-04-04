@@ -1,4 +1,4 @@
-# 11 — Environments & Development Workflow
+# 10 — Environments & Development Workflow
 
 This document defines the three-environment model for Clinicforce, how each environment is configured, and the rules for working across them.
 
@@ -19,7 +19,7 @@ This document defines the three-environment model for Clinicforce, how each envi
 ## 2. Local Environment
 
 ### What runs locally
-- Next.js dev server (`pnpm dev`) on `localhost:3000`
+- Next.js dev server (`pnpm dev` — Turbopack) on `localhost:3000`
 - PostgreSQL via Docker Compose
 - Minio (S3-compatible) via Docker Compose
 
@@ -62,21 +62,29 @@ Modern browsers resolve `*.localhost` automatically — no `/etc/hosts` changes 
 
 ### Running migrations locally
 ```bash
-pnpm drizzle-kit migrate
+pnpm db:migrate
 ```
-This runs against your local Docker Postgres (via `DATABASE_URL` in `.env.local`). Run this every time you add or change a schema file.
+This runs `drizzle-kit migrate` against your local Docker Postgres (via `DATABASE_URL` in `.env.local`). Run this every time you add or change a schema file after generating a migration.
+
+### Generating a new migration (after schema edits)
+```bash
+pnpm db:generate
+```
+Creates SQL under `lib/db/migrations/`; then run `pnpm db:migrate` to apply locally.
 
 ### Seed script (`scripts/seed.ts`)
 
 Edit the **SEED CONFIG** block at the top of the file, then run:
 
 ```bash
-pnpm tsx scripts/seed.ts list-clinics   # inspect tenant rows
-pnpm tsx scripts/seed.ts list-users     # inspect staff users + clinic
+pnpm db:seed list-clinics   # inspect tenant rows
+pnpm db:seed list-users     # inspect staff users + clinic
 
-pnpm tsx scripts/seed.ts clinic         # insert one clinic row
-pnpm tsx scripts/seed.ts user            # Better-Auth sign-up, then Drizzle patch for clinicId / type / chartId, etc.
+pnpm db:seed clinic         # insert one clinic row
+pnpm db:seed user           # Better-Auth sign-up, then Drizzle patch for clinicId / type / chartId, etc.
 ```
+
+(Equivalent: `pnpm tsx scripts/seed.ts <command>`.)
 
 - Loads `.env.local` by default (`DATABASE_URL`, `BETTER_AUTH_SECRET`, …). Override `DATABASE_URL` on the command line to point at Neon or another DB without editing the file.
 - **Users:** created via `auth.api.signUpEmail` (password hashing + `accounts` row), then `users` is updated with `clinicId`, `firstName`, `lastName`, `type`, `chartId`, etc. Do not insert passwords directly into SQL.
@@ -134,7 +142,7 @@ DATABASE_URL="..." S3_ENDPOINT="..." pnpm dev
 
 ### Running migrations against Neon staging
 ```bash
-DATABASE_URL="<neon staging connection string>" pnpm drizzle-kit migrate
+DATABASE_URL="<neon staging connection string>" pnpm db:migrate
 ```
 
 ---
@@ -174,7 +182,7 @@ Never run migrations against production from your local machine unless it is an 
 4. Run the migration against Neon production:
 
 ```bash
-DATABASE_URL="<neon production connection string>" pnpm drizzle-kit migrate
+DATABASE_URL="<neon production connection string>" pnpm db:migrate
 ```
 
 ---
@@ -204,12 +212,12 @@ The clinic is immediately live at `medlife.clinicforce.app` — no DNS changes, 
 ### Via seed script (recommended for repeatability)
 Use `scripts/seed.ts` (see §2 Local — Seed script). Example:
 ```bash
-DATABASE_URL="<neon production connection string>" pnpm tsx scripts/seed.ts clinic
-DATABASE_URL="<neon production connection string>" pnpm tsx scripts/seed.ts user
+DATABASE_URL="<neon production connection string>" pnpm db:seed clinic
+DATABASE_URL="<neon production connection string>" pnpm db:seed user
 ```
 
 ### After creating the clinic
-You also need to create the first admin user for that clinic so staff can log in. Prefer `pnpm tsx scripts/seed.ts user` (Better-Auth `signUpEmail` + Drizzle update for `clinicId` / RBAC). Do not insert raw passwords into the `accounts` table directly.
+You also need to create the first admin user for that clinic so staff can log in. Prefer `pnpm db:seed user` (Better-Auth `signUpEmail` + Drizzle update for `clinicId` / RBAC). Do not insert raw passwords into the `accounts` table directly.
 
 ---
 
@@ -217,12 +225,12 @@ You also need to create the first admin user for that clinic so staff can log in
 
 | Situation | Command | Target |
 |---|---|---|
-| Local schema change | `pnpm drizzle-kit migrate` | Docker Postgres |
-| Test migration on staging | `DATABASE_URL="<staging>" pnpm drizzle-kit migrate` | Neon staging |
-| Ship to production | `DATABASE_URL="<production>" pnpm drizzle-kit migrate` | Neon production |
-| Generate new migration file | `pnpm drizzle-kit generate` | Creates file only, no DB change |
+| Local schema change | `pnpm db:migrate` | Docker Postgres |
+| Test migration on staging | `DATABASE_URL="<staging>" pnpm db:migrate` | Neon staging |
+| Ship to production | `DATABASE_URL="<production>" pnpm db:migrate` | Neon production |
+| Generate new migration SQL | `pnpm db:generate` | Creates files only, no DB change |
 
-**Never** run `drizzle-kit push` against production — always use `migrate` with explicit migration files so changes are tracked and reversible.
+**Never** run `pnpm db:push` against production — always use `db:migrate` with explicit migration files so changes are tracked and reversible. (`db:push` is acceptable for fast local iteration only when you understand it bypasses migration history.)
 
 ---
 

@@ -392,7 +392,7 @@ export function LoginPageClient({ clinicBrand }: LoginPageClientProps) {
               className="text-xs"
               style={{ color: "var(--color-text-secondary)" }}
             >
-              v1.0.0 MVP
+              v1.0.0
             </span>
           </div>
           <div className="flex flex-col">

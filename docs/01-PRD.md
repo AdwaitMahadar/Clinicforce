@@ -5,22 +5,25 @@
 
 ---
 
-## 2. Project Scope & Constraints
-To maintain a focused MVP (Minimum Viable Product), the following scope constraints are defined:
+## 2. Project Scope & Product Stage
+The **baseline product** is shipped: core clinic workflows (patients, appointments, documents, medicines library, staff auth, multi-tenant hosting) are in production use for small practices. Ongoing work is **feature growth, polish, and maintenance**, not greenfield MVP build.
 
-*   **Internal Access Only**: The application is strictly for clinic staff (Admin, Doctors, Staff). There is no patient-facing portal or self-service scheduling.
-*   **Document Management**: The system does not generate prescriptions or reports. It provides a centralized repository for uploading and viewing externally generated digital files.
-*   **Manual Scheduling**: Appointments are managed manually by staff; the system does not include automated booking logic or patient notifications at this stage.
-*   **Medicine Library**: The Medicines module serves as a reference library and data builder for future automation.
+The following **scope constraints** still apply (until explicitly changed):
+
+*   **Internal access only**: The application is for clinic staff (Admin, Doctors, Staff). There is no patient-facing portal or self-service scheduling.
+*   **Document management**: The system does not generate prescriptions or reports. It provides a centralized repository for uploading and viewing externally generated digital files.
+*   **Manual scheduling**: Appointments are managed manually by staff; there is no automated booking logic or patient notifications yet.
+*   **Medicine library**: The Medicines module is a reference directory (future hook for in-app prescribing or automation).
 
 ---
 
 ## 3. Core Concepts & Business Logic
 
 ### 3.1 Identification System (ChartId)
-Every User and Patient is assigned a **ChartId**, a unique 3-to-6 digit user-friendly identifier (e.g., `1001`). 
-*   Unlike system-generated UUIDs, ChartIds are visible in the UI for ease of reference by staff.
-*   They must be unique within their respective entities.
+**Staff users** and **patients** are assigned a numeric **ChartId** (see `docs/08-Business-Rules.md` for ranges and uniqueness rules): short, human-friendly IDs shown in the UI (e.g. `#STF-472`, `#PT-38291`).
+*   ChartIds are **unique per clinic** for that entity type (not globally).
+*   **Medicines** do not have a `chart_id` column; list and detail UIs use name/category and URLs use the row UUID like other entities without a display chart id.
+*   Internal UUIDs remain the primary keys for relations; staff normally see chart ids, not raw UUIDs, for patients and colleagues.
 
 ### 3.2 Document Attachment
 Documents (Prescriptions, Lab Reports, X-Rays, etc.) are highly flexible:
@@ -35,17 +38,22 @@ Appointments track the complete lifecycle of a patient visit, including schedule
 
 ## 4. User Roles & Permissions
 
-The system utilizes Role-Based Access Control (RBAC) across three primary personas:
+RBAC is enforced in **server actions** (`requireRole` in `lib/auth/rbac.ts`) and reflected in the UI via **`lib/permissions.ts`** (`PERMISSIONS`, `hasPermission`, `usePermission`, `<RoleGate>`). The table below matches the **implemented** permission map.
 
-| Feature | Staff (Receptionist) | Doctor | Admin |
+| Capability | Staff | Doctor | Admin |
 | :--- | :---: | :---: | :---: |
-| **Users Management** | - | - | Full CRUD |
-| **Appointments** | Full CRUD | Full CRUD | Full CRUD |
-| **Patients** | View / Add / Edit | Full CRUD | Full CRUD |
-| **Documents** | View / Add | Full CRUD | Full CRUD |
-| **Medicines** | Full CRUD | Full CRUD | Full CRUD |
+| **Manage users** (create/update/deactivate clinic users) | — | — | Yes |
+| **Appointments** — view / create / edit | Yes | Yes | Yes |
+| **Appointments** — delete (soft cancel) | Yes | Yes | Yes |
+| **Patients** — view / create / edit | Yes | Yes | Yes |
+| **Patients** — deactivate (“delete”) | — | Yes | Yes |
+| **Clinical notes** (patient + appointment `notes` field) | — | Yes | Yes |
+| **Detail sidebar** (tabs + activity area on detail views) | — | Yes | Yes |
+| **Documents** — view / upload | Yes | Yes | Yes |
+| **Documents** — edit metadata / delete | — | Yes | Yes |
+| **Medicines** — any access | — | Yes | Yes |
 
-*Note: "Full CRUD" includes Create, Read, Update, and Delete. Staff cannot delete patients or documents, but have full access to medicines and appointments.*
+*Staff (receptionist) has **no** Medicines top-nav or routes: `viewMedicines` and related permissions are **admin + doctor** only.*
 
 ---
 
@@ -65,7 +73,7 @@ Individual medical records for clinic clients.
 
 ### 5.3 Appointments
 Records of clinical consultations or procedures.
-*   **Status**: Pending, Completed, Cancelled, No-Show.
+*   **Status**: Scheduled, Completed, Cancelled, No-show (see DB enum / `docs/08-Business-Rules.md`).
 *   **Types**: General, Follow-up, Emergency.
 *   **Tracking**: Doctor/Patient links, Date/Time, Duration, Actual Check-in/out times.
 *   **Notes**: Post-appointment summary or clinical notes.

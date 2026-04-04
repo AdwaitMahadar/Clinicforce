@@ -21,6 +21,7 @@ Use this table to determine exactly which files need to be updated based on the 
 | A server action or Zod schema pattern | `docs/04-API-Specification.md` | `skills/api-and-validation/SKILL.md` |
 | A business rule, status enum, or validation rule | `docs/08-Business-Rules.md` | `skills/business-rules/SKILL.md` |
 | The file upload or pre-signed URL flow | `docs/09-File-Upload-Flow.md` | `skills/file-upload/SKILL.md` |
+| Environments, migrations, seed, hosting, env vars | `docs/10-Environments-and-Dev-Workflow.md` | `skills/schema-and-data/SKILL.md`, `skills/auth-and-rbac/SKILL.md` |
 | Project structure, built/planned status, or component inventory | `CLAUDE.md` | `skills/ui-and-components/SKILL.md` |
 
 ## 🔄 Step-by-Step Propagation Process

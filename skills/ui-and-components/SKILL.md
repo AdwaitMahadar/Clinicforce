@@ -83,7 +83,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` (with `getActivePatients`/`getActiveDoctors`; **view** uses `Promise.all` with `getAppointmentDetail`); **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
+    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` via `getActivePatients` / `getActiveDoctors` (import both from `@/lib/actions/appointments`; `getActivePatients` is implemented in `patients.ts` and re-exported); **view** uses `Promise.all` with `getAppointmentDetail`; **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).

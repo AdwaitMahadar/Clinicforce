@@ -24,7 +24,6 @@ import {
   getAppointmentById,
   getActiveDoctors as queryGetActiveDoctors,
 } from "@/lib/db/queries/appointments";
-import { getActivePatients as queryGetActivePatients } from "@/lib/db/queries/patients";
 import {
   createAppointmentSchema,
   updateAppointmentSchema,
@@ -405,20 +404,5 @@ export async function getActiveDoctors() {
   }
 }
 
-// ─── getActivePatients ─────────────────────────────────────────────────────────
-
-/** Returns active patients for the appointment form patient picker. */
-export async function getActivePatients() {
-  try {
-    const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
-
-    const { clinicId } = session.user;
-    const data = await queryGetActivePatients(clinicId);
-    return { success: true as const, data };
-  } catch (err) {
-    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
-    console.error("[getActivePatients]", err);
-    return { success: false as const, error: "Failed to fetch active patients." };
-  }
-}
+/** Re-export: implementation lives in `lib/actions/patients.ts` (single source of truth). */
+export { getActivePatients } from "./patients";

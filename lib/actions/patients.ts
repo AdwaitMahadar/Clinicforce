@@ -244,7 +244,10 @@ export async function updatePatient(input: unknown) {
 
 // ─── getActivePatients ────────────────────────────────────────────────────────
 
-/** Returns active patients for the appointment form patient picker. */
+/**
+ * Active patients for select pickers (`is_active = true`).
+ * Re-exported from `lib/actions/appointments.ts` so appointment routes can `Promise.all` with `getActiveDoctors` from one import path.
+ */
 export async function getActivePatients() {
   try {
     const session = await getSession();
