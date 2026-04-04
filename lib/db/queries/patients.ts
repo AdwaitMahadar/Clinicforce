@@ -57,7 +57,7 @@ export interface PatientDetail {
   allergies: string | null;
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
-  notes: string | null;
+  pastHistoryNotes: string | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -276,7 +276,7 @@ export async function getPatientById(
       allergies: patients.allergies,
       emergencyContactName: patients.emergencyContactName,
       emergencyContactPhone: patients.emergencyContactPhone,
-      notes: patients.notes,
+      pastHistoryNotes: patients.pastHistoryNotes,
       isActive: patients.isActive,
       createdAt: patients.createdAt,
       updatedAt: patients.updatedAt,

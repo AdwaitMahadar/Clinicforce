@@ -83,11 +83,11 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` via `getActivePatients` / `getActiveDoctors` (import both from `@/lib/actions/appointments`; `getActivePatients` is implemented in `patients.ts` and re-exported); **view** uses `Promise.all` with `getAppointmentDetail`; **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
+    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` via `getActivePatients` (`@/lib/actions/patients`) and `getActiveDoctors` (`@/lib/actions/appointments`), or `loadAppointmentFormSelectOptions` in `appointments/_lib/appointment-picker-options.ts`; **view** uses `Promise.all` with `getAppointmentDetail`; **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).
-    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` (RHF + Zod): form column (all fields + clinical notes), sidebar tabs Documents | Appointments, activity log in sidebar bottom zone; create mode hides sidebar. After successful `createPatient`, modal closes via `back` + `refresh`; full-page new route pushes to `dashboard`.
+    *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` (RHF + Zod): DOB + Age sync via `PatientDobAgeSync` (`insideForm`); admin/doctor see **Patient's Past History** (`pastHistoryNotes`); sidebar tabs Documents | Appointments; create hides sidebar. List row subtitle: **phone** under name. Intercepting modal: `NewPatientModalClient` / `PatientViewModalClient` pass `onClose` → successful **create** or **update** runs `router.back()` + `refresh` (full-page routes keep the URL; no auto-back).
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
     *   `/dashboard`: DataTable (Search by name, filter by category/form); first column = category-mapped Lucide icon in `surface-alt` square + name/brand (same flex pattern as patients + `InitialsBadge`); row click → `/medicines/view/[id]` (intercepting modal).

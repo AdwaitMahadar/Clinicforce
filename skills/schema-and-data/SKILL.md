@@ -40,7 +40,7 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 *(Every business table has `id` (uuid) and `clinic_id` (uuid))*
 
 - **`patients`**:
-  - Key fields: `first_name`, `last_name`, `chart_id` (integer)
+  - Key fields: `first_name`, `last_name`, `chart_id` (integer), `date_of_birth`, `past_history_notes` (was `notes`; migration `0006_patient_past_history_notes`)
   - Relationships: Foreign key to `users` (`created_by`)
   - Unique index: `(clinic_id, chart_id)`
   - Performance index: B-Tree on `(clinic_id, last_name, first_name)`

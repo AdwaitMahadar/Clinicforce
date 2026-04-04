@@ -1,10 +1,11 @@
 /**
  * Maps `getActivePatients` / `getActiveDoctors` action results to DetailForm select options.
- * Both actions are imported from `@/lib/actions/appointments` (`getActivePatients` is implemented in `patients.ts` and re-exported).
+ * `getActivePatients` from `@/lib/actions/patients`; `getActiveDoctors` from `@/lib/actions/appointments`.
  * Used by server entry points; keeps mapping logic in one place.
  */
 
-import { getActiveDoctors, getActivePatients } from "@/lib/actions/appointments";
+import { getActiveDoctors } from "@/lib/actions/appointments";
+import { getActivePatients } from "@/lib/actions/patients";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import type { AppointmentSelectOption } from "@/types/appointment";
 

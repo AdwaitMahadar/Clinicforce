@@ -102,7 +102,7 @@ Better-Auth email/token verification records.
 - `emergency_contact_name`: `varchar(255)`
 - `emergency_contact_phone`: `varchar(20)`
 - `allergies`: `text`
-- `notes`: `text`
+- `past_history_notes`: `text` (patient past history; admin/doctor only in UI; staff payloads redacted)
 - `is_active`: `boolean` (Default: `true`)
 - `created_by`: `text` (References `users.id`)
 - `created_at`: `timestamp`

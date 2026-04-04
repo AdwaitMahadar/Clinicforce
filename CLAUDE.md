@@ -156,7 +156,7 @@ Routes follow `/{entity}/{view}` — all static segments. Root `/` redirects to 
 
 Detail records open as **intercepting route modals** (`@modal` parallel routes). Every entity also has a full-page fallback for direct URL / refresh access.
 
-Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). The patients list uses **`InitialsBadge`** before the name; the medicines list uses a **category-mapped Lucide icon** in a neutral rounded square (`MedicinesTable`, same flex layout pattern). Entity **detail/create** flows use **`DetailPanel`** + **`DetailForm`**; Save / Cancel sit in the **panel footer** (submit via `formRef`). After `createPatient` (and similar) succeeds, the modal **closes** (`router.back()` + `router.refresh()`), or the full-page new route **pushes to** `/patients/dashboard` — list refreshed via `revalidatePath` + refresh.
+Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable />` so a row navigates to `/patients/view/[id]` or `/medicines/view/[id]` (soft navigation opens the modal). The patients list uses **`InitialsBadge`** before the name; the medicines list uses a **category-mapped Lucide icon** in a neutral rounded square (`MedicinesTable`, same flex layout pattern). Entity **detail/create** flows use **`DetailPanel`** + **`DetailForm`**; Save / Cancel sit in the **panel footer** (submit via `formRef`). After `createPatient` or `updatePatient` succeeds in an intercepting modal, the panel **closes** (`router.back()` + `router.refresh()`); the full-page new route **pushes to** `/patients/dashboard` on create, and full-page **view** stays on the same URL with `router.refresh()` only.
 
 **CRITICAL — `/view/[id]` routing pattern:** Detail routes MUST use `/view/[id]` (e.g. `/appointments/view/abc-123`), never a bare `/[id]` (e.g. `/appointments/abc-123`). A bare `[id]` is a dynamic segment that matches ANY string — including `dashboard`, `new`, and `reports` — causing the `@modal` interceptor to match nav-bar clicks and freeze the page. The `/view/` sub-segment creates a separate namespace that can never conflict with static nav segments.
 
@@ -178,7 +178,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - UI hiding is for UX only — all server actions must enforce role checks independently
 - See `docs/01-PRD.md` for the full permission matrix
 - **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`), all pages redirect (`getSession()` + `redirect`), all server actions use `requireRole(session, ["admin", "doctor"])`
-- **Clinical notes — staff excluded:** `PatientDetailPanel` and `AppointmentDetailPanel` filter the `notes` form field when `usePermission("viewClinicalNotes")` returns false
+- **Clinical notes / patient past history — staff excluded:** `AppointmentDetailPanel` filters appointment `notes`; `PatientDetailPanel` filters `pastHistoryNotes` when `usePermission("viewClinicalNotes")` is false. Patient/appointment server actions also redact or ignore these fields for staff (see `docs/05-Authentication.md`).
 - **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
 
 ### Appointments

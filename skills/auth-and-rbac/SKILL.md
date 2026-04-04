@@ -134,10 +134,10 @@ const session = await requirePermission("manageUsers");
 | **Patients** | View / Create / Update | Full CRUD | Full CRUD |
 | **Documents** | View / Upload | Full CRUD | Full CRUD |
 | **Medicines** | **No access** | Full CRUD | Full CRUD |
-| **Clinical Notes** | **Hidden** | Full CRUD | Full CRUD |
+| **Appt. clinical notes + patient past history** | **Hidden + API redacted** | Full | Full |
 | **Detail Sidebar** | **Hidden** | Visible | Visible |
 
-Staff **cannot** delete patients or documents. Staff has **no access to medicines** (nav tab hidden, pages redirect, server actions reject with `requireRole(session, ["admin", "doctor"])`). Clinical notes fields (`notes`) are filtered from patient and appointment forms. The detail sidebar is hidden for staff — `DetailPanel` auto-hides it via `usePermission("viewDetailSidebar")`. `ModalDetailPanelBodySkeleton` applies the **same `noSidebar` logic** so the Suspense fallback skeleton matches the final rendered layout with no layout shift.
+Staff **cannot** delete patients or documents. Staff has **no access to medicines** (nav tab hidden, pages redirect, server actions reject with `requireRole(session, ["admin", "doctor"])`). Appointment `notes` and patient `pastHistoryNotes` are hidden in UI and **redacted/ignored in patient + appointment server actions** for staff. The detail sidebar is hidden for staff — `DetailPanel` auto-hides it via `usePermission("viewDetailSidebar")`. `ModalDetailPanelBodySkeleton` applies the **same `noSidebar` logic** so the Suspense fallback skeleton matches the final rendered layout with no layout shift.
 
 ### `requireRole()` Usage
 

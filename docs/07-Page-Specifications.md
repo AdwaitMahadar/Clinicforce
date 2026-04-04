@@ -189,7 +189,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ## 5. New Appointment Modal / Page — `/appointments/new`
 
-> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` (from `lib/actions/patients.ts`, re-exported `lib/actions/appointments.ts`) and `getActiveDoctors`.
+> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` (`lib/actions/patients.ts`) and `getActiveDoctors` (`lib/actions/appointments.ts`).
 
 ### Server Actions
 
@@ -227,7 +227,7 @@ Both needed to populate the patient and doctor pickers in the form:
 ### Table Columns
 | Column | DB Field | Sortable? | Filterable? |
 |---|---|---|---|
-| Patient (name + email) | `first_name`, `last_name`, `email` | ✓ by last_name | Search only |
+| Patient (name + phone subtitle) | `first_name`, `last_name`, `phone` | ✓ by last_name | Search only |
 | Chart ID | `chart_id` | — | Search only |
 | Last Visit | Derived from most recent appointment `scheduled_at` | ✓ | — |
 | Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
@@ -290,9 +290,10 @@ Both needed to populate the patient and doctor pickers in the form:
 ### Layout
 `PatientDetailPanel` uses `<DetailPanel />`:
 - **Header:** Initials badge, name, chart ID pill, status badge, close
-- **Form column:** `<DetailForm />` with all patient fields (including clinical notes textarea at the bottom). Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`
+- **Form column:** `<DetailForm />` with all patient fields, including **Date of Birth** and a synced **Age** field (UI-only; only DOB is stored) and, for admin/doctor, **Patient's Past History** (`pastHistoryNotes`) at the bottom. Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`. `PatientDobAgeSync` keeps DOB and age aligned inside the form (`DetailForm` `insideForm` slot).
 - **Sidebar:** `DetailSidebar` tabbed — Documents | Appointments (same list/upload behaviour as before). In **create** mode (`isCreate`), the sidebar column is hidden
 - **Activity log:** `events` prop on `DetailPanel` (always-visible bottom zone in the sidebar)
+- **After save:** On successful `updatePatient`, the **intercepting modal** closes via `onClose` (`router.back()`) + `router.refresh()` so the user returns to the patients table with the same URL state. The **full-page** `/patients/view/[id]` route stays on the same URL and only `router.refresh()` runs.
 
 ### Server Actions Needed
 
@@ -314,7 +315,7 @@ Both needed to populate the patient and doctor pickers in the form:
     allergies:             string | null;
     emergencyContactName:  string | null;
     emergencyContactPhone: string | null;
-    notes:                 string | null;   // clinical notes
+    pastHistoryNotes:      string | null;   // patients.past_history_notes (admin/doctor; null for staff)
     isActive:              boolean;
     createdAt:             string;
     createdBy:             string;   // display name
@@ -350,14 +351,14 @@ Both needed to populate the patient and doctor pickers in the form:
 - **Input:** `id`, patient form fields, `clinicId` from session
 - **Validates:** Zod schema (to be created at `lib/validators/patient.ts`)
 - **Enforces:**
-  - At least one of `email` or `phone` must be non-empty
+  - `phone` must be non-empty; `email` optional
+  - Either `dateOfBirth` (after trim) or `age` (UI) must be provided; server normalizes to `date_of_birth` only
   - `clinicId` and `createdBy` are immutable
-- **RBAC:** Doctor and Admin only (Staff cannot edit).
+- **RBAC:** All roles may submit; `pastHistoryNotes` is only applied for admin/doctor (see `docs/05-Authentication.md`).
 
-#### `getNoteForPatient(id)` / `saveNoteForPatient(id, note)`
-The clinical notes field in the right column is a freeform textarea backed by `patients.notes`.
-- Update happens on save / blur (debounced or explicit save button — refine when a dedicated notes UX is scheduled).
-- **RBAC:** Doctor and Admin only.
+#### Patient past history (`pastHistoryNotes`)
+The **Patient's Past History** textarea is backed by `patients.past_history_notes` and is updated with the rest of the form on **Save**.
+- **RBAC:** Admin and Doctor only (hidden and redacted for staff — see `docs/05-Authentication.md`).
 
 #### `getPresignedUrl(documentId)`
 - Called when a user clicks a document row to view it.
@@ -376,16 +377,17 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 |---|---|---|---|
 | First Name | ✓ | `first_name` | min 1, max 100 |
 | Last Name | ✓ | `last_name` | min 1, max 100 |
-| Email | ✓ or phone | `email` | valid email format |
-| Phone | ✓ or email | `phone` | non-empty string |
+| Email | — | `email` | valid email format or empty |
+| Phone | ✓ | `phone` | non-empty string |
 | Address | — | `address` | text |
-| Date of Birth | ✓ | `date_of_birth` | valid date, not in future |
+| Date of Birth | ✓ or Age | `date_of_birth` | required with Age (see business rules); only this column is stored |
+| Age | ✓ or DOB | — | UI-only; syncs with DOB; if alone, server sets DOB to Jan 1 of computed year |
 | Gender | ✓ | `gender` | `male / female / other` |
 | Blood Group | — | `blood_group` | `A+ A- B+ B- AB+ AB- O+ O-` or null |
 | Allergies | — | `allergies` | text or null |
 | Emergency Contact Name | — | `emergency_contact_name` | text |
 | Emergency Contact Phone | — | `emergency_contact_phone` | text |
-| Initial Clinical Notes | — | `notes` | text |
+| Patient's Past History | — | `past_history_notes` | text; admin/doctor only |
 
 ### Implementation notes
 - **Form:** Submit and cancel controls must live inside the same `<form>` as the fields so **Save** triggers `onSubmit` (native submit buttons outside a form do not submit it).
@@ -398,7 +400,9 @@ The clinical notes field in the right column is a freeform textarea backed by `p
 - **Input:** Patient form values, `clinicId` from session
 - **Validates:** Zod schema (`lib/validators/patient.ts` — to be created)
 - **Enforces:**
-  - At least one of `email` or `phone` must be non-empty
+  - `phone` required; `email` optional
+  - Either `dateOfBirth` or `age` (UI); persists `date_of_birth` only (see `docs/08-Business-Rules.md`)
+  - `past_history_notes` only when actor is admin/doctor
   - Generates `chartId` using the 10000–99999 range algorithm (see `docs/08-Business-Rules.md §3`)
   - Sets `createdBy = session.userId` (immutable)
   - Sets `clinicId = session.clinicId` (immutable)
@@ -648,7 +652,7 @@ The application provides intercepting routes to display forms seamlessly over th
 
 - **`@modal/(.)patients/view/[id]/`, `@modal/(.)patients/new/`**:
   > **Status:** UI built.
-  Intercepting routes that utilize `ModalShell` to render the view and creation flows for patients over the current dashboard. **View** modal: server `page.tsx` wraps async data in **`<Suspense>`** with **`ModalDetailPanelBodySkeleton`** (see `docs/06-UI-Design-System.md` §2.1). **New** modal: server `page.tsx` + client inner — no segment `loading.tsx`.
+  Intercepting routes that utilize `ModalShell` to render the view and creation flows for patients over the current dashboard. **View** modal: server `PatientViewModalContent` loads data; client **`PatientViewModalClient`** wraps `PatientDetailPanel` with **`onClose`** (`router.back`) so a successful **Save** dismisses the modal (same pattern as **`NewPatientModalClient`** on create). **`page.tsx`** wraps async content in **`<Suspense>`** with **`ModalDetailPanelBodySkeleton`** (see `docs/06-UI-Design-System.md` §2.1). **New** modal: server `page.tsx` + client inner — no segment `loading.tsx`.
 
 - **`@modal/(.)appointments/view/[id]/`, `@modal/(.)medicines/view/[id]/`**:
   > **Status:** UI built.
@@ -687,14 +691,14 @@ Every item here is a hard prerequisite — skipping any will cause type errors o
 ### Step 1 — Zod Validators
 Create or complete validators in `lib/validators/`. These are the single source of truth used by both the client (React Hook Form) and the server (server actions).
 
-- [ ] `lib/validators/patient.ts` — does not yet exist, create it:
+- [x] `lib/validators/patient.ts` — exists ✓. Summary for drift checks:
   ```ts
-  // Required fields: firstName, lastName, (email OR phone), dateOfBirth, gender
-  // Optional: address, bloodGroup, allergies, emergencyContactName, emergencyContactPhone, notes
-  // Enforce: at least one of email / phone must be non-empty (use .refine())
+  // Required: firstName, lastName, phone, gender
+  // Optional: email, address, bloodGroup, allergies, emergencyContactName, emergencyContactPhone, pastHistoryNotes
+  // UI-only on form: age (not persisted). Enforce DOB or age via .refine(hasDobOrAge); server normalizes to date_of_birth.
   ```
-- [ ] `lib/validators/appointment.ts` — exists ✓. Review against DB schema to confirm field names match column names.
-- [ ] `lib/validators/medicine.ts` — exists ✓. Already includes `category` and `form`.
+- [x] `lib/validators/appointment.ts` — exists ✓. Review against DB schema to confirm field names match column names.
+- [x] `lib/validators/medicine.ts` — exists ✓. Already includes `category` and `form`.
 
 ### Step 2 — Auth / Session Helper
 - [x] `lib/auth/session.ts` exports a real `getSession()` backed by Better-Auth — returns `{ id, clinicId, clinicSubdomain, clinicName, type, firstName, lastName, email }`. Throws `UNAUTHORIZED` if no session, `CLINIC_MISMATCH` if subdomain and user clinic differ.
@@ -704,7 +708,7 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [x] `lib/auth/rbac.ts` — `ForbiddenError` class + `requireRole(session, allowed[])`. Throws `ForbiddenError` if `session.user.type` is not in `allowed`. All server actions call this before any DB work.
 
 ### Step 4 — Shared Supporting Actions (no UI dependency)
-- [x] `getActivePatients()` — **`lib/actions/patients.ts`** (canonical); also `export` from `lib/actions/appointments.ts` for routes that batch with `getActiveDoctors`)
+- [x] `getActivePatients()` — **`lib/actions/patients.ts`** (appointment pickers import it alongside `getActiveDoctors` from `appointments.ts`)
 - [x] `getActiveDoctors()` — `lib/actions/appointments.ts`
 - [ ] `appendActivityLog()` — not implemented (`audit_log` / activity persistence not yet built)
 
@@ -744,4 +748,4 @@ Create or complete validators in `lib/validators/`. These are the single source 
 ### Step 6 — Wire UI to Actions
 Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.
 
-**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` / `getActiveDoctors` where applicable — both may be imported from `@/lib/actions/appointments`; `getActivePatients` is implemented in `patients.ts` and re-exported) and passed as props so selects are populated on first paint.
+**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` from `@/lib/actions/patients` and `getActiveDoctors` from `@/lib/actions/appointments`, or via `loadAppointmentFormSelectOptions` in `appointments/_lib/appointment-picker-options.ts`) and passed as props so selects are populated on first paint.

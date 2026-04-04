@@ -17,6 +17,7 @@ import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { appointments, patients, users } from "@/lib/db/schema";
 import {
@@ -115,7 +116,12 @@ export async function getAppointments(input: unknown) {
       return { success: false as const, error: "Invalid date range values." };
     }
 
-    const data = await queryGetAppointments(clinicId, { rangeStart, rangeEnd });
+    const rows = await queryGetAppointments(clinicId, { rangeStart, rangeEnd });
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const data = rows.map((row) => ({
+      ...row,
+      notes: canNotes ? row.notes : null,
+    }));
     return { success: true as const, data };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
@@ -143,10 +149,12 @@ export async function getAppointmentDetail(id: unknown) {
       return { success: false as const, error: "Appointment not found." };
     }
 
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     return {
       success: true as const,
       data: {
         ...appointment,
+        notes: canNotes ? appointment.notes : null,
         // TODO: Implement when audit_log table is built.
         activityLog: [] as never[],
       },
@@ -173,6 +181,7 @@ export async function createAppointment(input: unknown) {
 
     const { clinicId, id: userId } = session.user;
     const v = parsed.data;
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const serverNow = new Date();
 
     let scheduledAt: Date;
@@ -229,7 +238,7 @@ export async function createAppointment(input: unknown) {
         scheduledAt,
         duration:           v.duration,
         actualCheckIn:      actualCheckInFromTimeOnly(v.actualCheckIn, serverNow),
-        notes:              n(v.notes),
+        notes:              canNotes ? n(v.notes) : null,
         isActive:           true,
         createdBy:          userId,
       })
@@ -259,6 +268,9 @@ export async function updateAppointment(input: unknown) {
 
     const { clinicId } = session.user;
     const { id, ...fields } = parsed.data;
+    if (!hasPermission(session.user.type, "viewClinicalNotes")) {
+      delete fields.notes;
+    }
     const serverNow = new Date();
 
     // Verify ownership
@@ -403,6 +415,3 @@ export async function getActiveDoctors() {
     return { success: false as const, error: "Failed to fetch active doctors." };
   }
 }
-
-/** Re-export: implementation lives in `lib/actions/patients.ts` (single source of truth). */
-export { getActivePatients } from "./patients";

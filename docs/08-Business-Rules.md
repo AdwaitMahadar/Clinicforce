@@ -54,7 +54,8 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 
 ### Creation
 - Any role (Admin, Doctor, Staff) can create a patient.
-- A patient must have at least one of: `email` or `phone`. Both being empty is not allowed.
+- A patient must have a non-empty `phone`. `email` is optional.
+- On create and edit, the patient must have **either** a `date_of_birth` **or** an age entered in the UI; if only age is provided, the server stores `date_of_birth` as **January 1** of `(current calendar year − age)`. Only `date_of_birth` is persisted (no `age` column).
 - A ChartId in the `10000–99999` range is assigned on creation using the algorithm above.
 - `createdBy` is set to the authenticated user's ID at creation and is immutable.
 

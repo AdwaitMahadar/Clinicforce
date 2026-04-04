@@ -18,7 +18,7 @@ const patientColumns: ColumnDef<PatientRow>[] = [
             {row.original.firstName} {row.original.lastName}
           </p>
           <p className="text-xs truncate mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-            {row.original.email}
+            {row.original.phone?.trim() ? row.original.phone : "—"}
           </p>
         </div>
       </div>

@@ -30,6 +30,20 @@ import {
   updatePatientSchema,
 } from "@/lib/validators/patient";
 import { idSchema, n } from "@/lib/validators/common";
+import { hasPermission } from "@/lib/permissions";
+
+/** Resolve persisted DOB: trim input, or Jan 1 from age when DOB empty. */
+function resolveSaveDateOfBirth(
+  dateOfBirth: string | undefined,
+  age: number | undefined
+): string | null {
+  const t = dateOfBirth?.trim() ?? "";
+  if (t.length > 0) return t;
+  if (age !== undefined && Number.isFinite(age) && age >= 0) {
+    return `${new Date().getFullYear() - age}-01-01`;
+  }
+  return null;
+}
 
 // ─── Input schemas for list/filter params ─────────────────────────────────────
 
@@ -118,10 +132,12 @@ export async function getPatientDetail(id: unknown) {
       return { success: false as const, error: "Patient not found." };
     }
 
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     return {
       success: true as const,
       data: {
         ...patient,
+        pastHistoryNotes: canNotes ? patient.pastHistoryNotes : null,
         // TODO: Implement when audit_log table is built.
         activityLog: [] as never[],
       },
@@ -160,6 +176,12 @@ export async function createPatient(input: unknown) {
     }
 
     const v = parsed.data;
+    const dobResolved = resolveSaveDateOfBirth(v.dateOfBirth, v.age);
+    if (!dobResolved) {
+      return { success: false as const, error: "Enter date of birth or age." };
+    }
+
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
 
     const [created] = await db
       .insert(patients)
@@ -170,14 +192,14 @@ export async function createPatient(input: unknown) {
         lastName:  v.lastName.trim(),
         email:     n(v.email),
         phone:     n(v.phone),
-        dateOfBirth: n(v.dateOfBirth),
+        dateOfBirth: dobResolved,
         gender:    v.gender,
         address:   n(v.address),
         bloodGroup: v.bloodGroup ?? null,
         allergies: n(v.allergies),
         emergencyContactName:  n(v.emergencyContactName),
         emergencyContactPhone: n(v.emergencyContactPhone),
-        notes:     n(v.notes),
+        pastHistoryNotes: canNotes ? n(v.pastHistoryNotes) : null,
         isActive:  true,
         createdBy: userId,
       })
@@ -207,12 +229,19 @@ export async function updatePatient(input: unknown) {
     }
 
     const { clinicId } = session.user;
-    const { id, ...fields } = parsed.data;
+    const { id, age: _age, ...fields } = parsed.data;
 
     // Verify ownership
     const existing = await getPatientById(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Patient not found." };
+    }
+
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+
+    const dobResolved = resolveSaveDateOfBirth(fields.dateOfBirth, _age);
+    if (!dobResolved) {
+      return { success: false as const, error: "Enter date of birth or age." };
     }
 
     await db
@@ -222,14 +251,16 @@ export async function updatePatient(input: unknown) {
         ...(fields.lastName  !== undefined && { lastName:  fields.lastName.trim()  }),
         ...(fields.email     !== undefined && { email:     n(fields.email)         }),
         ...(fields.phone     !== undefined && { phone:     n(fields.phone)         }),
-        ...(fields.dateOfBirth !== undefined && { dateOfBirth: n(fields.dateOfBirth) }),
+        dateOfBirth: dobResolved,
         ...(fields.gender    !== undefined && { gender:    fields.gender            }),
         ...(fields.address   !== undefined && { address:   n(fields.address)        }),
         ...(fields.bloodGroup !== undefined && { bloodGroup: fields.bloodGroup ?? null }),
         ...(fields.allergies !== undefined && { allergies: n(fields.allergies)      }),
         ...(fields.emergencyContactName  !== undefined && { emergencyContactName:  n(fields.emergencyContactName)  }),
         ...(fields.emergencyContactPhone !== undefined && { emergencyContactPhone: n(fields.emergencyContactPhone) }),
-        ...(fields.notes     !== undefined && { notes:     n(fields.notes)          }),
+        ...(canNotes && fields.pastHistoryNotes !== undefined && {
+          pastHistoryNotes: n(fields.pastHistoryNotes),
+        }),
         updatedAt: new Date(),
       })
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)));
@@ -246,7 +277,7 @@ export async function updatePatient(input: unknown) {
 
 /**
  * Active patients for select pickers (`is_active = true`).
- * Re-exported from `lib/actions/appointments.ts` so appointment routes can `Promise.all` with `getActiveDoctors` from one import path.
+ * Appointment routes import this from here alongside `getActiveDoctors` from `lib/actions/appointments.ts` (Next.js `"use server"` files cannot reliably re-export actions from another module).
  */
 export async function getActivePatients() {
   try {

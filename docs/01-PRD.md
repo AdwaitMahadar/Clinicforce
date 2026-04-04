@@ -47,7 +47,7 @@ RBAC is enforced in **server actions** (`requireRole` in `lib/auth/rbac.ts`) and
 | **Appointments** — delete (soft cancel) | Yes | Yes | Yes |
 | **Patients** — view / create / edit | Yes | Yes | Yes |
 | **Patients** — deactivate (“delete”) | — | Yes | Yes |
-| **Clinical notes** (patient + appointment `notes` field) | — | Yes | Yes |
+| **Appointment clinical notes** (`appointments.notes`) and **patient past history** (`patients.past_history_notes`) | — | Yes | Yes |
 | **Detail sidebar** (tabs + activity area on detail views) | — | Yes | Yes |
 | **Documents** — view / upload | Yes | Yes | Yes |
 | **Documents** — edit metadata / delete | — | Yes | Yes |
@@ -68,7 +68,7 @@ Authorized personnel who access the system.
 ### 5.2 Patients
 Individual medical records for clinic clients.
 *   **Medical Profile**: DOB, Gender, Blood Group, Allergies, Emergency Contact Info.
-*   **Clinical Notes**: General background or medical history notes.
+*   **Patient's Past History** (`past_history_notes`): General background or medical history narrative (admin/doctor only).
 *   **Metadata**: `chartId`, `isActive`, `createdAt`, `updatedAt`, `createdBy`.
 
 ### 5.3 Appointments

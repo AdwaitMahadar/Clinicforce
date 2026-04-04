@@ -19,7 +19,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 
 ## 📏 Field-Level Constraints
 
-- **Patient Contact Info:** A patient must have at least one of `email` OR `phone`. Both cannot be empty. (Enforce this using `.refine()` in Zod schemas).
+- **Patient contact / DOB:** `phone` is required; `email` optional. Create/update require **date of birth or age** in the UI; only `date_of_birth` is stored (age-only → Jan 1 of computed year). Enforce in `lib/validators/patient.ts` + server `resolveSaveDateOfBirth` in `lib/actions/patients.ts`.
 - **Appointment Duration:** Must be between **15 and 480 minutes** (8 hours maximum).
 - **Document Size:** Maximum file size is **10MB** per file.
 - **Empty Strings:** Treat empty strings as `null` in all nullable database fields. Never store an empty string where `null` is the correct value.
@@ -48,7 +48,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Do not** allow an appointment to be assigned to a deactivated user, or a user who is not specifically a 'doctor'.
 - **Do not** assign a default user role out of convenience.
 - **Do not** accept `clinicId` via client input to skip checks; it MUST be resolved from the server session.
-- **Do not** allow a patient to be created without at least an email or a phone number.
+- **Do not** allow a patient to be created without a **phone** number or without **DOB or age** (see patient validator).
 - **Do not** store empty strings in nullable database fields; coerce them to `null` on the server.
 
 ## 📚 References

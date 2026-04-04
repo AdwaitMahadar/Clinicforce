@@ -43,6 +43,13 @@
       "when": 1774142000000,
       "tag": "0005_appointment_scheduled_at",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775000000000,
+      "tag": "0006_patient_past_history_notes",
+      "breakpoints": true
     }
   ]
 }

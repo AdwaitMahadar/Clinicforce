@@ -23,8 +23,8 @@ export const PERMISSIONS = {
   /** Permanently delete / hard-deactivate a patient record. */
   deletePatient: ["admin", "doctor"],
 
-  // ── Clinical notes (nested under patient/appointment detail) ─────────────
-  /** View the clinical notes field on patient and appointment records. */
+  // ── Clinical / history text (appointment notes + patient past history) ────
+  /** View appointment clinical notes and patient past history. Hidden from staff; server actions redact for staff. */
   viewClinicalNotes: ["admin", "doctor"],
   editClinicalNotes: ["admin", "doctor"],
 

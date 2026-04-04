@@ -6,6 +6,8 @@
  *   - <PatientDetailPanel> component (client-side React Hook Form)
  *   - Server actions: createPatient, updatePatient (`lib/actions/patients.ts`)
  *
+ * `age` is UI-only (not persisted). Server resolves `dateOfBirth` from `age` when DOB is empty.
+ *
  * Rule: Never define validation inline in a component. Always import from here.
  * Rule: Never include clinicId, createdBy, createdAt, updatedAt, or id in create schemas.
  */
@@ -15,6 +17,25 @@ import { PATIENT_GENDERS, PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
 
 // Re-export for call sites that import enums from validators (forms, panels).
 export { PATIENT_GENDERS, PATIENT_BLOOD_GROUPS };
+
+/** Coerce RHF empty string / number input into an optional integer age. */
+function preprocessAge(val: unknown): number | undefined {
+  if (val === "" || val === null || val === undefined) return undefined;
+  const n = typeof val === "number" ? val : Number(String(val).trim());
+  if (!Number.isFinite(n)) return undefined;
+  return Math.trunc(n);
+}
+
+const optionalAgeSchema = z.preprocess(
+  preprocessAge,
+  z.number().int().min(0, "Age must be at least 0").max(130, "Age must be at most 130").optional()
+);
+
+function hasDobOrAge(data: { dateOfBirth?: string; age?: number }): boolean {
+  const dob = data.dateOfBirth?.trim() ?? "";
+  if (dob.length > 0) return true;
+  return data.age !== undefined && data.age >= 0;
+}
 
 // ─── Create Schema ────────────────────────────────────────────────────────────
 // Used for the New Patient form. Excludes all system-managed fields.
@@ -41,11 +62,13 @@ export const createPatientSchema = z
 
     phone: z
       .string()
-      .max(20, "Phone must be under 20 characters")
-      .optional()
-      .default(""),
+      .min(1, "Phone is required")
+      .max(20, "Phone must be under 20 characters"),
 
-    dateOfBirth: z.string().min(1, "Date of birth is required"),
+    dateOfBirth: z.string().optional().default(""),
+
+    /** UI-only — not stored; used when DOB is empty. */
+    age: optionalAgeSchema,
 
     gender: z.enum(PATIENT_GENDERS, {
       error: "Please select a gender",
@@ -74,23 +97,15 @@ export const createPatientSchema = z
       .optional()
       .default(""),
 
-    notes: z.string().optional().default(""),
+    pastHistoryNotes: z.string().optional().default(""),
   })
-  .refine(
-    (data) => {
-      const hasEmail = !!data.email && data.email.trim().length > 0;
-      const hasPhone = !!data.phone && data.phone.trim().length > 0;
-      return hasEmail || hasPhone;
-    },
-    {
-      message: "At least one of email or phone must be provided",
-      path: ["email"], // surface the error on the email field
-    }
-  );
+  .refine(hasDobOrAge, {
+    message: "Enter date of birth or age",
+    path: ["dateOfBirth"],
+  });
 
 // ─── Update Schema ────────────────────────────────────────────────────────────
-// Used for the Edit Patient form. All fields are optional except id.
-// Applies the same email-or-phone refinement if either is provided.
+// Used for the Edit Patient form. `id` is required; other fields match the full form payload.
 
 export const updatePatientSchema = z
   .object({
@@ -99,14 +114,12 @@ export const updatePatientSchema = z
     firstName: z
       .string()
       .min(1, "First name is required")
-      .max(100, "First name must be under 100 characters")
-      .optional(),
+      .max(100, "First name must be under 100 characters"),
 
     lastName: z
       .string()
       .min(1, "Last name is required")
-      .max(100, "Last name must be under 100 characters")
-      .optional(),
+      .max(100, "Last name must be under 100 characters"),
 
     email: z
       .string()
@@ -115,12 +128,11 @@ export const updatePatientSchema = z
       .or(z.literal(""))
       .optional(),
 
-    phone: z
-      .string()
-      .max(20, "Phone must be under 20 characters")
-      .optional(),
+    phone: z.string().min(1, "Phone is required").max(20, "Phone must be under 20 characters"),
 
     dateOfBirth: z.string().optional(),
+
+    age: optionalAgeSchema,
 
     gender: z
       .enum(PATIENT_GENDERS, {
@@ -149,23 +161,12 @@ export const updatePatientSchema = z
       .max(20, "Emergency contact phone must be under 20 characters")
       .optional(),
 
-    notes: z.string().optional(),
+    pastHistoryNotes: z.string().optional(),
   })
-  .refine(
-    (data) => {
-      // Only enforce email-or-phone if either field is explicitly provided in the update
-      const emailProvided = data.email !== undefined;
-      const phoneProvided = data.phone !== undefined;
-      if (!emailProvided && !phoneProvided) return true; // not being touched — skip check
-      const hasEmail = !!data.email && data.email.trim().length > 0;
-      const hasPhone = !!data.phone && data.phone.trim().length > 0;
-      return hasEmail || hasPhone;
-    },
-    {
-      message: "At least one of email or phone must be provided",
-      path: ["email"],
-    }
-  );
+  .refine(hasDobOrAge, {
+    message: "Enter date of birth or age",
+    path: ["dateOfBirth"],
+  });
 
 // ─── Inferred TypeScript Types ────────────────────────────────────────────────
 

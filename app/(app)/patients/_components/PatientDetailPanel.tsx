@@ -9,8 +9,10 @@
  *   mode="create" — new patient form; no sidebar
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { differenceInYears, isValid, parseISO } from "date-fns";
 import {
   FileText,
   CalendarDays,
@@ -39,6 +41,7 @@ import {
 import { PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
 import { createPatient, updatePatient } from "@/lib/actions/patients";
 import { usePermission } from "@/lib/auth/session-context";
+import { PatientDobAgeSync } from "./PatientDobAgeSync";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -82,6 +85,19 @@ function patientGenderToForm(g: PatientDetail["gender"]): "male" | "female" | "o
   return "other";
 }
 
+/** Display-only age for the form (derived from stored DOB until the user edits). */
+function ageStringFromBirthIso(iso: string | undefined): string {
+  const t = iso?.trim();
+  if (!t) return "";
+  try {
+    const d = parseISO(t.slice(0, 10));
+    if (!isValid(d)) return "";
+    return String(differenceInYears(new Date(), d));
+  } catch {
+    return "";
+  }
+}
+
 // ─── Field grid (matches previous create form layout: 2-column grid) ─────────
 
 const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
@@ -95,6 +111,12 @@ const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
     placeholder: "123 Maple Avenue, Springfield, IL 62704",
   },
   { name: "dateOfBirth", label: "Date of Birth", type: "date" },
+  {
+    name: "age",
+    label: "Age",
+    type: "number",
+    placeholder: "Years",
+  },
   {
     name: "gender",
     label: "Gender",
@@ -141,29 +163,30 @@ const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
     placeholder: "(555) 987-6543",
   },
   {
-    name: "notes",
-    label: "Clinical Notes",
+    name: "pastHistoryNotes",
+    label: "Patient's Past History",
     type: "textarea",
     rows: 5,
     colSpan: 2,
     placeholder:
-      "Add any initial clinical notes, referral reasons, or relevant background…",
+      "Relevant medical history, referrals, or background for clinical context…",
   },
 ];
 
-const EMPTY_CREATE: CreatePatientInput = {
+const EMPTY_CREATE: DefaultValues<CreatePatientInput> = {
   firstName: "",
   lastName: "",
   email: "",
   phone: "",
   dateOfBirth: "",
+  age: undefined,
   gender: "male",
   address: "",
   bloodGroup: undefined,
   allergies: "",
   emergencyContactName: "",
   emergencyContactPhone: "",
-  notes: "",
+  pastHistoryNotes: "",
 };
 
 // ─── Sidebar tab: Documents ───────────────────────────────────────────────────
@@ -250,13 +273,12 @@ function PatientAppointmentsTab({ patient }: { patient: PatientDetail }) {
 export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPanelProps) {
   const router = useRouter();
   const formRef = useRef<DetailFormHandle | null>(null);
-  const handleClose = useCallback(() => onClose?.(), [onClose]);
 
   const isCreate = mode === "create";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
   const visibleFields = canViewClinicalNotes
     ? PATIENT_FIELDS
-    : PATIENT_FIELDS.filter((f) => f.name !== "notes");
+    : PATIENT_FIELDS.filter((f) => f.name !== "pastHistoryNotes");
 
   const viewDefaultValues: UpdatePatientInput | null = patient
     ? ({
@@ -266,6 +288,10 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         email: patient.email,
         phone: patient.phone,
         dateOfBirth: patient.dateOfBirthIso ?? "",
+        age: (() => {
+          const s = ageStringFromBirthIso(patient.dateOfBirthIso);
+          return s === "" ? undefined : Number(s);
+        })(),
         gender: patientGenderToForm(patient.gender),
         address: patient.address,
         bloodGroup: patient.bloodGroup
@@ -274,7 +300,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         allergies: patient.allergies ?? "",
         emergencyContactName: patient.emergencyContactName,
         emergencyContactPhone: patient.emergencyContactPhone,
-        notes: patient.notes ?? "",
+        pastHistoryNotes: patient.pastHistoryNotes ?? "",
       } satisfies UpdatePatientInput)
     : null;
 
@@ -297,6 +323,9 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
     const result = await updatePatient(values);
     if (result.success) {
       toast.success("Patient updated successfully.");
+      if (onClose) {
+        onClose();
+      }
       router.refresh();
     } else {
       toast.error(result.error ?? "Failed to update patient.");
@@ -325,6 +354,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         schema={createPatientSchema}
         defaultValues={EMPTY_CREATE}
         fields={visibleFields}
+        insideForm={<PatientDobAgeSync />}
         onSubmit={handleSubmitCreate}
       />
     );
@@ -374,6 +404,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
       schema={updatePatientSchema}
       defaultValues={viewDefaultValues}
       fields={visibleFields as FormFieldDescriptor<UpdatePatientInput>[]}
+      insideForm={<PatientDobAgeSync />}
       onSubmit={handleSubmitUpdate}
     />
   );

@@ -131,6 +131,11 @@ export interface DetailFormProps<TValues extends FieldValues> {
   /** Called with validated values on submit (native submit or `ref.submit()`). */
   onSubmit: (values: TValues) => Promise<void>;
   className?: string;
+  /**
+   * Rendered inside the same `<Form>` provider as the field grid (e.g. `useFormContext`
+   * effects for cross-field sync). Not wrapped in a FormField row.
+   */
+  insideForm?: React.ReactNode;
 }
 
 // ─── Field control renderer ───────────────────────────────────────────────────
@@ -247,6 +252,7 @@ function DetailFormInner<TValues extends FieldValues>(
     fields,
     onSubmit,
     className,
+    insideForm,
   }: DetailFormProps<TValues>,
   ref: React.ForwardedRef<DetailFormHandle>
 ) {
@@ -305,6 +311,7 @@ function DetailFormInner<TValues extends FieldValues>(
         className={cn("flex flex-col h-full", className)}
       >
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {insideForm}
           <FieldGrid
             fields={fields}
             control={form.control}

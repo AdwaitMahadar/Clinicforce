@@ -40,7 +40,7 @@ export const patients = pgTable(
     emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
     emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
     allergies: text("allergies"),
-    notes: text("notes"),
+    pastHistoryNotes: text("past_history_notes"),
     isActive: boolean("is_active").notNull().default(true),
     createdBy: text("created_by").references(() => users.id, {
       onDelete: "set null",

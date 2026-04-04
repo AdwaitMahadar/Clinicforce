@@ -68,8 +68,8 @@ export interface PatientDetail {
   allergies:            string | null;
   emergencyContactName: string;
   emergencyContactPhone:string;
-  /** Clinical notes from DB */
-  notes?: string;
+  /** Patient past history from DB (`past_history_notes`). */
+  pastHistoryNotes?: string;
   assignedDoctor:       string;
   status:               PatientStatus;
   appointments:         PatientAppointment[];
