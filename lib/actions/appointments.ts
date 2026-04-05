@@ -225,15 +225,17 @@ export async function createAppointment(input: unknown) {
       return { success: false as const, error: "The selected user is not a doctor." };
     }
 
+    const titleTrimmed = v.title?.trim() ?? "";
     const [created] = await db
       .insert(appointments)
       .values({
         clinicId,
         patientId:          v.patientId,
         doctorId:           v.doctorId,
-        title:              v.title.trim(),
+        title:              titleTrimmed ? titleTrimmed : null,
         description:        n(v.description),
-        type:               v.type,
+        category:           v.category,
+        visitType:          v.visitType,
         status:             v.status ?? "scheduled",
         scheduledAt,
         duration:           v.duration,
@@ -338,10 +340,13 @@ export async function updateAppointment(input: unknown) {
     await db
       .update(appointments)
       .set({
-        ...(fields.title       !== undefined && { title:       fields.title.trim()        }),
+        ...(fields.title !== undefined && {
+          title: fields.title.trim() ? fields.title.trim() : null,
+        }),
         ...(fields.description !== undefined && { description: n(fields.description)      }),
         ...(fields.doctorId    !== undefined && { doctorId:    fields.doctorId            }),
-        ...(fields.type        !== undefined && { type:        fields.type                }),
+        ...(fields.category   !== undefined && { category:    fields.category            }),
+        ...(fields.visitType  !== undefined && { visitType:   fields.visitType           }),
         ...(fields.status      !== undefined && { status:      fields.status              }),
         ...(scheduledAt !== undefined && { scheduledAt }),
         ...(fields.duration    !== undefined && { duration:    fields.duration            }),

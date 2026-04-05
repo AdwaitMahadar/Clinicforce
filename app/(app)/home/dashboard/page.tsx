@@ -19,6 +19,7 @@ import {
 import { HomeRecentTables } from "../_components/HomeRecentTables";
 import type { HomeRecentAppointmentRow } from "@/types/home";
 import { getHomeStats, getRecentAppointments } from "@/lib/actions/home";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -45,7 +46,11 @@ export default async function HomeDashboardPage() {
           ? format(new Date(a.scheduledAt as unknown as string), "hh:mm a")
           : "—",
         patientName: a.patientName,
-        visitType:   a.type.replace(/-/g, " "),
+        visitType:   formatAppointmentHeading({
+          category:  a.category,
+          visitType: a.visitType,
+          title:     a.title,
+        }),
         status:      a.status,
       }))
     : [];

@@ -10,15 +10,34 @@ export const APPOINTMENT_STATUSES = [
   "no-show",
 ] as const;
 
-export const APPOINTMENT_TYPES = ["general", "follow-up", "emergency"] as const;
+/** Clinical / service category for an appointment (DB `appointment_category`). */
+export const APPOINTMENT_CATEGORIES = [
+  "general",
+  "orthopedic",
+  "physiotherapy",
+] as const;
+
+/** Visit classification (DB `appointment_visit_type`). */
+export const APPOINTMENT_VISIT_TYPES = [
+  "general",
+  "first-visit",
+  "follow-up-visit",
+] as const;
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
-export type AppointmentDbType = (typeof APPOINTMENT_TYPES)[number];
+export type AppointmentCategory = (typeof APPOINTMENT_CATEGORIES)[number];
+export type AppointmentVisitType = (typeof APPOINTMENT_VISIT_TYPES)[number];
 
-export const APPOINTMENT_TYPE_LABELS: Record<AppointmentDbType, string> = {
-  general:   "General",
-  "follow-up": "Follow-up",
-  emergency: "Emergency",
+export const APPOINTMENT_CATEGORY_LABELS: Record<AppointmentCategory, string> = {
+  general:       "General",
+  orthopedic:    "Orthopedic",
+  physiotherapy: "Physiotherapy",
+};
+
+export const APPOINTMENT_VISIT_TYPE_LABELS: Record<AppointmentVisitType, string> = {
+  general:         "General",
+  "first-visit":   "First Visit",
+  "follow-up-visit": "Follow-up Visit",
 };
 
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
@@ -29,4 +48,4 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
 };
 
 /** Default appointment length in minutes — used in DB schema default and form initial state. */
-export const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
+export const DEFAULT_APPOINTMENT_DURATION_MINUTES = 15;

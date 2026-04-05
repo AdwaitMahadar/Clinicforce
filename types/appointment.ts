@@ -2,28 +2,20 @@
  * types/appointment.ts
  *
  * Canonical appointment types for UI and server-action payloads.
- * Calendar type styling lives in `lib/appointment-calendar-styles.ts`.
+ * Calendar category styling lives in `lib/appointment-calendar-styles.ts`.
  *
- * `AppointmentStatus` and DB appointment types are derived from `lib/constants/appointment.ts`
+ * `AppointmentStatus` and DB enums are derived from `lib/constants/appointment.ts`
  * (no Zod) so client bundles stay lean and values stay aligned with validators + DB.
  */
 
-import type { AppointmentDbType, AppointmentStatus } from "@/lib/constants/appointment";
+import type {
+  AppointmentCategory,
+  AppointmentVisitType,
+  AppointmentStatus,
+} from "@/lib/constants/appointment";
 import type { PatientDocument } from "@/types/patient";
 
-export type { AppointmentStatus };
-
-/** Extra calendar-only type labels (not in DB `appointment_type` enum). */
-export type AppointmentCalendarExtra =
-  | "vaccination"
-  | "checkup"
-  | "dental"
-  | "surgery"
-  | "lab-test"
-  | "therapy";
-
-/** Display superset for calendar chips — DB types + calendar-only labels. */
-export type AppointmentType = AppointmentDbType | AppointmentCalendarExtra;
+export type { AppointmentStatus, AppointmentCategory, AppointmentVisitType };
 
 /** The shape passed as props to MonthView / TimeGridView. */
 export interface AppointmentEvent {
@@ -32,13 +24,16 @@ export interface AppointmentEvent {
   /** `patients.first_name` from the calendar query — use for compact month chips. */
   patientFirstName: string;
   doctorName:       string;
-  type:        AppointmentType;
-  status:      AppointmentStatus;
+  category:         AppointmentCategory;
+  visitType:        AppointmentVisitType;
+  /** Optional user-facing title; primary label uses `formatAppointmentHeading`. */
+  title:            string | null;
+  status:           AppointmentStatus;
   /** ISO date-time string, e.g. "2025-02-22T09:00:00" */
-  start:       string;
+  start:            string;
   /** ISO date-time string */
-  end:         string;
-  notes?:      string;
+  end:              string;
+  notes?:           string;
 }
 
 // ─── Detail record (single appointment view/edit panel) ───────────────────────
@@ -62,8 +57,9 @@ export interface AppointmentDetail {
   patientInitials:    string;
   doctorId:           string;
   doctorName:         string;
-  title:              string;
-  type:               AppointmentType;
+  title:              string | null;
+  category:           AppointmentCategory;
+  visitType:          AppointmentVisitType;
   status:             AppointmentStatus;
   /** Scheduled date for the form date picker (YYYY-MM-DD). */
   scheduledDate:      string;

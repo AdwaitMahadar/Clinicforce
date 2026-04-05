@@ -11,7 +11,7 @@
 
 import { parseISO, isValid } from "date-fns";
 import { getAppointments } from "@/lib/actions/appointments";
-import { VALID_APPOINTMENT_DISPLAY_TYPES } from "@/lib/appointment-calendar-styles";
+import { VALID_APPOINTMENT_CATEGORIES } from "@/lib/appointment-calendar-styles";
 import type { AppointmentCalendarRow } from "@/lib/db/queries/appointments";
 import { getCalendarRange } from "../_lib/calendar-range";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
@@ -45,17 +45,21 @@ export default async function AppointmentsDashboardPage({ searchParams }: PagePr
         const start = a.scheduledAt ? new Date(a.scheduledAt) : new Date();
         const durationMs = Number(a.duration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES) * 60 * 1000;
         const end = new Date(start.getTime() + durationMs);
-        const apptType = (VALID_APPOINTMENT_DISPLAY_TYPES.has(a.type) ? a.type : "general") as AppointmentEvent["type"];
+        const category = (
+          VALID_APPOINTMENT_CATEGORIES.has(a.category) ? a.category : "general"
+        ) as AppointmentEvent["category"];
         return {
           id:               a.id,
           patientName:      a.patientName ?? "",
           patientFirstName: a.patientFirstName ?? "",
           doctorName:       a.doctorName ?? "",
-          type:        apptType,
-          status:      a.status as AppointmentEvent["status"],
-          start:       start.toISOString(),
-          end:         end.toISOString(),
-          notes:       a.notes ?? "",
+          category,
+          visitType:        a.visitType as AppointmentEvent["visitType"],
+          title:            a.title,
+          status:           a.status as AppointmentEvent["status"],
+          start:            start.toISOString(),
+          end:              end.toISOString(),
+          notes:            a.notes ?? "",
         };
       })
     : [];

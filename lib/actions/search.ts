@@ -16,7 +16,11 @@ import {
   patients,
   users,
 } from "@/lib/db/schema";
-import type { AppointmentDbType, AppointmentStatus } from "@/lib/constants/appointment";
+import type {
+  AppointmentCategory,
+  AppointmentStatus,
+  AppointmentVisitType,
+} from "@/lib/constants/appointment";
 import { searchGlobalQuerySchema } from "@/lib/validators/search";
 import type { GroupedSearchResults } from "@/types/search";
 
@@ -77,7 +81,8 @@ export async function searchGlobal(query: unknown) {
           title: appointments.title,
           scheduledAt: appointments.scheduledAt,
           status: appointments.status,
-          type: appointments.type,
+          category: appointments.category,
+          visitType: appointments.visitType,
           patientFirstName: patients.firstName,
           patientLastName: patients.lastName,
         })
@@ -167,7 +172,8 @@ export async function searchGlobal(query: unknown) {
         patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
         date: r.scheduledAt.toISOString(),
         status: r.status as AppointmentStatus,
-        type: r.type as AppointmentDbType,
+        category: r.category as AppointmentCategory,
+        visitType: r.visitType as AppointmentVisitType,
       })),
       medicines: medicineRows.map((r) => ({
         id: r.id,

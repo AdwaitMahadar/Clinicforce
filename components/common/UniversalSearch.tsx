@@ -32,6 +32,7 @@ import type { GroupedSearchResults } from "@/types/search";
 import { DocumentMimeTypeIcon } from "@/components/common/DocumentMimeTypeIcon";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 const DEBOUNCE_MS = 300;
 
@@ -247,6 +248,11 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
                   } catch {
                     /* ignore */
                   }
+                  const heading = formatAppointmentHeading({
+                    category:  a.category,
+                    visitType: a.visitType,
+                    title:     a.title,
+                  });
                   return (
                     <CommandItem
                       key={a.id}
@@ -269,7 +275,7 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
                           className="text-sm font-medium truncate"
                           style={{ color: "var(--color-text-primary)" }}
                         >
-                          {a.title}
+                          {heading}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <span

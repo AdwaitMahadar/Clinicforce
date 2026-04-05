@@ -37,7 +37,9 @@ export interface DbPatientRow {
 
 export interface PatientAppointmentSummary {
   id: string;
-  title: string;
+  title: string | null;
+  category: string;
+  visitType: string;
   doctor: string;
   scheduledAt: Date;
   status: string;
@@ -294,6 +296,8 @@ export async function getPatientById(
     .select({
       id: appointments.id,
       title: appointments.title,
+      category: appointments.category,
+      visitType: appointments.visitType,
       scheduledAt: appointments.scheduledAt,
       status: appointments.status,
       doctorName: sql<string>`COALESCE(
@@ -319,6 +323,8 @@ export async function getPatientById(
     appointments: apptRows.map((a) => ({
       id: a.id,
       title: a.title,
+      category: a.category,
+      visitType: a.visitType,
       doctor: a.doctorName ?? "",
       scheduledAt: a.scheduledAt,
       status: a.status,

@@ -50,6 +50,13 @@
       "when": 1775000000000,
       "tag": "0006_patient_past_history_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775425338419,
+      "tag": "0007_appointment_category_visit_type",
+      "breakpoints": true
     }
   ]
 }

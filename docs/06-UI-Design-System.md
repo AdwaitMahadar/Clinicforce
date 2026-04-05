@@ -212,7 +212,7 @@ type BadgeVariant =
   | 'chartId'           // 8821 style — muted background, monospace font
   | 'appointmentStatus' // scheduled | completed | cancelled | no-show
   | 'patientStatus'     // active | inactive | critical
-  | 'appointmentType'   // general | follow-up | emergency
+  | 'appointmentCategory' // general | orthopedic | physiotherapy (if used — calendar styling uses `CATEGORY_COLORS` in `lib/appointment-calendar-styles.ts`)
 ```
 
 **Colour mapping:**
@@ -344,9 +344,9 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 // @fullcalendar/interaction  ← install now, enables drag-and-drop later
 ```
 
-**Custom event rendering:** Use FullCalendar's `eventContent` prop to render `<AppointmentEventCard />` instead of the default event block. The card shows appointment type, patient name, and time range with a coloured left border based on type.
+**Custom event rendering:** Use FullCalendar's `eventContent` prop to render `<AppointmentEventCard />` instead of the default event block. The card shows the standard appointment heading (`formatAppointmentHeading`), visit-type badge, and time range with a coloured left border based on **category**.
 
-**Appointment type colours** (shared by month chips and time-grid cards): defined in `lib/appointment-calendar-styles.ts` as `TYPE_COLORS` / `TYPE_LABELS`, using semantic tokens from `globals.css` (never hex in components). Core DB types: **general** → blue emphasis (`--color-blue-bg-strong` / `--color-blue-border-emphasis`), **follow-up** → amber, **emergency** → red. Extra calendar-only display types (e.g. vaccination, dental) map to their own token sets in the same file.
+**Appointment category colours** (shared by month chips and time-grid cards): defined in `lib/appointment-calendar-styles.ts` as `CATEGORY_COLORS` / `CATEGORY_LABELS`, keyed by DB **`appointment_category`**: **general** → blue emphasis (`--color-blue-bg-strong` / `--color-blue-border-emphasis`), **orthopedic** → amber, **physiotherapy** → green. Event titles use **`formatAppointmentHeading`** (`Category - Visit Type` or with optional title in parentheses).
 
 **Month view chips** show `time · patientFirstName` using `patientFirstName` from the calendar query (not parsed from `patientName`). Derive chip time and day grouping from `parseISO(start)` + `format` (local timezone), not substrings of the UTC ISO string.
 

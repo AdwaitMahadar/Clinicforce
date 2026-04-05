@@ -6,7 +6,9 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventContentArg } from "@fullcalendar/core";
 import type { AppointmentEvent } from "@/types/appointment";
-import { TYPE_COLORS } from "@/lib/appointment-calendar-styles";
+import type { AppointmentCategory } from "@/lib/constants/appointment";
+import { CATEGORY_COLORS } from "@/lib/appointment-calendar-styles";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 import { AppointmentEventCard } from "./AppointmentEventCard";
 
 interface TimeGridViewProps {
@@ -35,19 +37,31 @@ export function TimeGridView({
   const scrollTime = `${Math.max(0, new Date().getHours() - 2).toString().padStart(2, "0")}:00:00`;
 
   // Convert AppointmentEvent → FullCalendar EventInput array
-  const events = appointments.map((a) => ({
-    id:    a.id,
-    title: a.patientName,
-    start: a.start,
-    end:   a.end,
-    color: TYPE_COLORS[a.type]?.solid ?? "var(--color-blue)",
-    extendedProps: {
-      patientName: a.patientName,
-      doctorName:  a.doctorName,
-      type:        a.type,
-      status:      a.status,
-    },
-  }));
+  const events = appointments.map((a) => {
+    const heading = formatAppointmentHeading({
+      category:  a.category,
+      visitType: a.visitType,
+      title:     a.title,
+    });
+    return {
+      id:    a.id,
+      title: heading,
+      start: a.start,
+      end:   a.end,
+      color:
+        CATEGORY_COLORS[a.category as AppointmentCategory]?.solid ??
+        "var(--color-blue)",
+      extendedProps: {
+        patientName: a.patientName,
+        doctorName:  a.doctorName,
+        category:    a.category,
+        visitType:   a.visitType,
+        title:       a.title,
+        status:      a.status,
+        heading,
+      },
+    };
+  });
 
   function renderEventContent(info: EventContentArg) {
     return <AppointmentEventCard eventInfo={info} />;

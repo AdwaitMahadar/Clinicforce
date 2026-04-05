@@ -75,7 +75,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 
 ### Creation
 - Any role can create an appointment.
-- An appointment requires: `patientId`, `doctorId`, scheduled date + time (combined into `scheduled_at` on the server), `type`, and `duration`.
+- An appointment requires: `patientId`, `doctorId`, `category`, `visitType`, scheduled date + time (combined into `scheduled_at` on the server), and `duration`. `title` is optional.
 - The `doctorId` must reference an active user with the role `doctor`. You cannot assign an inactive doctor or a non-doctor user to an appointment.
 - You cannot create an appointment for an inactive patient.
 - Duration must be between **15 and 480 minutes** (8 hours maximum).

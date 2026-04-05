@@ -248,7 +248,7 @@ function PatientAppointmentsTab({ patient }: { patient: PatientDetail }) {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-bold truncate" style={{ color: "var(--color-text-primary)" }}>{appt.title}</p>
+                <p className="text-sm font-bold truncate" style={{ color: "var(--color-text-primary)" }}>{appt.heading}</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>{appt.doctor}</p>
               </div>
               <span

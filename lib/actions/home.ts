@@ -136,7 +136,8 @@ export async function getRecentAppointments(limit: unknown = 5) {
         title:       appointments.title,
         scheduledAt: appointments.scheduledAt,
         status:      appointments.status,
-        type:        appointments.type,
+        category:    appointments.category,
+        visitType:   appointments.visitType,
         patientFirstName: patients.firstName,
         patientLastName:  patients.lastName,
         doctorName: sql<string>`COALESCE(
@@ -165,7 +166,8 @@ export async function getRecentAppointments(limit: unknown = 5) {
         doctorName:  r.doctorName ?? "",
         scheduledAt: r.scheduledAt,
         status:      r.status,
-        type:        r.type,
+        category:    r.category,
+        visitType:   r.visitType,
       })),
     };
   } catch (err) {

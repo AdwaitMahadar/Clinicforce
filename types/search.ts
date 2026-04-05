@@ -2,7 +2,11 @@
  * Global search result rows — minimal fields for display and navigation.
  */
 
-import type { AppointmentDbType, AppointmentStatus } from "@/lib/constants/appointment";
+import type {
+  AppointmentCategory,
+  AppointmentVisitType,
+  AppointmentStatus,
+} from "@/lib/constants/appointment";
 
 export interface PatientSearchHit {
   id: string;
@@ -16,12 +20,13 @@ export interface PatientSearchHit {
 
 export interface AppointmentSearchHit {
   id: string;
-  title: string;
+  title: string | null;
   patientName: string;
   /** ISO string from `appointments.scheduled_at` */
   date: string;
   status: AppointmentStatus;
-  type: AppointmentDbType;
+  category: AppointmentCategory;
+  visitType: AppointmentVisitType;
 }
 
 export interface MedicineSearchHit {

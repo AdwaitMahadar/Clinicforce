@@ -22,7 +22,7 @@ import type { DocumentSummary } from "./documents";
  */
 export interface AppointmentCalendarRow {
   id: string;
-  title: string;
+  title: string | null;
   patientName: string;
   /** `patients.first_name` — exposed for month-view chips (full name remains in `patientName`). */
   patientFirstName: string;
@@ -32,7 +32,8 @@ export interface AppointmentCalendarRow {
   /** Duration in minutes. */
   duration: number;
   status: string;
-  type: string;
+  category: string;
+  visitType: string;
   notes: string | null;
 }
 
@@ -43,13 +44,14 @@ export interface AppointmentCalendarRow {
  */
 export interface AppointmentDetailRecord {
   id: string;
-  title: string;
+  title: string | null;
   description: string | null;
   patientId: string;
   patientName: string;
   doctorId: string;
   doctorName: string;
-  type: string;
+  category: string;
+  visitType: string;
   status: string;
   scheduledAt: Date;
   duration: number;
@@ -84,7 +86,8 @@ export async function getAppointments(
       scheduledAt: appointments.scheduledAt,
       duration: appointments.duration,
       status: appointments.status,
-      type: appointments.type,
+      category: appointments.category,
+      visitType: appointments.visitType,
       notes: appointments.notes,
       patientFirstName: patients.firstName,
       patientLastName: patients.lastName,
@@ -115,7 +118,8 @@ export async function getAppointments(
     scheduledAt: r.scheduledAt,
     duration: r.duration,
     status: r.status,
-    type: r.type,
+    category: r.category,
+    visitType: r.visitType,
     notes: r.notes,
   }));
 }
@@ -146,7 +150,8 @@ export async function getAppointmentById(
         NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
         ${users.name}
       )`,
-      type: appointments.type,
+      category: appointments.category,
+      visitType: appointments.visitType,
       status: appointments.status,
       scheduledAt: appointments.scheduledAt,
       duration: appointments.duration,
@@ -197,7 +202,8 @@ export async function getAppointmentById(
     patientName: `${appt.patientFirstName} ${appt.patientLastName}`.trim(),
     doctorId: appt.doctorId,
     doctorName: appt.doctorName ?? "",
-    type: appt.type,
+    category: appt.category,
+    visitType: appt.visitType,
     status: appt.status,
     scheduledAt: appt.scheduledAt,
     duration: appt.duration,

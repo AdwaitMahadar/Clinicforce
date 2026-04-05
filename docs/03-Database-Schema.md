@@ -4,7 +4,7 @@ This document defines the PostgreSQL schema used by Clinicforce. We use **Drizzl
 
 ### Enum source of truth
 
-`pgEnum` value lists for **appointments** (`appointment_status`, `appointment_type`) and **patients** (`gender`) are built from the same `as const` arrays in `lib/constants/` that power Zod `z.enum()` and TypeScript types. When adding or renaming an enum value, update the constant module first, then run migrations.
+`pgEnum` value lists for **appointments** (`appointment_status`, `appointment_category`, `appointment_visit_type`) and **patients** (`gender`) are built from the same `as const` arrays in `lib/constants/` that power Zod `z.enum()` and TypeScript types. When adding or renaming an enum value, update the constant module first, then run migrations.
 
 ## 1. SaaS & Multi-tenancy
 We use a **Column-based isolation** strategy. Almost every table includes a `clinic_id` to ensure data remains isolated between different clinics in a SaaS environment.
@@ -113,12 +113,13 @@ Better-Auth email/token verification records.
 - `clinic_id`: `uuid` (References `clinics.id`)
 - `patient_id`: `uuid` **notNull** (References `patients.id`)
 - `doctor_id`: `text` **notNull** (References `users.id`)
-- `title`: `varchar(255)` **notNull**
+- `title`: `varchar(255)` (nullable — optional user label)
 - `description`: `text`
 - `status`: `enum` ('scheduled', 'completed', 'cancelled', 'no-show') (Default: 'scheduled')
-- `type`: `enum` ('general', 'follow-up', 'emergency') (Default: 'general')
+- `category`: `enum` ('general', 'orthopedic', 'physiotherapy') **notNull** (no column default — required on insert)
+- `visit_type`: `enum` ('general', 'first-visit', 'follow-up-visit') **notNull** (no column default — required on insert)
 - `scheduled_at`: `timestamp` **notNull** (Scheduled start — date and time combined)
-- `duration`: `integer` **notNull** (In minutes, Default: 30)
+- `duration`: `integer` **notNull** (In minutes, Default: 15)
 - `notes`: `text` (Clinical notes)
 - `actual_check_in`: `timestamp` (Optional; time-of-day from UI is stored with the server calendar day at save time)
 - `is_active`: `boolean` (Default: `true`)

@@ -30,12 +30,16 @@ export type PatientGender = "Male" | "Female" | "Other" | "Prefer not to say";
 export type { AppointmentStatus };
 
 export interface PatientAppointment {
-  id:     string;
-  title:  string;
-  doctor: string;
-  date:   string;
-  time:   string;
-  status: AppointmentStatus;
+  id:        string;
+  title:     string | null;
+  category:  string;
+  visitType: string;
+  /** Display label: `formatAppointmentHeading` (Category - Visit Type [(Title)]). */
+  heading:   string;
+  doctor:    string;
+  date:      string;
+  time:      string;
+  status:    AppointmentStatus;
 }
 
 /** Document list item for patient / appointment detail (matches DB + `DocumentCard`). */

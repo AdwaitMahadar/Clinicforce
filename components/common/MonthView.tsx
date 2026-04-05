@@ -13,8 +13,10 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 
-import type { AppointmentEvent, AppointmentType } from "@/types/appointment";
-import { TYPE_COLORS } from "@/lib/appointment-calendar-styles";
+import type { AppointmentEvent } from "@/types/appointment";
+import type { AppointmentCategory } from "@/lib/constants/appointment";
+import { CATEGORY_COLORS } from "@/lib/appointment-calendar-styles";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MAX_EVENTS_VISIBLE = 3;
@@ -103,11 +105,20 @@ export function MonthView({
               {/* Event chips */}
               <div className="flex-1 overflow-hidden px-1.5 pb-1.5 space-y-1.5">
                 {dayAppts.slice(0, MAX_EVENTS_VISIBLE).map((appt) => {
-                  const colors = TYPE_COLORS[appt.type as AppointmentType] ?? TYPE_COLORS.general;
+                  const colors =
+                    CATEGORY_COLORS[appt.category as AppointmentCategory] ??
+                    CATEGORY_COLORS.general;
                   const time   = format(parseISO(appt.start), "HH:mm");
+                  const heading = formatAppointmentHeading({
+                    category:  appt.category,
+                    visitType: appt.visitType,
+                    title:     appt.title,
+                  });
                   return (
                     <button
                       key={appt.id}
+                      type="button"
+                      title={heading}
                       onClick={(e) => {
                         e.stopPropagation();
                         onEventClick?.(appt);

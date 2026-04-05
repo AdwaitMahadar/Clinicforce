@@ -6,7 +6,7 @@
  * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, FileText, Upload } from "lucide-react";
@@ -25,8 +25,10 @@ import type { AppointmentDetail, AppointmentSelectOption } from "@/types/appoint
 import {
   createAppointmentSchema,
   updateAppointmentSchema,
-  APPOINTMENT_TYPES,
-  APPOINTMENT_TYPE_LABELS,
+  APPOINTMENT_CATEGORIES,
+  APPOINTMENT_VISIT_TYPES,
+  APPOINTMENT_CATEGORY_LABELS,
+  APPOINTMENT_VISIT_TYPE_LABELS,
   APPOINTMENT_STATUSES,
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_DURATIONS,
@@ -34,6 +36,7 @@ import {
   type UpdateAppointmentInput,
 } from "@/lib/validators/appointment";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 import {
   createAppointment,
   updateAppointment,
@@ -146,22 +149,6 @@ function AppointmentDocumentsTab({ appointment }: { appointment: AppointmentDeta
   );
 }
 
-// ─── Blank defaults for create mode ──────────────────────────────────────────
-
-const EMPTY_VALUES: CreateAppointmentInput = {
-  title:              "",
-  patientId:          "",
-  doctorId:           "",
-  type:               "general",
-  status:             "scheduled",
-  scheduledDate:      new Date().toISOString().slice(0, 10),
-  scheduledTime:      "",
-  duration:           DEFAULT_APPOINTMENT_DURATION_MINUTES,
-  actualCheckIn:      "",
-  description:        "",
-  notes:              "",
-};
-
 // ─── Field definitions (single scrollable column; pickers filled at runtime) ───
 
 function buildAppointmentFormFields(
@@ -189,19 +176,40 @@ function buildAppointmentFormFields(
       options:     doctorOptions,
     },
     {
-      name:        "title",
-      label:       "Appointment Title",
-      type:        "text",
-      colSpan:     2,
-      placeholder: "e.g. Annual Physical Examination",
-    },
-    {
-      name:    "type",
-      label:   "Type",
+      name:    "category",
+      label:   "Category",
       type:    "select",
       colSpan: 2,
-      options: APPOINTMENT_TYPES.map((t) => ({ label: APPOINTMENT_TYPE_LABELS[t], value: t })),
+      options: APPOINTMENT_CATEGORIES.map((c) => ({
+        label: APPOINTMENT_CATEGORY_LABELS[c],
+        value: c,
+      })),
     },
+    {
+      name:    "visitType",
+      label:   "Visit type",
+      type:    "select",
+      colSpan: 2,
+      options: APPOINTMENT_VISIT_TYPES.map((v) => ({
+        label: APPOINTMENT_VISIT_TYPE_LABELS[v],
+        value: v,
+      })),
+    },
+    {
+      name:    "scheduledDate",
+      label:   "Date",
+      type:    "date",
+      colSpan: 1,
+    },
+    { name: "scheduledTime", label: "Scheduled start", type: "time", colSpan: 1 },
+    {
+      name:    "duration",
+      label:   "Duration",
+      type:    "select",
+      colSpan: 1,
+      options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
+    },
+    { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 1 },
     {
       name:    "status",
       label:   "Status",
@@ -210,17 +218,11 @@ function buildAppointmentFormFields(
       options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
     },
     {
-      name:    "scheduledDate",
-      label:   "Date",
-      type:    "date",
-      colSpan: 1,
-    },
-    {
-      name:    "duration",
-      label:   "Duration",
-      type:    "select",
-      colSpan: 1,
-      options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
+      name:        "title",
+      label:       "Title (optional)",
+      type:        "text",
+      colSpan:     2,
+      placeholder: "e.g. Post-surgery checkup",
     },
     {
       name:        "description",
@@ -230,8 +232,6 @@ function buildAppointmentFormFields(
       rows:        5,
       placeholder: "Add visit details or reason for appointment...",
     },
-    { name: "scheduledTime", label: "Scheduled start", type: "time", colSpan: 1 },
-    { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 1 },
     {
       name: "notes",
       label: "Clinical Notes",
@@ -277,14 +277,33 @@ export function AppointmentDetailPanel({
   const formRef  = useRef<DetailFormHandle | null>(null);
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
 
+  const createDefaults = useMemo(
+    (): CreateAppointmentInput => ({
+      title: "",
+      patientId: "",
+      doctorId: "",
+      category: "general",
+      visitType: "general",
+      status: "scheduled",
+      scheduledDate: format(new Date(), "yyyy-MM-dd"),
+      scheduledTime: format(new Date(), "HH:mm"),
+      duration: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+      actualCheckIn: "",
+      description: "",
+      notes: "",
+    }),
+    []
+  );
+
   const defaultValues: CreateAppointmentInput | UpdateAppointmentInput = isCreate
-    ? EMPTY_VALUES
+    ? createDefaults
     : {
         id:                 appointment!.id,
-        title:              appointment!.title,
+        title:              appointment!.title ?? "",
         patientId:          appointment!.patientId,
         doctorId:           appointment!.doctorId,
-        type:               appointment!.type as UpdateAppointmentInput["type"],
+        category:           appointment!.category as UpdateAppointmentInput["category"],
+        visitType:          appointment!.visitType as UpdateAppointmentInput["visitType"],
         status:             appointment!.status as UpdateAppointmentInput["status"],
         scheduledDate:      appointment!.scheduledDate ?? "",
         scheduledTime:      appointment!.scheduledTime ?? "",
@@ -320,7 +339,8 @@ export function AppointmentDetailPanel({
         id: v.id!,
         title: v.title,
         doctorId: v.doctorId,
-        type: v.type,
+        category: v.category,
+        visitType: v.visitType,
         status: v.status,
         scheduledDate: v.scheduledDate,
         scheduledTime: v.scheduledTime,
@@ -397,7 +417,13 @@ export function AppointmentDetailPanel({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold" style={{ color: "var(--color-text-primary)" }}>
-              {isCreate ? "New Appointment" : appointment!.title}
+              {isCreate
+                ? "New Appointment"
+                : formatAppointmentHeading({
+                    category:  appointment!.category,
+                    visitType: appointment!.visitType,
+                    title:     appointment!.title,
+                  })}
             </h3>
             {!isCreate && (
               <StatusBadge status={appointment!.status} />

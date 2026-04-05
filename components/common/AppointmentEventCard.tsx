@@ -1,7 +1,11 @@
 import { Clock, User } from "lucide-react";
 import type { EventContentArg } from "@fullcalendar/core";
-import type { AppointmentType } from "@/types/appointment";
-import { TYPE_COLORS, TYPE_LABELS } from "@/lib/appointment-calendar-styles";
+import {
+  APPOINTMENT_VISIT_TYPE_LABELS,
+  type AppointmentCategory,
+  type AppointmentVisitType,
+} from "@/lib/constants/appointment";
+import { CATEGORY_COLORS } from "@/lib/appointment-calendar-styles";
 import { cn } from "@/lib/utils";
 
 interface AppointmentEventCardProps {
@@ -12,19 +16,21 @@ interface AppointmentEventCardProps {
  * Custom FullCalendar event renderer for the week & day time-grid views.
  *
  * Expects `event.extendedProps` to contain:
- *   - patientName: string
- *   - doctorName:  string
- *   - type:        AppointmentType
- *   - status:      AppointmentStatus
+ *   - patientName, doctorName, category, visitType, title, status, heading (optional preformatted)
  */
 export function AppointmentEventCard({ eventInfo }: AppointmentEventCardProps) {
   const { event } = eventInfo;
-  const type      = (event.extendedProps.type ?? "general") as AppointmentType;
-  const colors    = TYPE_COLORS[type] ?? TYPE_COLORS.general;
-  const label     = TYPE_LABELS[type] ?? type;
+  const category = (event.extendedProps.category ?? "general") as AppointmentCategory;
+  const visitType = (event.extendedProps.visitType ?? "general") as AppointmentVisitType;
+  const colors =
+    CATEGORY_COLORS[category] ?? CATEGORY_COLORS.general;
+  const label =
+    APPOINTMENT_VISIT_TYPE_LABELS[visitType] ?? visitType;
 
   const timeText   = eventInfo.timeText;
   const doctorName = event.extendedProps.doctorName as string;
+  const displayTitle =
+    (event.extendedProps.heading as string | undefined) ?? event.title;
 
   // Determine if the event block is "small" (< 45min) — shrink content
   const durationMs = event.end
@@ -50,13 +56,13 @@ export function AppointmentEventCard({ eventInfo }: AppointmentEventCardProps) {
       }}
     >
       <div className="flex flex-col justify-center px-2 py-1.5 min-w-0 flex-1">
-        {/* Patient name + type badge */}
+        {/* Heading + visit-type badge */}
         <div className="flex items-center gap-1.5 min-w-0">
           <span
             className="text-[11px] font-bold truncate leading-tight"
             style={{ color: "var(--color-text-primary)" }}
           >
-            {event.title}
+            {displayTitle}
           </span>
           {!isCompact && (
             <span

@@ -110,7 +110,7 @@ lib/
   auth/                     ← Better-Auth config; `session-context.tsx` — `AppSessionProvider` + `useAppSession()` + `usePermission()` client hooks (no extra server calls); `require-permission.ts` — `requirePermission(permission, redirectTo?)` server-side page guard (calls `getSession()` + `hasPermission()`, redirects if unauthorised, returns session)
   permissions.ts            ← `PERMISSIONS` map + `Permission` type + `hasPermission(role, permission)` — single source of truth for all UI role decisions; consumed by `usePermission` and `<RoleGate>`
   utils/                    ← `chart-id.ts` — `formatChartId(value, entityType)` plus `formatPatientChartId` / `formatStaffChartId`; `'medicine'` / `'user'` prefixes exist for `formatChartId` but **medicines have no `chart_id` in DB** — use chart formatting for patients and staff only in practice
-  appointment-calendar-styles.ts ← TYPE_COLORS / TYPE_LABELS for calendar (wider than DB type enum)
+  appointment-calendar-styles.ts ← CATEGORY_COLORS / CATEGORY_LABELS for calendar (DB `appointment_category`); `formatAppointmentHeading` in `lib/utils/format-appointment-heading.ts`
 
 types/                      ← UI/view-model TypeScript types (patient, appointment, medicine, home)
 ```
@@ -183,7 +183,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
-- Type enum: `general | follow-up | emergency`
+- Category enum: `general | orthopedic | physiotherapy`; visit type enum: `general | first-visit | follow-up-visit` (DB `visit_type`; form/API key `visitType`)
 - Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), and `duration` (minutes)
 
 ### Documents

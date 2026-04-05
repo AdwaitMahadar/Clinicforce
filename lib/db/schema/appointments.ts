@@ -12,14 +12,25 @@ import {
 import { clinics } from "./clinics";
 import { users } from "./auth";
 import { patients } from "./patients";
-import { APPOINTMENT_STATUSES, APPOINTMENT_TYPES, DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
+import {
+  APPOINTMENT_STATUSES,
+  APPOINTMENT_CATEGORIES,
+  APPOINTMENT_VISIT_TYPES,
+  DEFAULT_APPOINTMENT_DURATION_MINUTES,
+} from "@/lib/constants/appointment";
 
 /** Must match `lib/constants/appointment.ts` — single source for Zod + types. */
 export const appointmentStatusEnum = pgEnum("appointment_status", [
   ...APPOINTMENT_STATUSES,
 ]);
 
-export const appointmentTypeEnum = pgEnum("appointment_type", [...APPOINTMENT_TYPES]);
+export const appointmentCategoryEnum = pgEnum("appointment_category", [
+  ...APPOINTMENT_CATEGORIES,
+]);
+
+export const appointmentVisitTypeEnum = pgEnum("appointment_visit_type", [
+  ...APPOINTMENT_VISIT_TYPES,
+]);
 
 /**
  * appointments — Records of clinical consultations or procedures.
@@ -37,10 +48,11 @@ export const appointments = pgTable(
     doctorId: text("doctor_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    title: varchar("title", { length: 255 }).notNull(),
+    title: varchar("title", { length: 255 }),
     description: text("description"),
     status: appointmentStatusEnum("status").notNull().default("scheduled"),
-    type: appointmentTypeEnum("type").notNull().default("general"),
+    category: appointmentCategoryEnum("category").notNull(),
+    visitType: appointmentVisitTypeEnum("visit_type").notNull(),
     /** Scheduled start instant (date + time combined). */
     scheduledAt: timestamp("scheduled_at").notNull(),
     duration: integer("duration").notNull().default(DEFAULT_APPOINTMENT_DURATION_MINUTES),

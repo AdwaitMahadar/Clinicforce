@@ -10,6 +10,7 @@
 
 import { format, parseISO, differenceInYears } from "date-fns";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 import type { getPatientDetail } from "@/lib/actions/patients";
 import type { PatientDetail } from "@/types/patient";
 
@@ -53,8 +54,15 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
     assignedDoctor:        "",
     status:                r.isActive ? "active" : "inactive",
     appointments: (r.appointments ?? []).map((a) => ({
-      id:     a.id,
-      title:  a.title,
+      id:        a.id,
+      title:     a.title,
+      category:  a.category,
+      visitType: a.visitType,
+      heading:   formatAppointmentHeading({
+        category:  a.category,
+        visitType: a.visitType,
+        title:     a.title,
+      }),
       doctor: a.doctor ?? "",
       date:   a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
       time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",

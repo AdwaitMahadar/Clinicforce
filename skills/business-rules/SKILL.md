@@ -13,7 +13,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **User Roles:** `admin`, `doctor`, `staff`. (There is no default role; it must be explicitly set on creation).
 - **Patient Status:** Evaluated purely by the `is_active` boolean field (maps to active or inactive).
 - **Appointment Statuses:** `scheduled`, `completed`, `cancelled`, `no-show`. (Default on creation is `scheduled`. Any transition between statuses is currently permitted.)
-- **Appointment Types:** `general`, `follow-up`, `emergency`.
+- **Appointment category:** `general`, `orthopedic`, `physiotherapy`. **Visit type:** `general`, `first-visit`, `follow-up-visit`. **`title`** optional. Heading format: `Category - Visit Type` or `Category - Visit Type (Title)` via `formatAppointmentHeading`.
 - **Document Mime Types:** Accepted types are limited to `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - **Document clinic-boundary:** `confirmDocumentUpload` must verify `assignedToId` belongs to the session `clinicId` before inserting. Query `patients` for `assignedToType: "patient"`, `users` for `"user"`.
 

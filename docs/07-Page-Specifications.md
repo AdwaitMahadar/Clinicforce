@@ -59,7 +59,7 @@ High-level clinic overview — metric cards, today’s appointments strip, link 
 
 #### `getRecentAppointments(limit?)`
 - **Default `limit`:** 5 (validated 1–50).
-- **Output:** `{ id, title, patientName, doctorName, scheduledAt, status, type }` (patient/doctor names from joins).
+- **Output:** `{ id, title, patientName, doctorName, scheduledAt, status, category, visitType }` (patient/doctor names from joins). Home table shows `formatAppointmentHeading({ category, visitType, title })` in the visit column.
 - **Sort:** `scheduled_at DESC`.
 - **Filter:** `clinic_id`, `is_active = true`.
 - **RBAC:** All roles.
@@ -105,14 +105,15 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   // AppointmentCalendarRow (query layer) — includes:
   {
     id: string;
-    title: string;
+    title: string | null;
     patientName: string;       // patients.first_name + last_name
     patientFirstName: string;  // patients.first_name (for month-view chips)
     doctorName: string;
     scheduledAt: Date;
     duration: number;
     status: string;
-    type: string;
+    category: string;
+    visitType: string;
     notes: string | null;
   }
   // AppointmentEvent (UI) — see `types/appointment.ts`
@@ -137,7 +138,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — patient, doctor, title, type, status, scheduled date + scheduled time, duration, description, actual check-in time (time-only), clinical notes (custom control). The patient select is **disabled in edit mode**; `patientId` is not sent on update. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Form column:** All fields in one grid — patient, doctor, category, visit type, scheduled date + scheduled time, duration, status, optional title, description, actual check-in time (time-only), clinical notes (custom control). The patient select is **disabled in edit mode**; `patientId` is not sent on update. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`.
 - **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
@@ -149,13 +151,14 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   ```ts
   {
     id:                 string;
-    title:              string;
+    title:              string | null;
     patientId:          string;
     patientName:        string;   // JOIN patients (first_name + last_name)
     patientChartId:     string;
     doctorId:           string;
     doctorName:         string;   // JOIN users (first_name + last_name)
-    type:               string;
+    category:           string;
+    visitType:          string;
     status:             string;
     scheduledAt:        string;   // ISO timestamp (`scheduled_at`)
     duration:           number;
@@ -324,11 +327,13 @@ Both needed to populate the patient and doctor pickers in the form:
     activityLog:           LogEvent[];
   }
   ```
-  where `PatientAppointmentSummary` (query layer; UI maps `scheduledAt` to display date + time strings):
+  where `PatientAppointmentSummary` (query layer; UI maps `scheduledAt` to display date + time strings and adds `heading` via `formatAppointmentHeading`):
   ```ts
   {
     id:           string;
-    title:        string;
+    title:        string | null;
+    category:     string;
+    visitType:    string;
     doctor:       string;   // doctor display name
     scheduledAt:  Date;
     status:       string;

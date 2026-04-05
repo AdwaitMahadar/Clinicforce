@@ -18,17 +18,21 @@
 
 import { z } from "zod";
 import {
-  APPOINTMENT_TYPES,
+  APPOINTMENT_CATEGORIES,
+  APPOINTMENT_VISIT_TYPES,
   APPOINTMENT_STATUSES,
-  APPOINTMENT_TYPE_LABELS,
+  APPOINTMENT_CATEGORY_LABELS,
+  APPOINTMENT_VISIT_TYPE_LABELS,
   APPOINTMENT_STATUS_LABELS,
 } from "@/lib/constants/appointment";
 
 // Re-export for call sites that import enums from validators (forms, panels).
 export {
-  APPOINTMENT_TYPES,
+  APPOINTMENT_CATEGORIES,
+  APPOINTMENT_VISIT_TYPES,
   APPOINTMENT_STATUSES,
-  APPOINTMENT_TYPE_LABELS,
+  APPOINTMENT_CATEGORY_LABELS,
+  APPOINTMENT_VISIT_TYPE_LABELS,
   APPOINTMENT_STATUS_LABELS,
 };
 
@@ -60,15 +64,20 @@ export const APPOINTMENT_DURATIONS = [
 export const createAppointmentSchema = z.object({
   title: z
     .string()
-    .min(2, "Title must be at least 2 characters")
-    .max(255, "Title must be under 255 characters"),
+    .max(255, "Title must be under 255 characters")
+    .optional()
+    .default(""),
 
   patientId: z.string().min(1, "Please select a patient").uuid("Please select a valid patient"),
 
   doctorId: z.string().min(1, "Please select a doctor"),
 
-  type: z.enum(APPOINTMENT_TYPES, {
-    error: "Please select an appointment type",
+  category: z.enum(APPOINTMENT_CATEGORIES, {
+    error: "Please select a category",
+  }),
+
+  visitType: z.enum(APPOINTMENT_VISIT_TYPES, {
+    error: "Please select a visit type",
   }),
 
   status: z.enum(APPOINTMENT_STATUSES, {
@@ -78,8 +87,8 @@ export const createAppointmentSchema = z.object({
   /** Calendar date for scheduled start (YYYY-MM-DD). Combined with `scheduledTime` on the server. */
   scheduledDate: z.string().min(1, "Date is required"),
 
-  /** Time of day for scheduled start (HH:mm). Empty means start of that calendar day. */
-  scheduledTime: z.string().optional().default(""),
+  /** Time of day for scheduled start (HH:mm). */
+  scheduledTime: z.string().min(1, "Time is required"),
 
   /**
    * Actual check-in time of day only (HH:mm). Server stores full timestamp using today's date.
@@ -106,20 +115,22 @@ export const createAppointmentSchema = z.object({
 export const updateAppointmentSchema = z.object({
   id: z.string().uuid("Invalid appointment ID"),
 
-  title: z
-    .string()
-    .min(2, "Title must be at least 2 characters")
-    .max(255, "Title must be under 255 characters")
-    .optional(),
+  title: z.string().max(255, "Title must be under 255 characters").optional(),
 
   /** Ignored by `updateAppointment` — patient cannot be reassigned after creation. Kept optional for shared form typing. */
   patientId: z.string().uuid("Please select a valid patient").optional(),
 
   doctorId: z.string().min(1, "Please select a valid doctor").optional(),
 
-  type: z
-    .enum(APPOINTMENT_TYPES, {
-      error: "Please select an appointment type",
+  category: z
+    .enum(APPOINTMENT_CATEGORIES, {
+      error: "Please select a category",
+    })
+    .optional(),
+
+  visitType: z
+    .enum(APPOINTMENT_VISIT_TYPES, {
+      error: "Please select a visit type",
     })
     .optional(),
 
