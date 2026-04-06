@@ -20,7 +20,7 @@
  *
  * ─── Field types ──────────────────────────────────────────────────────────────
  *
- *   "text" | "date" | "email" | "number" | "time"  → <Input type={…} />
+ *   "text" | "date" | "email" | "number" | "time"  → <Input type={…} /> (optional `prefix` → input-group shell: muted prepended label + shared border)
  *   "textarea"                                      → <Textarea /> (optional `rows`, `className` on descriptor)
  *   "select"                                        → Radix <Select /> (controlled: `value` + `key` so external resets sync)
  *   "custom"  (requires renderControl)              → caller-supplied JSX
@@ -83,6 +83,11 @@ interface BaseField<TValues extends FieldValues> {
 
 export interface TextField<TValues extends FieldValues> extends BaseField<TValues> {
   type: "text" | "date" | "email" | "number" | "time";
+  /**
+   * When set, wraps `<Input />` in a single bordered control with a non-editable
+   * prefix (e.g. currency `₹`, units). Uses `focus-within` ring on the shell.
+   */
+  prefix?: string;
   /** For `type: "number"` only — passed to `<Input />`. */
   step?: string;
   min?: string;
@@ -209,18 +214,48 @@ function renderFieldControl<TValues extends FieldValues>(
 
   // text | date | email | number | time
   const tf = descriptor as TextField<TValues>;
-  return (
+  const disabled = descriptor.disabled ?? isSaving;
+  const numberExtra =
+    descriptor.type === "number"
+      ? { step: tf.step ?? undefined, min: tf.min ?? undefined }
+      : {};
+
+  const inputNode = (
     <Input
       type={descriptor.type}
       placeholder={descriptor.placeholder}
-      disabled={descriptor.disabled ?? isSaving}
+      disabled={disabled}
       {...field}
       value={String(field.value ?? "")}
-      {...(descriptor.type === "number"
-        ? { step: tf.step ?? undefined, min: tf.min ?? undefined }
-        : {})}
+      {...numberExtra}
+      className={cn(
+        tf.prefix &&
+          "h-9 min-w-0 flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+      )}
     />
   );
+
+  if (tf.prefix) {
+    return (
+      <div
+        className={cn(
+          "flex h-9 w-full min-w-0 items-stretch rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] dark:bg-input/30",
+          "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
+          disabled && "pointer-events-none opacity-50"
+        )}
+      >
+        <span
+          className="flex shrink-0 items-center border-r border-input px-2.5 text-sm text-muted-foreground select-none"
+          aria-hidden="true"
+        >
+          {tf.prefix}
+        </span>
+        {inputNode}
+      </div>
+    );
+  }
+
+  return inputNode;
 }
 
 // ─── Field grid ───────────────────────────────────────────────────────────────

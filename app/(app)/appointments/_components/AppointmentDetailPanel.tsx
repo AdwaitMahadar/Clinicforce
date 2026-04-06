@@ -221,6 +221,7 @@ function buildAppointmentFormFields(
       label:       "Fee",
       type:        "number",
       colSpan:     1,
+      prefix:      "₹",
       placeholder: "Appointment Fee",
       step:        "0.01",
       min:         "0",

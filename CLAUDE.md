@@ -127,7 +127,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `TimeGridView.tsx` — FullCalendar timeGridWeek/timeGridDay wrapper
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
-- `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`). No footer — parent uses `DetailPanel` or composes actions.
+- `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`); optional **`TextField.prefix`** for input-group prepended labels (e.g. fee `₹`). No footer — parent uses `DetailPanel` or composes actions.
 - `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`). Sidebar hidden when `isCreate=true` OR when user lacks `viewDetailSidebar` permission — computed internally via `usePermission`, no extra prop needed from entity panels.
 - `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
