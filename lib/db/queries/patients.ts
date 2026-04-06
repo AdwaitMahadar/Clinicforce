@@ -353,3 +353,46 @@ export async function getActivePatients(
     .where(and(eq(patients.clinicId, clinicId), eq(patients.isActive, true)))
     .orderBy(asc(patients.lastName), asc(patients.firstName));
 }
+
+/** Max rows returned by `searchActivePatientsForPicker` (combobox list + scroll). */
+export const PATIENT_PICKER_SEARCH_LIMIT = 8;
+
+/**
+ * Active patients for async combobox pickers. Search predicate matches `getPatients`
+ * directory filtering (first/last name, email, phone, numeric chart id).
+ * Empty `search` returns the first `PATIENT_PICKER_SEARCH_LIMIT` rows ordered by name.
+ */
+export async function searchActivePatientsForPicker(
+  clinicId: string,
+  search: string
+): Promise<{ id: string; firstName: string; lastName: string; chartId: number }[]> {
+  const q = search.trim();
+  const conditions = [
+    eq(patients.clinicId, clinicId),
+    eq(patients.isActive, true),
+  ];
+
+  if (q.length > 0) {
+    conditions.push(
+      or(
+        ilike(patients.firstName, `%${q}%`),
+        ilike(patients.lastName, `%${q}%`),
+        ilike(patients.email, `%${q}%`),
+        ilike(patients.phone, `%${q}%`),
+        sql`${patients.chartId}::text ILIKE ${"%" + q + "%"}`
+      )!
+    );
+  }
+
+  return db
+    .select({
+      id: patients.id,
+      firstName: patients.firstName,
+      lastName: patients.lastName,
+      chartId: patients.chartId,
+    })
+    .from(patients)
+    .where(and(...conditions))
+    .orderBy(asc(patients.lastName), asc(patients.firstName))
+    .limit(PATIENT_PICKER_SEARCH_LIMIT);
+}

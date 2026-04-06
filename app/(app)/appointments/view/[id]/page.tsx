@@ -8,8 +8,7 @@
 
 import { notFound } from "next/navigation";
 import { getAppointmentDetail, getActiveDoctors } from "@/lib/actions/appointments";
-import { getActivePatients } from "@/lib/actions/patients";
-import { mapAppointmentPickerResults } from "../../_lib/appointment-picker-options";
+import { mapDoctorPickerResults } from "../../_lib/appointment-picker-options";
 import { buildAppointmentDetail } from "../../_lib/appointment-detail-mapper";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
@@ -20,12 +19,11 @@ interface AppointmentDetailPageProps {
 
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
   const { id } = await params;
-  const [result, patientsRes, doctorsRes] = await Promise.all([
+  const [result, doctorsRes] = await Promise.all([
     getAppointmentDetail(id),
-    getActivePatients(),
     getActiveDoctors(),
   ]);
-  const { patientOptions, doctorOptions } = mapAppointmentPickerResults(patientsRes, doctorsRes);
+  const { doctorOptions } = mapDoctorPickerResults(doctorsRes);
 
   if (!result.success) notFound();
 
@@ -36,7 +34,6 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
       <AppointmentDetailPanel
         mode="edit"
         appointment={appointment}
-        patientOptions={patientOptions}
         doctorOptions={doctorOptions}
       />
     </DetailPageShell>

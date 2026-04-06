@@ -134,6 +134,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
+- `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
 - `ModalCloseButton.tsx` — Shared dialog/modal close control where a distinct control from `PanelCloseButton` is needed
@@ -179,6 +180,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - See `docs/01-PRD.md` for the full permission matrix
 - **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`), all pages redirect (`getSession()` + `redirect`), all server actions use `requireRole(session, ["admin", "doctor"])`
 - **Clinical notes / patient past history — staff excluded:** `AppointmentDetailPanel` filters appointment `notes`; `PatientDetailPanel` filters `pastHistoryNotes` when `usePermission("viewClinicalNotes")` is false. Patient/appointment server actions also redact or ignore these fields for staff (see `docs/05-Authentication.md`).
+- **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff (see `docs/05-Authentication.md`).
 - **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
 
 ### Appointments

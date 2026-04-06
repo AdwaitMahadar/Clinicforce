@@ -33,6 +33,7 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     id:              r.id,
     patientId:       r.patientId,
     patientName:     r.patientName,
+    patientChartId:  r.patientChartId,
     patientInitials: r.patientName.slice(0, 2).toUpperCase(),
     doctorId:        r.doctorId,
     doctorName:      r.doctorName,

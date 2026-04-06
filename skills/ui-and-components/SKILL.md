@@ -44,7 +44,8 @@ Reuse existing components instead of building ad-hoc solutions.
 *   `<DocumentMimeTypeIcon />` - MIME-based file icon (PDF / image / generic); used in `<DocumentCard />` and `<UniversalSearch />`.
 *   `<DocumentCard />` / `<UploadDocumentDialog />` - Patient/appointment document list + presigned upload (see `skills/file-upload/SKILL.md`).
 *   `<UniversalSearch />` - TopNav command palette (`Dialog` + cmdk `Command`); `searchGlobal` + document `getViewPresignedUrl`; ⌘/Ctrl+K.
-*   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`.
+*   `<DetailForm />` - RHF + Zod; required `fields` (single scrollable 2-column grid); `forwardRef` + `submit`/`reset`; footer lives on `<DetailPanel />`. Select fields may set **`selectContentClassName`** on the descriptor for `<SelectContent />` (e.g. appointment doctor picker max height ~6 rows + scroll).
+*   `<AsyncSearchCombobox />` - Popover + cmdk; **`fetchItems(query)`** async (debounced internally); **`shouldFilter={false}`**; **`modal={false}`** for dialogs; optional **`renderOption`**. Appointment patient: **`AppointmentPatientCombobox`** + **`searchPatientsForPicker`** (limit 8, same search columns as `getPatients`).
 *   `<DetailPanel />` / `<DetailSidebar />` - Detail shell: header, form column, optional sidebar tabs + activity log, footer (Save / Cancel / optional delete). Sidebar is hidden when `isCreate=true` OR when the user lacks `viewDetailSidebar` permission (staff) — `DetailPanel` reads this internally via `usePermission`, no extra prop needed in entity panels. View modal pages pass `size="lg"` instead of `"xl"` for staff so the narrower modal matches the full-width form.
 *   `<PanelCloseButton />` - Shared X close button for all detail panels; uses Lucide `X` with CSS `:hover` (no imperative DOM). Always pass `onClose` explicitly — panels decide whether to call `router.back()` or a custom callback.
 *   `<ModalShell />` - Intercepting route modals: shadcn `Dialog` / Radix (focus trap, scroll lock, `router.back()` on dismiss); sizes from `modal-shell-sizes.ts`.
@@ -83,7 +84,7 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/reports`: Placeholder view.
 *   **Appointments**: 
     *   `/dashboard`: Calendar views (Month/Week/Day).
-    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server pages fetch `patientOptions`/`doctorOptions` via `getActivePatients` (`@/lib/actions/patients`) and `getActiveDoctors` (`@/lib/actions/appointments`), or `loadAppointmentFormSelectOptions` in `appointments/_lib/appointment-picker-options.ts`; **view** uses `Promise.all` with `getAppointmentDetail`; **patient select disabled in edit**; sidebar Documents + activity log in edit; create = full-width form.
+    *   `/new` & `/view/[id]`: `AppointmentDetailPanel` — server loads **`doctorOptions`** via `getActiveDoctors` + `loadAppointmentDoctorOptions` / `mapDoctorPickerResults` in `appointments/_lib/appointment-picker-options.ts`; **patient** create = debounced **`searchPatientsForPicker`** combobox; **patient** edit = disabled label from detail (`patientChartId` on `getAppointmentDetail`); **view** uses `Promise.all` with `getAppointmentDetail` + doctors; **Title** after doctor via `usePermission("viewAppointmentTitle")`; category + visit type same row (`colSpan` 1); doctor select scroll cap via `selectContentClassName`; sidebar Documents + activity log in edit; create = full-width form.
     *   `/reports`: Placeholder view.
 *   **Patients**: 
     *   `/dashboard`: DataTable (Search by name/chart_id, filter by Last Dr. / Status); row click → `/patients/view/[id]` (intercepting modal).

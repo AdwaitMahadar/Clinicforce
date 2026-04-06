@@ -21,6 +21,11 @@ export { TimeGridView }         from "./TimeGridView";
 export { AppointmentEventCard } from "./AppointmentEventCard";
 
 // ─── Forms ───────────────────────────────────────────────────────────────────
+export { AsyncSearchCombobox } from "./AsyncSearchCombobox";
+export type {
+  AsyncSearchComboboxFetchFn,
+  AsyncSearchComboboxProps,
+} from "./AsyncSearchCombobox";
 export { DetailForm } from "./DetailForm";
 export type {
   DetailFormHandle,

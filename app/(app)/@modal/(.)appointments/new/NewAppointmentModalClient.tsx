@@ -6,18 +6,16 @@ import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/App
 import type { AppointmentSelectOption } from "@/types/appointment";
 
 type Props = {
-  patientOptions: AppointmentSelectOption[];
   doctorOptions: AppointmentSelectOption[];
 };
 
-export function NewAppointmentModalClient({ patientOptions, doctorOptions }: Props) {
+export function NewAppointmentModalClient({ doctorOptions }: Props) {
   const router = useRouter();
   const handleClose = useCallback(() => router.back(), [router]);
 
   return (
     <AppointmentDetailPanel
       mode="create"
-      patientOptions={patientOptions}
       doctorOptions={doctorOptions}
       onClose={handleClose}
     />

@@ -38,7 +38,7 @@ export interface AppointmentEvent {
 
 // ─── Detail record (single appointment view/edit panel) ───────────────────────
 
-/** Label/value pair for patient/doctor selects in `AppointmentDetailPanel`. */
+/** Label/value pair for static selects in `AppointmentDetailPanel` (e.g. doctor). */
 export type AppointmentSelectOption = { label: string; value: string };
 
 export interface AppointmentActivityEntry {
@@ -54,6 +54,8 @@ export interface AppointmentDetail {
   id:                 string;
   patientId:           string;
   patientName:        string;
+  /** Raw chart id for picker / labels — format with `formatPatientChartId` in UI. */
+  patientChartId:     number;
   patientInitials:    string;
   doctorId:           string;
   doctorName:         string;

@@ -1,31 +1,16 @@
 /**
- * Maps `getActivePatients` / `getActiveDoctors` action results to DetailForm select options.
- * `getActivePatients` from `@/lib/actions/patients`; `getActiveDoctors` from `@/lib/actions/appointments`.
- * Used by server entry points; keeps mapping logic in one place.
+ * Maps `getActiveDoctors` action results to DetailForm select options.
+ * Patient picker uses debounced `searchPatientsForPicker` on the client — no bulk preload.
  */
 
 import { getActiveDoctors } from "@/lib/actions/appointments";
-import { getActivePatients } from "@/lib/actions/patients";
-import { formatPatientChartId } from "@/lib/utils/chart-id";
 import type { AppointmentSelectOption } from "@/types/appointment";
 
-type PatientsResult = Awaited<ReturnType<typeof getActivePatients>>;
 type DoctorsResult = Awaited<ReturnType<typeof getActiveDoctors>>;
 
-export function mapAppointmentPickerResults(
-  patientsRes: PatientsResult,
-  doctorsRes: DoctorsResult
-): {
-  patientOptions: AppointmentSelectOption[];
+export function mapDoctorPickerResults(doctorsRes: DoctorsResult): {
   doctorOptions: AppointmentSelectOption[];
 } {
-  const patientOptions =
-    patientsRes.success && patientsRes.data
-      ? patientsRes.data.map((p) => ({
-          label: `${p.firstName} ${p.lastName} (${formatPatientChartId(p.chartId)})`,
-          value: p.id,
-        }))
-      : [];
   const doctorOptions =
     doctorsRes.success && doctorsRes.data
       ? doctorsRes.data.map((d) => ({
@@ -33,14 +18,11 @@ export function mapAppointmentPickerResults(
           value: d.id,
         }))
       : [];
-  return { patientOptions, doctorOptions };
+  return { doctorOptions };
 }
 
-/** Fetches and maps picker options (for create flows and any server page that only needs selects). */
-export async function loadAppointmentFormSelectOptions() {
-  const [patientsRes, doctorsRes] = await Promise.all([
-    getActivePatients(),
-    getActiveDoctors(),
-  ]);
-  return mapAppointmentPickerResults(patientsRes, doctorsRes);
+/** Fetches doctor options for appointment create/edit (server entry points). */
+export async function loadAppointmentDoctorOptions() {
+  const doctorsRes = await getActiveDoctors();
+  return mapDoctorPickerResults(doctorsRes);
 }

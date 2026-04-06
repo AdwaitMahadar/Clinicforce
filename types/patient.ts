@@ -7,6 +7,16 @@
 import type { LogEvent } from "@/components/common";
 import type { AppointmentStatus } from "@/types/appointment";
 
+// ─── Appointment combobox (`searchPatientsForPicker`) ─────────────────────────
+
+/** Active patient row for async patient picker — not the full detail shape. */
+export interface PatientPickerHit {
+  id: string;
+  firstName: string;
+  lastName: string;
+  chartId: number;
+}
+
 // ─── Dashboard row (list view) ────────────────────────────────────────────────
 
 export type PatientStatus = "active" | "inactive";

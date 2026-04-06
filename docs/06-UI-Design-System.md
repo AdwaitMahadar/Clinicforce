@@ -305,7 +305,12 @@ The row containing the search input, filter dropdowns, and export button. Appear
 ### `<DetailForm />` — Entity Detail Form
 **Location:** `components/common/DetailForm.tsx`
 
-A generic field-driven form panel wired to React Hook Form and Zod. Pass a **`fields`** array (the only layout mode); it renders one scrollable 2-column grid (`colSpan` controls full-width rows). Exposes **`forwardRef`** + **`DetailFormHandle`** (`submit()`, `reset()`). Footer buttons are **not** included — the parent **`DetailPanel`** (or a custom layout) calls `formRef.current?.submit()` after validation. Select fields use a **controlled** Radix Select (`value` + `key`) so programmatic default changes stay in sync.
+A generic field-driven form panel wired to React Hook Form and Zod. Pass a **`fields`** array (the only layout mode); it renders one scrollable 2-column grid (`colSpan` controls full-width rows). Exposes **`forwardRef`** + **`DetailFormHandle`** (`submit()`, `reset()`). Footer buttons are **not** included — the parent **`DetailPanel`** (or a custom layout) calls `formRef.current?.submit()` after validation. Select fields use a **controlled** Radix Select (`value` + `key`) so programmatic default changes stay in sync. Select descriptors may set optional **`selectContentClassName`** (merged onto `<SelectContent />`) — used e.g. to cap dropdown height for long lists without affecting other selects.
+
+### `<AsyncSearchCombobox />` — server-searched combobox
+**Location:** `components/common/AsyncSearchCombobox.tsx`
+
+Popover (`modal={false}` for use inside intercepting `Dialog`s) + shadcn **`Command`** / cmdk with **`shouldFilter={false}`**. Callers pass a debounced async **`fetchItems(query)`**; results render as **`CommandItem`**s with a scroll-capped **`CommandList`** (default ~8 rows via `max-h` + `overflow-y-auto`). Generic **`getOptionValue` / `getOptionLabel`** (and optional **`renderOption`**) keep it reusable for other entities. First consumer: **`AppointmentPatientCombobox`** (`appointments/_components/`) + **`searchPatientsForPicker`**.
 
 ### `<DetailPanel />` — Detail Modal / Page Shell
 **Location:** `components/common/DetailPanel.tsx`

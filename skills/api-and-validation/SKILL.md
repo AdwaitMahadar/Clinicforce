@@ -73,10 +73,10 @@ The general pattern for every action follows the anatomy above:
 - **Get actions**: Accept `id` + `clinicId`. Return a fully joined aggregate including nested `eventLog` and `documents` where applicable.
 - **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.
 - **Update actions**: Accept `id` + validated Zod payload. Scope the UPDATE with `clinic_id` to prevent cross-tenant writes. Example: `updateAppointment` never updates `patientId` and rejects if the client sends a different `patientId` than the row.
-- **Appointment mutations** (`createAppointment`, `updateAppointment`, `deleteAppointment`): After success, call **`revalidatePath("/appointments/dashboard")`**; client detail panels call **`router.refresh()`** after create/update/cancel so the calendar stays in sync.
+- **Appointment mutations** (`createAppointment`, `updateAppointment`, `deleteAppointment`): After success, call **`revalidatePath("/appointments/dashboard")`**; client detail panels call **`router.refresh()`** after create/update/cancel so the calendar stays in sync. For **staff**, `createAppointment` always persists `title` as null; `updateAppointment` removes `title` from the parsed payload (parallel to `notes` / `viewClinicalNotes`).
 - **Cross-cutting actions** (activity logging, S3 presigned URLs): Follow the same session → RBAC → validate → execute sequence. See `docs/09-File-Upload-Flow.md` for the upload flow specifically.
 - **Global search**: `searchGlobal` in `lib/actions/search.ts` — validate with `searchGlobalQuerySchema` (`lib/validators/search.ts`); parallel `LIMIT 5` queries per entity, all scoped by `clinicId`; return type `GroupedSearchResults` in `types/search.ts`.
-- **Appointment pickers:** `getActivePatients()` only in `lib/actions/patients.ts`; `getActiveDoctors()` in `lib/actions/appointments.ts`. Appointment routes import both (two modules) — Next.js `"use server"` files cannot reliably re-export server actions from another file. Do not duplicate the `getActivePatients` body.
+- **Appointment pickers:** `getActiveDoctors()` in `lib/actions/appointments.ts` (server preload for doctor `<Select />`). **`searchPatientsForPicker`** in `lib/actions/patients.ts` for the patient combobox (8-row cap; same search columns as `getPatients`). `getActivePatients()` remains for other bulk use; appointment form does not preload all patients.
 
 ## Detail Mapper Pattern
 

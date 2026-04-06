@@ -52,12 +52,14 @@ Create/update payloads use **`scheduledDate`** (`YYYY-MM-DD`) and **`scheduledTi
 
 After a successful **`createAppointment`**, **`updateAppointment`**, or **`deleteAppointment`** (soft cancel), the action calls **`revalidatePath("/appointments/dashboard")`** so the appointments calendar server cache matches the database. Detail/create UIs also call **`router.refresh()`** after mutations (aligned with the patients detail panel) so the calendar updates without a full page reload.
 
-**Picker helpers:** `getActiveDoctors()` — `lib/actions/appointments.ts`. **`getActivePatients()`** — **`lib/actions/patients.ts`** only (Next.js `"use server"` modules cannot reliably re-export server actions from another file). Appointment routes `Promise.all` both by importing from those two modules. RBAC: `requireRole(session, ["admin", "doctor", "staff"])` on both.
+**Picker helpers:** `getActiveDoctors()` — `lib/actions/appointments.ts` (appointment form doctor `<Select />`). **`searchPatientsForPicker({ query })`** — `lib/actions/patients.ts`: returns up to **8** active patients; search matches the same columns as directory `getPatients` (name, email, phone, chart id); empty `query` returns the first 8 active patients by name. Used by the appointment **patient** combobox (`AsyncSearchCombobox` + `AppointmentPatientCombobox`). **`getActivePatients()`** remains in `lib/actions/patients.ts` for other bulk-picker needs but is **not** used to preload the appointment form. RBAC: `requireRole(session, ["admin", "doctor", "staff"])` on these actions.
 
 ## Patients (`lib/actions/patients.ts`)
 
 **`getPatients`** (via `lib/db/queries/patients.ts`): each list row includes **`status: "active" | "inactive"`** derived from `patients.is_active`. The list payload does **not** include `isActive`; dashboard and other consumers must map **`row.status`** into UI types (`types/patient.ts` `PatientRow`). **`getPatientDetail`** / `getPatientById` still expose `isActive` on the full detail aggregate. Full column contract: `docs/07-Page-Specifications.md` (Patients dashboard).
 
 **Sensitive narrative fields (RBAC):** For **staff**, `getPatientDetail` returns `pastHistoryNotes: null`; `getAppointmentDetail` and list **`getAppointments`** return `notes: null`; **`createPatient`** / **`updatePatient`** do not persist `past_history_notes` from staff; **`createAppointment`** / **`updateAppointment`** do not persist `notes` from staff (and updates from staff omit `notes` even if tampered). Admin and doctor receive full values.
+
+**Appointment title (RBAC):** For **staff**, **`createAppointment`** always persists `title` as null (ignores any client-supplied title). **`updateAppointment`** removes `title` from the parsed payload for staff so existing titles are not updated or cleared via the API.
 
 **`PatientRow.chartId`** is a **`number`** (raw integer from DB). The table display layer (`PatientsTable`) is responsible for calling `formatPatientChartId` — the dashboard page must not pre-format it to a string before passing to the row shape.

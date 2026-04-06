@@ -138,7 +138,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — patient, doctor, category, visit type, scheduled date + scheduled time, duration, status, optional title, description, actual check-in time (time-only), clinical notes (custom control). The patient select is **disabled in edit mode**; `patientId` is not sent on update. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, duration, status, description, actual check-in time (time-only), clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
 - **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`.
 - **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
@@ -154,7 +154,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     title:              string | null;
     patientId:          string;
     patientName:        string;   // JOIN patients (first_name + last_name)
-    patientChartId:     string;
+    patientChartId:     number;   // raw integer; format in UI with `formatPatientChartId`
     doctorId:           string;
     doctorName:         string;   // JOIN users (first_name + last_name)
     category:           string;
@@ -192,7 +192,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ## 5. New Appointment Modal / Page — `/appointments/new`
 
-> **Status:** UI built (modal + full-page fallback). Server actions wired. Patient and doctor pickers populated via `getActivePatients` (`lib/actions/patients.ts`) and `getActiveDoctors` (`lib/actions/appointments.ts`).
+> **Status:** UI built (modal + full-page fallback). Server actions wired. **Doctor** options load on the server via `getActiveDoctors` (`lib/actions/appointments.ts`). **Patient** create picker uses debounced **`searchPatientsForPicker`** (`lib/actions/patients.ts`) — no bulk `getActivePatients` preload for appointments.
 
 ### Server Actions
 
@@ -209,11 +209,9 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **Returns:** Created appointment `{ id }` (client then navigates to detail view)
 - **RBAC:** All roles.
 
-#### Supporting Selects (for form dropdowns)
-Both needed to populate the patient and doctor pickers in the form:
-
-`getActivePatients()` — `{ id, firstName, lastName, chartId }[]` where `is_active = true`
-`getActiveDoctors()` — `{ id, firstName, lastName, chartId }[]` where `is_active = true AND type = 'doctor'`
+#### Supporting data (form pickers)
+- **`getActiveDoctors()`** — populates the doctor `<Select />`: `{ id, firstName, lastName, … }[]` where `is_active = true` and `type = 'doctor'`.
+- **`searchPatientsForPicker({ query })`** — async patient combobox (create mode): returns up to **8** active patients per request; search predicate matches the patients directory (`getPatients`): first/last name, email, phone, chart id. Empty `query` returns the first 8 active patients ordered by name. Implementation: `searchActivePatientsForPicker` in `lib/db/queries/patients.ts`.
 
 ---
 
@@ -673,9 +671,9 @@ The application provides intercepting routes to display forms seamlessly over th
 | `/home/dashboard` | Home overview | — | `getHomeStats`, `getRecentAppointments`, `getRecentPatients` |
 | `/home/reports` | Home Reports | Placeholder | `—` |
 | `/appointments/dashboard` | Calendar view | `MonthView`, `TimeGridView` | `getAppointments` |
-| `/appointments/new` | New appt form | `AppointmentDetailPanel mode="create"` | `createAppointment`, `getActivePatients`, `getActiveDoctors` |
+| `/appointments/new` | New appt form | `AppointmentDetailPanel mode="create"` | `createAppointment`, `searchPatientsForPicker` (client), `getActiveDoctors` |
 | `/appointments/reports` | Appt Reports | Placeholder | `—` |
-| `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `getActivePatients`, `getActiveDoctors` (parallel with detail), `updateAppointment`, `deleteAppointment` |
+| `/appointments/view/[id]` | Appt detail | `AppointmentDetailPanel mode="edit"` | `getAppointmentDetail`, `getActiveDoctors` (parallel with detail), `updateAppointment`, `deleteAppointment` |
 | `/patients/dashboard` | Patient list | `DataTable` | `getPatients` |
 | `/patients/new` | New patient form | `PatientDetailPanel mode="create"` | `createPatient` |
 | `/patients/reports` | Patient Reports | Placeholder | `—` |
@@ -714,7 +712,8 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [x] `lib/auth/rbac.ts` — `ForbiddenError` class + `requireRole(session, allowed[])`. Throws `ForbiddenError` if `session.user.type` is not in `allowed`. All server actions call this before any DB work.
 
 ### Step 4 — Shared Supporting Actions (no UI dependency)
-- [x] `getActivePatients()` — **`lib/actions/patients.ts`** (appointment pickers import it alongside `getActiveDoctors` from `appointments.ts`)
+- [x] `getActivePatients()` — **`lib/actions/patients.ts`** (bulk list; not used for appointment form preload)
+- [x] `searchPatientsForPicker()` — **`lib/actions/patients.ts`** (appointment patient combobox)
 - [x] `getActiveDoctors()` — `lib/actions/appointments.ts`
 - [ ] `appendActivityLog()` — not implemented (`audit_log` / activity persistence not yet built)
 
@@ -754,4 +753,4 @@ Create or complete validators in `lib/validators/`. These are the single source 
 ### Step 6 — Wire UI to Actions
 Server actions return data shaped for `@/types/*` view models (or query-layer types in `lib/db/queries/` mapped in the action). Pages should call actions and map to the types expected by panels and tables.
 
-**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema` with patient and doctor pickers. Picker options are fetched on the **server** in each route (`Promise.all` with `getActivePatients` from `@/lib/actions/patients` and `getActiveDoctors` from `@/lib/actions/appointments`, or via `loadAppointmentFormSelectOptions` in `appointments/_lib/appointment-picker-options.ts`) and passed as props so selects are populated on first paint.
+**Note:** Appointment create/edit UI is fully wired. `AppointmentDetailPanel` uses `createAppointmentSchema` / `updateAppointmentSchema`. **Doctor** options are fetched on the server per route (`getActiveDoctors` + `loadAppointmentDoctorOptions` / `mapDoctorPickerResults` in `appointments/_lib/appointment-picker-options.ts`). **Patient** (create) uses client-debounced **`searchPatientsForPicker`**; edit mode shows a disabled combobox label from `getAppointmentDetail` (`patientName` + `patientChartId`).

@@ -48,6 +48,7 @@ export interface AppointmentDetailRecord {
   description: string | null;
   patientId: string;
   patientName: string;
+  patientChartId: number;
   doctorId: string;
   doctorName: string;
   category: string;
@@ -145,6 +146,7 @@ export async function getAppointmentById(
       patientId: appointments.patientId,
       patientFirstName: patients.firstName,
       patientLastName: patients.lastName,
+      patientChartId: patients.chartId,
       doctorId: appointments.doctorId,
       doctorName: sql<string>`COALESCE(
         NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
@@ -200,6 +202,7 @@ export async function getAppointmentById(
     description: appt.description,
     patientId: appt.patientId,
     patientName: `${appt.patientFirstName} ${appt.patientLastName}`.trim(),
+    patientChartId: appt.patientChartId,
     doctorId: appt.doctorId,
     doctorName: appt.doctorName ?? "",
     category: appt.category,

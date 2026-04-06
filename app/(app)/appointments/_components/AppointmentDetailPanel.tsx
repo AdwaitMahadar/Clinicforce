@@ -43,6 +43,8 @@ import {
   deleteAppointment,
 } from "@/lib/actions/appointments";
 import { usePermission } from "@/lib/auth/session-context";
+import { formatPatientChartId } from "@/lib/utils/chart-id";
+import { AppointmentPatientCombobox } from "./AppointmentPatientCombobox";
 
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
@@ -149,24 +151,14 @@ function AppointmentDocumentsTab({ appointment }: { appointment: AppointmentDeta
   );
 }
 
-// ─── Field definitions (single scrollable column; pickers filled at runtime) ───
+// ─── Field definitions (DetailForm 2-column grid; pickers filled at runtime) ───
 
 function buildAppointmentFormFields(
-  patientOptions: AppointmentSelectOption[],
   doctorOptions: AppointmentSelectOption[],
-  patientSelectDisabled: boolean,
-  includeNotes: boolean
+  includeNotes: boolean,
+  includeTitle: boolean
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
   const all: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
-    {
-      name:        "patientId",
-      label:       "Patient",
-      type:        "select",
-      colSpan:     2,
-      placeholder: "Select a patient...",
-      options:     patientOptions,
-      disabled:    patientSelectDisabled,
-    },
     {
       name:        "doctorId",
       label:       "Assigned Doctor",
@@ -174,12 +166,25 @@ function buildAppointmentFormFields(
       colSpan:     2,
       placeholder: "Select a doctor...",
       options:     doctorOptions,
+      selectContentClassName:
+        "max-h-[min(13.5rem,var(--radix-select-content-available-height))]",
     },
+    ...(includeTitle
+      ? [
+          {
+            name:        "title" as const,
+            label:       "Title",
+            type:        "text" as const,
+            colSpan:     2 as const,
+            placeholder: "e.g. Post-surgery checkup",
+          } satisfies FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>,
+        ]
+      : []),
     {
       name:    "category",
       label:   "Category",
       type:    "select",
-      colSpan: 2,
+      colSpan: 1,
       options: APPOINTMENT_CATEGORIES.map((c) => ({
         label: APPOINTMENT_CATEGORY_LABELS[c],
         value: c,
@@ -189,7 +194,7 @@ function buildAppointmentFormFields(
       name:    "visitType",
       label:   "Visit type",
       type:    "select",
-      colSpan: 2,
+      colSpan: 1,
       options: APPOINTMENT_VISIT_TYPES.map((v) => ({
         label: APPOINTMENT_VISIT_TYPE_LABELS[v],
         value: v,
@@ -218,13 +223,6 @@ function buildAppointmentFormFields(
       options: APPOINTMENT_STATUSES.map((s) => ({ label: APPOINTMENT_STATUS_LABELS[s], value: s })),
     },
     {
-      name:        "title",
-      label:       "Title (optional)",
-      type:        "text",
-      colSpan:     2,
-      placeholder: "e.g. Post-surgery checkup",
-    },
-    {
       name:        "description",
       label:       "Description",
       type:        "textarea",
@@ -248,7 +246,6 @@ function buildAppointmentFormFields(
 type EditProps = {
   mode: "edit";
   appointment: AppointmentDetail;
-  patientOptions: AppointmentSelectOption[];
   doctorOptions: AppointmentSelectOption[];
   onClose?: () => void;
 };
@@ -256,7 +253,6 @@ type EditProps = {
 type CreateProps = {
   mode: "create";
   appointment?: never;
-  patientOptions: AppointmentSelectOption[];
   doctorOptions: AppointmentSelectOption[];
   onClose?: () => void;
 };
@@ -268,7 +264,6 @@ type AppointmentDetailPanelProps = EditProps | CreateProps;
 export function AppointmentDetailPanel({
   mode = "edit",
   appointment,
-  patientOptions,
   doctorOptions,
   onClose,
 }: AppointmentDetailPanelProps) {
@@ -276,6 +271,7 @@ export function AppointmentDetailPanel({
   const router   = useRouter();
   const formRef  = useRef<DetailFormHandle | null>(null);
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
+  const canViewAppointmentTitle = usePermission("viewAppointmentTitle");
 
   const createDefaults = useMemo(
     (): CreateAppointmentInput => ({
@@ -438,17 +434,47 @@ export function AppointmentDetailPanel({
     </>
   );
 
+  const formFields = useMemo((): FormFieldDescriptor<
+    CreateAppointmentInput | UpdateAppointmentInput
+  >[] => {
+    const patientLockedLabel = !isCreate
+      ? `${appointment!.patientName} (${formatPatientChartId(appointment!.patientChartId)})`
+      : undefined;
+    const patientField: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput> = {
+      name: "patientId",
+      label: "Patient",
+      type: "custom",
+      colSpan: 2,
+      renderControl: (field) => (
+        <AppointmentPatientCombobox
+          field={field}
+          disabled={!isCreate}
+          disabledDisplayLabel={patientLockedLabel}
+        />
+      ),
+    };
+    return [
+      patientField,
+      ...buildAppointmentFormFields(
+        doctorOptions,
+        canViewClinicalNotes,
+        canViewAppointmentTitle
+      ),
+    ];
+  }, [
+    appointment,
+    doctorOptions,
+    isCreate,
+    canViewClinicalNotes,
+    canViewAppointmentTitle,
+  ]);
+
   const form = (
     <DetailForm<CreateAppointmentInput | UpdateAppointmentInput>
       ref={formRef}
       schema={isCreate ? createAppointmentSchema : updateAppointmentSchema}
       defaultValues={defaultValues}
-      fields={buildAppointmentFormFields(
-        patientOptions,
-        doctorOptions,
-        !isCreate,
-        canViewClinicalNotes
-      )}
+      fields={formFields}
       onSubmit={handleSubmit}
     />
   );

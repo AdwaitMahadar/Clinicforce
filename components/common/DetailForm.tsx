@@ -95,6 +95,8 @@ export interface TextareaField<TValues extends FieldValues> extends BaseField<TV
 export interface SelectField<TValues extends FieldValues> extends BaseField<TValues> {
   type: "select";
   options: SelectOption[];
+  /** Merged onto `<SelectContent />` (e.g. cap dropdown height for long option lists). */
+  selectContentClassName?: string;
 }
 
 /**
@@ -189,7 +191,9 @@ function renderFieldControl<TValues extends FieldValues>(
             }
           />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          className={(descriptor as SelectField<TValues>).selectContentClassName}
+        >
           {(descriptor as SelectField<TValues>).options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}

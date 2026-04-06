@@ -28,6 +28,9 @@ export const PERMISSIONS = {
   viewClinicalNotes: ["admin", "doctor"],
   editClinicalNotes: ["admin", "doctor"],
 
+  /** Optional appointment title field on create/edit forms. Hidden from staff; server actions ignore title from staff payloads. */
+  viewAppointmentTitle: ["admin", "doctor"],
+
   // ── Detail sidebar ────────────────────────────────────────────────────────
   /**
    * Show the right-column sidebar in detail views (tabs + activity log).

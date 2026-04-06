@@ -64,6 +64,7 @@ PostgreSQL `pgEnum` definitions in `lib/db/schema/` pull value arrays from `lib/
 Types exported from `lib/db/queries/` that represent raw DB row shapes are prefixed with **`Db`** to avoid collision with the UI view-model types in `types/`:
 
 - `DbPatientRow` (`lib/db/queries/patients.ts`) — chartId is `number`, dates are `Date | null`. Distinct from `PatientRow` in `types/patient.ts` (chartId formatted string, display strings).
+- `searchActivePatientsForPicker` — active patients only, same text match as list `getPatients`, **`LIMIT 8`** (`PATIENT_PICKER_SEARCH_LIMIT`).
 - `DbMedicineRow` (`lib/db/queries/medicines.ts`) — lastPrescribedDate is `Date | null`, isActive is `boolean`. Distinct from `MedicineRow` in `types/medicine.ts` (lastUsed string, status string).
 - Never import DB query types (`Db*`) in client components or UI code — they are server-only.
 

@@ -182,6 +182,7 @@ export async function createAppointment(input: unknown) {
     const { clinicId, id: userId } = session.user;
     const v = parsed.data;
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     const serverNow = new Date();
 
     let scheduledAt: Date;
@@ -225,7 +226,7 @@ export async function createAppointment(input: unknown) {
       return { success: false as const, error: "The selected user is not a doctor." };
     }
 
-    const titleTrimmed = v.title?.trim() ?? "";
+    const titleTrimmed = canTitle ? (v.title?.trim() ?? "") : "";
     const [created] = await db
       .insert(appointments)
       .values({
@@ -272,6 +273,9 @@ export async function updateAppointment(input: unknown) {
     const { id, ...fields } = parsed.data;
     if (!hasPermission(session.user.type, "viewClinicalNotes")) {
       delete fields.notes;
+    }
+    if (!hasPermission(session.user.type, "viewAppointmentTitle")) {
+      delete fields.title;
     }
     const serverNow = new Date();
 

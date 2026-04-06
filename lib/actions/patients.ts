@@ -24,6 +24,7 @@ import {
   getPatients as queryGetPatients,
   getPatientById,
   getActivePatients as queryGetActivePatients,
+  searchActivePatientsForPicker as querySearchActivePatientsForPicker,
 } from "@/lib/db/queries/patients";
 import {
   createPatientSchema,
@@ -46,6 +47,36 @@ function resolveSaveDateOfBirth(
 }
 
 // ─── Input schemas for list/filter params ─────────────────────────────────────
+
+const searchPatientsForPickerInputSchema = z.object({
+  query: z.string().max(200).optional().default(""),
+});
+
+// ─── searchPatientsForPicker ─────────────────────────────────────────────────
+
+/**
+ * Debounced combobox search for appointment (and future) patient pickers.
+ * Returns a minimal shape — not `getPatientDetail` / list row aggregates.
+ */
+export async function searchPatientsForPicker(input: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = searchPatientsForPickerInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid search." };
+    }
+
+    const { clinicId } = session.user;
+    const data = await querySearchActivePatientsForPicker(clinicId, parsed.data.query ?? "");
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[searchPatientsForPicker]", err);
+    return { success: false as const, error: "Failed to search patients." };
+  }
+}
 
 const getPatientsInputSchema = z.object({
   search:   z.string().optional(),
