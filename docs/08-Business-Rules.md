@@ -113,7 +113,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - All roles can upload (create) and view documents. Only Admin and Doctor can delete documents.
 - Every document must have an `assignedToId` and `assignedToType` (`patient` or `user`). A document must always belong to someone.
 - **Clinic-boundary enforcement:** `confirmDocumentUpload` verifies that `assignedToId` belongs to the session's `clinicId` before inserting the DB record. For `assignedToType: "patient"` this queries the `patients` table; for `"user"` it queries the `users` table. A mismatch returns an error and prevents cross-clinic attachment.
-- `appointmentId` is optional. It is used to surface relevant documents when viewing an appointment's detail — there is no behavioural restriction based on it.
+- `appointmentId` is optional. It links an upload to a specific visit in metadata; the appointment detail UI still lists every document assigned to that patient (`assigned_to_type = 'patient'`). There is no behavioural restriction based on `appointmentId` beyond audit/context.
 - `uploadedBy` is set to the authenticated user's ID at creation and is immutable.
 
 ### File Rules

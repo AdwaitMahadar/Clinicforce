@@ -252,6 +252,51 @@ export async function getPatients(
   };
 }
 
+// ─── getPatientAppointmentSummaries ────────────────────────────────────────────
+
+/**
+ * Active appointments for a patient, most recent `scheduled_at` first.
+ * Shared by `getPatientById` and `getAppointmentById`.
+ */
+export async function getPatientAppointmentSummaries(
+  clinicId: string,
+  patientId: string
+): Promise<PatientAppointmentSummary[]> {
+  const apptRows = await db
+    .select({
+      id: appointments.id,
+      title: appointments.title,
+      category: appointments.category,
+      visitType: appointments.visitType,
+      scheduledAt: appointments.scheduledAt,
+      status: appointments.status,
+      doctorName: sql<string>`COALESCE(
+        NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
+        ${users.name}
+      )`,
+    })
+    .from(appointments)
+    .leftJoin(users, eq(appointments.doctorId, users.id))
+    .where(
+      and(
+        eq(appointments.clinicId, clinicId),
+        eq(appointments.patientId, patientId),
+        eq(appointments.isActive, true)
+      )
+    )
+    .orderBy(desc(appointments.scheduledAt));
+
+  return apptRows.map((a) => ({
+    id: a.id,
+    title: a.title,
+    category: a.category,
+    visitType: a.visitType,
+    doctor: a.doctorName ?? "",
+    scheduledAt: a.scheduledAt,
+    status: a.status,
+  }));
+}
+
 // ─── getPatientById ───────────────────────────────────────────────────────────
 
 /**
@@ -291,44 +336,14 @@ export async function getPatientById(
   const patient = patientRows[0];
   if (!patient) return null;
 
-  // Fetch linked appointments with doctor display name
-  const apptRows = await db
-    .select({
-      id: appointments.id,
-      title: appointments.title,
-      category: appointments.category,
-      visitType: appointments.visitType,
-      scheduledAt: appointments.scheduledAt,
-      status: appointments.status,
-      doctorName: sql<string>`COALESCE(
-        NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
-        ${users.name}
-      )`,
-    })
-    .from(appointments)
-    .leftJoin(users, eq(appointments.doctorId, users.id))
-    .where(
-      and(
-        eq(appointments.clinicId, clinicId),
-        eq(appointments.patientId, id),
-        eq(appointments.isActive, true)
-      )
-    )
-    .orderBy(desc(appointments.scheduledAt));
-
-  const docs = await getDocumentsByAssignment(clinicId, id, "patient");
+  const [apptSummaries, docs] = await Promise.all([
+    getPatientAppointmentSummaries(clinicId, id),
+    getDocumentsByAssignment(clinicId, id, "patient"),
+  ]);
 
   return {
     ...patient,
-    appointments: apptRows.map((a) => ({
-      id: a.id,
-      title: a.title,
-      category: a.category,
-      visitType: a.visitType,
-      doctor: a.doctorName ?? "",
-      scheduledAt: a.scheduledAt,
-      status: a.status,
-    })),
+    appointments: apptSummaries,
     documents: docs,
   };
 }

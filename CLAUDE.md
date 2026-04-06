@@ -187,6 +187,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Category enum: `general | orthopedic | physiotherapy`; visit type enum: `general | first-visit | follow-up-visit` (DB `visit_type`; form/API key `visitType`)
 - Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), `duration` (minutes), and optional nullable **`fee`** (`numeric(10,2)` — UI displays with ₹ via `formatAppointmentFeeInr`)
+- **`AppointmentDetailPanel` sidebar (edit):** **Documents** lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`.
 
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment

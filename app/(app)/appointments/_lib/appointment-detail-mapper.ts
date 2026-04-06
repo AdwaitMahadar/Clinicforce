@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import type { getAppointmentDetail } from "@/lib/actions/appointments";
 import type { AppointmentDetail } from "@/types/appointment";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 type AppointmentDetailData = Extract<
   Awaited<ReturnType<typeof getAppointmentDetail>>,
@@ -49,7 +50,7 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     description:     r.description ?? "",
     notes:           r.notes ?? "",
     activityLog:     [],
-    documents: (r.documents ?? []).map((d) => ({
+    patientDocuments: (r.patientDocuments ?? []).map((d) => ({
       id:         d.id,
       title:      d.title,
       fileName:   d.fileName,
@@ -60,6 +61,21 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
         d.uploadedAt instanceof Date
           ? d.uploadedAt.toISOString()
           : String(d.uploadedAt),
+    })),
+    patientAppointments: (r.patientAppointments ?? []).map((a) => ({
+      id:        a.id,
+      title:     a.title,
+      category:  a.category,
+      visitType: a.visitType,
+      heading:   formatAppointmentHeading({
+        category:  a.category,
+        visitType: a.visitType,
+        title:     a.title,
+      }),
+      doctor: a.doctor ?? "",
+      date:   a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
+      time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
+      status: a.status as AppointmentDetail["patientAppointments"][number]["status"],
     })),
   };
 }

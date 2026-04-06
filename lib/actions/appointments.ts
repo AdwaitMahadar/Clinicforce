@@ -159,6 +159,10 @@ export async function getAppointmentDetail(id: unknown) {
         ...appointment,
         notes: canNotes ? appointment.notes : null,
         title: canTitle ? appointment.title : null,
+        patientAppointments: appointment.patientAppointments.map((a) => ({
+          ...a,
+          title: canTitle ? a.title : null,
+        })),
         // TODO: Implement when audit_log table is built.
         activityLog: [] as never[],
       },

@@ -13,7 +13,7 @@ import type {
   AppointmentVisitType,
   AppointmentStatus,
 } from "@/lib/constants/appointment";
-import type { PatientDocument } from "@/types/patient";
+import type { PatientAppointment, PatientDocument } from "@/types/patient";
 
 export type { AppointmentStatus, AppointmentCategory, AppointmentVisitType };
 
@@ -76,6 +76,8 @@ export interface AppointmentDetail {
   description?:       string;
   notes:              string;
   activityLog:        AppointmentActivityEntry[];
-  /** Documents linked via `appointment_id` (appointment detail panel). */
-  documents:          PatientDocument[];
+  /** All documents assigned to this patient (sidebar Documents tab). */
+  patientDocuments:   PatientDocument[];
+  /** Active appointments for this patient (sidebar Appointments tab). */
+  patientAppointments: PatientAppointment[];
 }

@@ -140,7 +140,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
 - **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, **duration** + optional **Fee** (number, `DetailForm` **`prefix: "₹"`** input group, `step=0.01`, all roles), **actual check-in** (time-only, full row), **status**, description, clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
 - **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`. Subline under the date/time shows **Duration** (minutes) and **Fee** via **`formatAppointmentFeeInr`** (`lib/utils/format-appointment-fee.ts`) — plain `₹` + two decimals, or `—` when null.
-- **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
+- **Sidebar (edit only):** **Documents** tab (all documents assigned to the patient — same query as patient detail; upload still passes `appointmentId` + `patientId` so new files link to this visit) + **Appointments** tab (all active appointments for that patient, newest first; current visit has a **Current** label and blue border; each row navigates to `/appointments/view/[id]`) + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
 ### Server Actions Needed
@@ -165,7 +165,9 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     fee:                number | null; // numeric(10,2)
     actualCheckIn:      string | null; // ISO timestamp when set
     notes:              string | null;
-    documents:          DocumentSummary[];
+    description:        string | null;
+    patientDocuments:   DocumentSummary[];  // `getDocumentsByAssignment(clinicId, patientId, "patient")`
+    patientAppointments: PatientAppointmentSummary[]; // active rows for patient, `scheduled_at` DESC; nested `title` redacted for staff like `getPatientDetail`
     activityLog:        LogEvent[];
     createdAt:          string;
     createdBy:          string;   // display name resolved from users
@@ -563,7 +565,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 
 ## 15. Cross-Cutting: Document Upload Flow
 
-Patient and appointment detail panels include a documents column with upload (`UploadDocumentDialog`) and list (`DocumentCard`).
+Patient and appointment detail panels include document upload (`UploadDocumentDialog`) and list (`DocumentCard`). The appointment detail sidebar lists **all** of the patient’s assigned documents (not only rows with `appointment_id` matching the open visit).
 This flow spans multiple pages and is described here once.
 
 ### Steps

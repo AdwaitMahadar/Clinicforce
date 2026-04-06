@@ -84,7 +84,7 @@ Every entity has a shared mapper in `_lib/*-detail-mapper.ts` that converts the 
 
 - `buildPatientDetail(r)` — `patients/_lib/patient-detail-mapper.ts` (includes `pastHistoryNotes`; `createPatientSchema` / `updatePatientSchema` carry UI-only `age`, stripped server-side)
 - `buildMedicineDetail(r)` — `medicines/_lib/medicine-detail-mapper.ts`
-- `buildAppointmentDetail(r)` — `appointments/_lib/appointment-detail-mapper.ts`
+- `buildAppointmentDetail(r)` — `appointments/_lib/appointment-detail-mapper.ts` — maps **`patientDocuments`** / **`patientAppointments`** (headings via `formatAppointmentHeading`; titles pre-redacted for staff in the action)
 
 Never duplicate mapping logic between `view/[id]/page.tsx` and `@modal/(.)entity/view/[id]/EntityViewModalContent.tsx`. Always import the shared mapper instead.
 

@@ -10,7 +10,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Calendar, FileText, Upload } from "lucide-react";
+import { Calendar, CalendarDays, FileText, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import {
   DocumentCard,
@@ -48,6 +48,14 @@ import { usePermission } from "@/lib/auth/session-context";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import { AppointmentPatientCombobox } from "./AppointmentPatientCombobox";
 
+// ─── Appointment status styles (sidebar list; mirrors PatientDetailPanel) ─────
+
+const APPT_STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  scheduled: { bg: "var(--color-amber-bg)",   text: "var(--color-amber)",   border: "var(--color-amber-border)"   },
+  completed: { bg: "var(--color-blue-bg)",    text: "var(--color-blue)",    border: "var(--color-blue-border)"    },
+  cancelled: { bg: "var(--color-red-bg)",     text: "var(--color-red)",     border: "var(--color-red-border)"     },
+  "no-show": { bg: "var(--color-purple-bg)",  text: "var(--color-purple)",  border: "var(--color-purple-border)" },
+};
 
 // ─── Sub-components used in custom field renderers ────────────────────────────
 
@@ -131,13 +139,13 @@ function AppointmentDocumentsTab({ appointment }: { appointment: AppointmentDeta
         </button>
       </div>
 
-      {appointment.documents.length === 0 ? (
+      {appointment.patientDocuments.length === 0 ? (
         <p className="text-xs text-center py-6" style={{ color: "var(--color-text-muted)" }}>
-          No documents for this visit yet.
+          No documents for this patient yet.
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          {appointment.documents.map((doc) => (
+          {appointment.patientDocuments.map((doc) => (
             <DocumentCard key={doc.id} document={doc} className="min-h-[72px]" />
           ))}
         </div>
@@ -150,6 +158,109 @@ function AppointmentDocumentsTab({ appointment }: { appointment: AppointmentDeta
         onOpenChange={setUploadOpen}
       />
     </>
+  );
+}
+
+// ─── Sidebar tab: Patient appointments ────────────────────────────────────────
+
+function AppointmentPatientAppointmentsTab({
+  appointment,
+}: {
+  appointment: AppointmentDetail;
+}) {
+  const router = useRouter();
+  const rows = appointment.patientAppointments;
+
+  if (rows.length === 0) {
+    return (
+      <p className="text-sm text-center py-10" style={{ color: "var(--color-text-muted)" }}>
+        No other appointments for this patient.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {rows.map((appt) => {
+        const isCurrent = appt.id === appointment.id;
+        const s = APPT_STATUS_STYLES[appt.status] ?? APPT_STATUS_STYLES.completed;
+        const cardStyle = {
+          background: "var(--color-surface)",
+          border: "1px solid",
+          borderColor: isCurrent ? "var(--color-blue-border)" : "var(--color-border)",
+          opacity: appt.status === "cancelled" ? 0.7 : 1,
+        } as const;
+        const inner = (
+          <>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p
+                    className="text-sm font-bold truncate"
+                    style={{ color: "var(--color-text-primary)" }}
+                  >
+                    {appt.heading}
+                  </p>
+                  {isCurrent && (
+                    <span
+                      className="text-[9px] font-semibold uppercase tracking-wide shrink-0 px-1.5 py-0.5 rounded"
+                      style={{
+                        background: "var(--color-blue-bg)",
+                        color: "var(--color-blue)",
+                        border: "1px solid var(--color-blue-border)",
+                      }}
+                    >
+                      Current
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+                  {appt.doctor}
+                </p>
+              </div>
+              <span
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap shrink-0 capitalize"
+                style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
+              >
+                {appt.status}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-4 text-xs"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              <span className="flex items-center gap-1">
+                <CalendarDays size={12} /> {appt.date}
+              </span>
+              <span>{appt.time}</span>
+            </div>
+          </>
+        );
+        if (isCurrent) {
+          return (
+            <div
+              key={appt.id}
+              className="w-full text-left flex flex-col gap-2 p-3 rounded-xl cursor-default transition-all"
+              style={cardStyle}
+              aria-current="page"
+            >
+              {inner}
+            </div>
+          );
+        }
+        return (
+          <button
+            key={appt.id}
+            type="button"
+            onClick={() => router.push(`/appointments/view/${appt.id}`)}
+            className="w-full text-left flex flex-col gap-2 p-3 rounded-xl cursor-pointer transition-all"
+            style={cardStyle}
+          >
+            {inner}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -528,6 +639,13 @@ export function AppointmentDetailPanel({
                 label: "Documents",
                 icon: FileText,
                 content: <AppointmentDocumentsTab appointment={appointment!} />,
+              },
+              {
+                label: "Appointments",
+                icon: CalendarDays,
+                content: (
+                  <AppointmentPatientAppointmentsTab appointment={appointment!} />
+                ),
               },
             ]
           : undefined

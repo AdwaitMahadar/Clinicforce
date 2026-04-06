@@ -8,10 +8,15 @@
  * Used by server actions only — never import from client components.
  */
 
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { appointments, documents, patients, users } from "@/lib/db/schema";
+import { appointments, patients, users } from "@/lib/db/schema";
 import type { DocumentSummary } from "./documents";
+import { getDocumentsByAssignment } from "./documents";
+import {
+  getPatientAppointmentSummaries,
+  type PatientAppointmentSummary,
+} from "./patients";
 
 // ─── Return Types ─────────────────────────────────────────────────────────────
 
@@ -63,7 +68,10 @@ export interface AppointmentDetailRecord {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string | null;
-  documents: DocumentSummary[];
+  /** All documents assigned to this patient (`assigned_to_type = 'patient'`). */
+  patientDocuments: DocumentSummary[];
+  /** Active appointments for this patient, newest `scheduled_at` first. */
+  patientAppointments: PatientAppointmentSummary[];
 }
 
 // ─── getAppointments ──────────────────────────────────────────────────────────
@@ -130,8 +138,8 @@ export async function getAppointments(
 
 /**
  * Returns full appointment detail for a clinic.
- * Includes joined patient name, doctor name, and documents linked to
- * this appointment (via appointment_id FK on the documents table).
+ * Includes joined patient name, doctor name, all patient-assigned documents,
+ * and all active appointments for that patient (same aggregates as `getPatientById`).
  *
  * Returns null if the appointment doesn't exist or belongs to a different clinic.
  */
@@ -177,26 +185,10 @@ export async function getAppointmentById(
   const appt = rows[0];
   if (!appt) return null;
 
-  // Fetch documents attached to this specific appointment
-  const docs = await db
-    .select({
-      id: documents.id,
-      title: documents.title,
-      fileName: documents.fileName,
-      mimeType: documents.mimeType,
-      fileSize: documents.fileSize,
-      type: documents.type,
-      uploadedAt: documents.createdAt,
-      appointmentId: documents.appointmentId,
-    })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.clinicId, clinicId),
-        eq(documents.appointmentId, id)
-      )
-    )
-    .orderBy(desc(documents.createdAt));
+  const [patientDocuments, patientAppointments] = await Promise.all([
+    getDocumentsByAssignment(clinicId, appt.patientId, "patient"),
+    getPatientAppointmentSummaries(clinicId, appt.patientId),
+  ]);
 
   return {
     id: appt.id,
@@ -219,7 +211,8 @@ export async function getAppointmentById(
     createdAt: appt.createdAt,
     updatedAt: appt.updatedAt,
     createdBy: appt.createdBy,
-    documents: docs,
+    patientDocuments,
+    patientAppointments,
   };
 }
 
