@@ -12,6 +12,7 @@ import { mapDoctorPickerResults } from "../../_lib/appointment-picker-options";
 import { buildAppointmentDetail } from "../../_lib/appointment-detail-mapper";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
+import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 interface AppointmentDetailPageProps {
   params: Promise<{ id: string }>;
@@ -28,9 +29,17 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
   if (!result.success) notFound();
 
   const appointment = buildAppointmentDetail(result.data);
+  const t = appointment.title?.trim();
+  const breadcrumbLabel = t
+    ? t
+    : formatAppointmentHeading({
+        category:  appointment.category,
+        visitType: appointment.visitType,
+        title:     null,
+      });
 
   return (
-    <DetailPageShell breadcrumb={`Appointments › ${appointment.title}`}>
+    <DetailPageShell breadcrumb={`Appointments › ${breadcrumbLabel}`}>
       <AppointmentDetailPanel
         mode="edit"
         appointment={appointment}

@@ -118,9 +118,11 @@ export async function getAppointments(input: unknown) {
 
     const rows = await queryGetAppointments(clinicId, { rangeStart, rangeEnd });
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     const data = rows.map((row) => ({
       ...row,
       notes: canNotes ? row.notes : null,
+      title: canTitle ? row.title : null,
     }));
     return { success: true as const, data };
   } catch (err) {
@@ -150,11 +152,13 @@ export async function getAppointmentDetail(id: unknown) {
     }
 
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     return {
       success: true as const,
       data: {
         ...appointment,
         notes: canNotes ? appointment.notes : null,
+        title: canTitle ? appointment.title : null,
         // TODO: Implement when audit_log table is built.
         activityLog: [] as never[],
       },

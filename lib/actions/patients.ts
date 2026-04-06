@@ -164,11 +164,16 @@ export async function getPatientDetail(id: unknown) {
     }
 
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     return {
       success: true as const,
       data: {
         ...patient,
         pastHistoryNotes: canNotes ? patient.pastHistoryNotes : null,
+        appointments: patient.appointments.map((a) => ({
+          ...a,
+          title: canTitle ? a.title : null,
+        })),
         // TODO: Implement when audit_log table is built.
         activityLog: [] as never[],
       },

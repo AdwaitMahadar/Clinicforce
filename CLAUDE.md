@@ -180,7 +180,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - See `docs/01-PRD.md` for the full permission matrix
 - **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`), all pages redirect (`getSession()` + `redirect`), all server actions use `requireRole(session, ["admin", "doctor"])`
 - **Clinical notes / patient past history — staff excluded:** `AppointmentDetailPanel` filters appointment `notes`; `PatientDetailPanel` filters `pastHistoryNotes` when `usePermission("viewClinicalNotes")` is false. Patient/appointment server actions also redact or ignore these fields for staff (see `docs/05-Authentication.md`).
-- **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff (see `docs/05-Authentication.md`).
+- **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff; read actions (**`getAppointmentDetail`**, **`getAppointments`**, **`getPatientDetail`** nested appointments, **`searchGlobal`**, **`getRecentAppointments`**) return **`title: null`** for staff without changing the DB (see `docs/05-Authentication.md`).
 - **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
 
 ### Appointments

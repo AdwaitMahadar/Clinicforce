@@ -15,6 +15,7 @@ import { z } from "zod";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { appointments, patients, users } from "@/lib/db/schema";
 
@@ -157,11 +158,13 @@ export async function getRecentAppointments(limit: unknown = 5) {
       .orderBy(desc(appointments.scheduledAt))
       .limit(parsedLimit.data);
 
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
+
     return {
       success: true as const,
       data: rows.map((r) => ({
         id:          r.id,
-        title:       r.title,
+        title:       canTitle ? r.title : null,
         patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
         doctorName:  r.doctorName ?? "",
         scheduledAt: r.scheduledAt,

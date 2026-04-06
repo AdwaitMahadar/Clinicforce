@@ -8,6 +8,7 @@
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import {
   appointments,
@@ -157,6 +158,8 @@ export async function searchGlobal(query: unknown) {
         .limit(5),
     ]);
 
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
+
     const data: GroupedSearchResults = {
       patients: patientRows.map((r) => ({
         id: r.id,
@@ -168,7 +171,7 @@ export async function searchGlobal(query: unknown) {
       })),
       appointments: appointmentRows.map((r) => ({
         id: r.id,
-        title: r.title,
+        title: canTitle ? r.title : null,
         patientName: `${r.patientFirstName} ${r.patientLastName}`.trim(),
         date: r.scheduledAt.toISOString(),
         status: r.status as AppointmentStatus,
