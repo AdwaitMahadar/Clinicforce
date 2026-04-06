@@ -83,6 +83,9 @@ interface BaseField<TValues extends FieldValues> {
 
 export interface TextField<TValues extends FieldValues> extends BaseField<TValues> {
   type: "text" | "date" | "email" | "number" | "time";
+  /** For `type: "number"` only — passed to `<Input />`. */
+  step?: string;
+  min?: string;
 }
 
 export interface TextareaField<TValues extends FieldValues> extends BaseField<TValues> {
@@ -205,6 +208,7 @@ function renderFieldControl<TValues extends FieldValues>(
   }
 
   // text | date | email | number | time
+  const tf = descriptor as TextField<TValues>;
   return (
     <Input
       type={descriptor.type}
@@ -212,6 +216,9 @@ function renderFieldControl<TValues extends FieldValues>(
       disabled={descriptor.disabled ?? isSaving}
       {...field}
       value={String(field.value ?? "")}
+      {...(descriptor.type === "number"
+        ? { step: tf.step ?? undefined, min: tf.min ?? undefined }
+        : {})}
     />
   );
 }

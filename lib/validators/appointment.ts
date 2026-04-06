@@ -59,6 +59,32 @@ export const APPOINTMENT_DURATIONS = [
   { label: "120 min", value: "120" },
 ] as const;
 
+function preprocessFeeInput(val: unknown): unknown {
+  if (val === "" || val === null || val === undefined) return undefined;
+  const n = typeof val === "number" ? val : Number(String(val).trim());
+  if (!Number.isFinite(n)) return val;
+  return n;
+}
+
+/** Optional `numeric(10,2)` fee — empty input → undefined → DB null on create. */
+const appointmentFeeCreateSchema = z.preprocess(
+  preprocessFeeInput,
+  z.number().min(0, "Fee cannot be negative").max(99999999.99, "Fee is too large").optional()
+);
+
+function preprocessFeeUpdateInput(val: unknown): unknown {
+  if (val === "") return null;
+  if (val === null) return null;
+  if (val === undefined) return undefined;
+  return preprocessFeeInput(val);
+}
+
+/** Update: empty string clears fee (`null`). */
+const appointmentFeeUpdateSchema = z.preprocess(
+  preprocessFeeUpdateInput,
+  z.union([z.null(), z.number().min(0).max(99999999.99)]).optional()
+);
+
 // ─── Create Schema ────────────────────────────────────────────────────────────
 
 export const createAppointmentSchema = z.object({
@@ -105,6 +131,8 @@ export const createAppointmentSchema = z.object({
     .int("Duration must be a whole number")
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration cannot exceed 480 minutes (8 hours)"),
+
+  fee: appointmentFeeCreateSchema,
 
   description: z.string().optional().default(""),
   notes:       z.string().optional().default(""),
@@ -153,6 +181,8 @@ export const updateAppointmentSchema = z.object({
     .min(15, "Duration must be at least 15 minutes")
     .max(480, "Duration cannot exceed 480 minutes (8 hours)")
     .optional(),
+
+  fee: appointmentFeeUpdateSchema,
 
   description: z.string().optional(),
   notes:       z.string().optional(),

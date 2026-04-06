@@ -44,6 +44,7 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     scheduledDate:   sa ? format(sa, "yyyy-MM-dd") : "",
     scheduledTime:   sa ? format(sa, "HH:mm") : "",
     duration:        Number(r.duration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES),
+    fee:             r.fee != null && Number.isFinite(Number(r.fee)) ? Number(r.fee) : null,
     actualCheckIn:   fmtHm(r.actualCheckIn),
     description:     r.description ?? "",
     notes:           r.notes ?? "",

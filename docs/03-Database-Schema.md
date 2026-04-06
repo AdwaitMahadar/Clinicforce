@@ -120,6 +120,7 @@ Better-Auth email/token verification records.
 - `visit_type`: `enum` ('general', 'first-visit', 'follow-up-visit') **notNull** (no column default — required on insert)
 - `scheduled_at`: `timestamp` **notNull** (Scheduled start — date and time combined)
 - `duration`: `integer` **notNull** (In minutes, Default: 15)
+- `fee`: `numeric(10, 2)` (nullable — optional visit fee; UI treats values as INR with a display-only ₹ prefix)
 - `notes`: `text` (Clinical notes)
 - `actual_check_in`: `timestamp` (Optional; time-of-day from UI is stored with the server calendar day at save time)
 - `is_active`: `boolean` (Default: `true`)

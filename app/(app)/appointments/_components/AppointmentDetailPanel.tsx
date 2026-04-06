@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, FileText, Upload } from "lucide-react";
@@ -37,6 +38,7 @@ import {
 } from "@/lib/validators/appointment";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
 import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
+import { formatAppointmentFeeInr } from "@/lib/utils/format-appointment-fee";
 import {
   createAppointment,
   updateAppointment,
@@ -214,7 +216,16 @@ function buildAppointmentFormFields(
       colSpan: 1,
       options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
     },
-    { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 1 },
+    {
+      name:        "fee",
+      label:       "Fee",
+      type:        "number",
+      colSpan:     1,
+      placeholder: "Appointment Fee",
+      step:        "0.01",
+      min:         "0",
+    },
+    { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 2 },
     {
       name:    "status",
       label:   "Status",
@@ -274,40 +285,45 @@ export function AppointmentDetailPanel({
   const canViewAppointmentTitle = usePermission("viewAppointmentTitle");
 
   const createDefaults = useMemo(
-    (): CreateAppointmentInput => ({
-      title: "",
-      patientId: "",
-      doctorId: "",
-      category: "general",
-      visitType: "general",
-      status: "scheduled",
-      scheduledDate: format(new Date(), "yyyy-MM-dd"),
-      scheduledTime: format(new Date(), "HH:mm"),
-      duration: DEFAULT_APPOINTMENT_DURATION_MINUTES,
-      actualCheckIn: "",
-      description: "",
-      notes: "",
-    }),
+    () =>
+      ({
+        title: "",
+        patientId: "",
+        doctorId: "",
+        category: "general",
+        visitType: "general",
+        status: "scheduled",
+        scheduledDate: format(new Date(), "yyyy-MM-dd"),
+        scheduledTime: format(new Date(), "HH:mm"),
+        duration: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+        fee: "",
+        actualCheckIn: "",
+        description: "",
+        notes: "",
+      }) as unknown as DefaultValues<CreateAppointmentInput>,
     []
   );
 
-  const defaultValues: CreateAppointmentInput | UpdateAppointmentInput = isCreate
-    ? createDefaults
-    : {
-        id:                 appointment!.id,
-        title:              appointment!.title ?? "",
-        patientId:          appointment!.patientId,
-        doctorId:           appointment!.doctorId,
-        category:           appointment!.category as UpdateAppointmentInput["category"],
-        visitType:          appointment!.visitType as UpdateAppointmentInput["visitType"],
-        status:             appointment!.status as UpdateAppointmentInput["status"],
-        scheduledDate:      appointment!.scheduledDate ?? "",
-        scheduledTime:      appointment!.scheduledTime ?? "",
-        duration:           appointment!.duration,
-        actualCheckIn:      appointment!.actualCheckIn ?? "",
-        description:         appointment!.description ?? "",
-        notes:              appointment!.notes ?? "",
-      };
+  const defaultValues = (
+    isCreate
+      ? createDefaults
+      : {
+          id:            appointment!.id,
+          title:         appointment!.title ?? "",
+          patientId:     appointment!.patientId,
+          doctorId:      appointment!.doctorId,
+          category:      appointment!.category as UpdateAppointmentInput["category"],
+          visitType:     appointment!.visitType as UpdateAppointmentInput["visitType"],
+          status:        appointment!.status as UpdateAppointmentInput["status"],
+          scheduledDate: appointment!.scheduledDate ?? "",
+          scheduledTime: appointment!.scheduledTime ?? "",
+          duration:      appointment!.duration,
+          fee:           appointment!.fee != null ? String(appointment!.fee) : "",
+          actualCheckIn: appointment!.actualCheckIn ?? "",
+          description:   appointment!.description ?? "",
+          notes:         appointment!.notes ?? "",
+        }
+  ) as unknown as DefaultValues<CreateAppointmentInput | UpdateAppointmentInput>;
 
   const handleSubmit = async (values: CreateAppointmentInput | UpdateAppointmentInput) => {
     if (isCreate) {
@@ -315,6 +331,7 @@ export function AppointmentDetailPanel({
       const result = await createAppointment({
         ...v,
         duration: typeof v.duration === "string" ? Number(v.duration) : v.duration,
+        fee: v.fee,
         description: v.description ?? "",
         notes: v.notes ?? "",
       });
@@ -347,6 +364,7 @@ export function AppointmentDetailPanel({
               : v.duration
             : undefined,
         actualCheckIn: v.actualCheckIn,
+        fee: v.fee,
         description: v.description || undefined,
         notes: v.notes || undefined,
       });
@@ -428,6 +446,23 @@ export function AppointmentDetailPanel({
           <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
             {headerSubtitle}
           </p>
+          {!isCreate && (
+            <p
+              className="text-xs mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              <span>
+                Duration:{" "}
+                <span style={{ color: "var(--color-text-primary)" }}>{appointment!.duration} min</span>
+              </span>
+              <span>
+                Fee:{" "}
+                <span style={{ color: "var(--color-text-primary)" }}>
+                  {formatAppointmentFeeInr(appointment!.fee)}
+                </span>
+              </span>
+            </p>
+          )}
         </div>
       </div>
       {onClose && <PanelCloseButton onClose={onClose} />}

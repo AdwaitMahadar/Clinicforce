@@ -69,6 +69,8 @@ export interface AppointmentDetail {
   scheduledTime:      string;
   /** Duration in minutes */
   duration:           number;
+  /** Optional visit fee (INR); display with `formatAppointmentFeeInr`. */
+  fee:                number | null;
   /** Actual check-in time for the form time picker only (HH:mm). */
   actualCheckIn:      string;
   description?:       string;

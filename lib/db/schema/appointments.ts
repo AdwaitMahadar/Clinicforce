@@ -7,6 +7,7 @@ import {
   boolean,
   timestamp,
   integer,
+  numeric,
   index,
 } from "drizzle-orm/pg-core";
 import { clinics } from "./clinics";
@@ -56,6 +57,8 @@ export const appointments = pgTable(
     /** Scheduled start instant (date + time combined). */
     scheduledAt: timestamp("scheduled_at").notNull(),
     duration: integer("duration").notNull().default(DEFAULT_APPOINTMENT_DURATION_MINUTES),
+    /** Optional visit fee (INR); UI formats with ₹ — column is not currency-aware. */
+    fee: numeric("fee", { precision: 10, scale: 2, mode: "number" }),
     notes: text("notes"),
     actualCheckIn: timestamp("actual_check_in"),
     isActive: boolean("is_active").notNull().default(true),

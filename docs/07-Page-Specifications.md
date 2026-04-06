@@ -138,8 +138,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, duration, status, description, actual check-in time (time-only), clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
-- **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`.
+- **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, **duration** + optional **Fee** (number, `step=0.01`, all roles), **actual check-in** (time-only, full row), **status**, description, clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`. Subline under the date/time shows **Duration** (minutes) and **Fee** via **`formatAppointmentFeeInr`** (`lib/utils/format-appointment-fee.ts`) — plain `₹` + two decimals, or `—` when null.
 - **Sidebar (edit only):** **Documents** tab + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
 
@@ -162,6 +162,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     status:             string;
     scheduledAt:        string;   // ISO timestamp (`scheduled_at`)
     duration:           number;
+    fee:                number | null; // numeric(10,2)
     actualCheckIn:      string | null; // ISO timestamp when set
     notes:              string | null;
     documents:          DocumentSummary[];

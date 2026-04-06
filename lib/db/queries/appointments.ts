@@ -56,6 +56,7 @@ export interface AppointmentDetailRecord {
   status: string;
   scheduledAt: Date;
   duration: number;
+  fee: number | null;
   actualCheckIn: Date | null;
   notes: string | null;
   isActive: boolean;
@@ -157,6 +158,7 @@ export async function getAppointmentById(
       status: appointments.status,
       scheduledAt: appointments.scheduledAt,
       duration: appointments.duration,
+      fee: appointments.fee,
       actualCheckIn: appointments.actualCheckIn,
       notes: appointments.notes,
       isActive: appointments.isActive,
@@ -210,6 +212,7 @@ export async function getAppointmentById(
     status: appt.status,
     scheduledAt: appt.scheduledAt,
     duration: appt.duration,
+    fee: appt.fee ?? null,
     actualCheckIn: appt.actualCheckIn,
     notes: appt.notes,
     isActive: appt.isActive,

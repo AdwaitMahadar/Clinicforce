@@ -76,6 +76,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 ### Creation
 - Any role can create an appointment.
 - An appointment requires: `patientId`, `doctorId`, `category`, `visitType`, scheduled date + time (combined into `scheduled_at` on the server), and `duration`. `title` is optional in the data model; only **admin** and **doctor** see the Title field on the create/edit form and may set or change it. **Staff** never get `title` applied on create (stored as null) and cannot mutate `title` on update (server strips the field).
+- Optional **`fee`**: `numeric(10, 2)` nullable on `appointments`. Any role may set or clear it in the UI; empty input stores `null`. Validated server-side as a non-negative number (max aligns with precision). Display uses a **UI-only** ₹ (INR) prefix — the column is not a native Postgres currency type.
 - The `doctorId` must reference an active user with the role `doctor`. You cannot assign an inactive doctor or a non-doctor user to an appointment.
 - You cannot create an appointment for an inactive patient.
 - Duration must be between **15 and 480 minutes** (8 hours maximum).
