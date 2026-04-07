@@ -127,7 +127,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `TimeGridView.tsx` — FullCalendar timeGridWeek/timeGridDay wrapper
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
-- `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); Radix `<Select>` is controlled (`value` + remount `key`); optional **`TextField.prefix`** for input-group prepended labels (e.g. fee `₹`). No footer — parent uses `DetailPanel` or composes actions.
+- `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); optional **`insideForm`** slot (same `<Form>` context — `useFormContext` for cross-field logic); Radix `<Select>` is controlled (`value` + remount `key`); optional **`TextField.prefix`** (e.g. fee `₹`) and **`TextField.readOnly`** (normal appearance, not editable — staff fee). No footer — parent uses `DetailPanel` or composes actions.
 - `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`). Sidebar hidden when `isCreate=true` OR when user lacks `viewDetailSidebar` permission — computed internally via `usePermission`, no extra prop needed from entity panels.
 - `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
@@ -186,7 +186,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Category enum: `general | orthopedic | physiotherapy`; visit type enum: `general | first-visit | follow-up-visit` (DB `visit_type`; form/API key `visitType`)
-- Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), `duration` (minutes), and optional nullable **`fee`** (`numeric(10,2)` — UI displays with ₹ via `formatAppointmentFeeInr`)
+- Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), `duration` (minutes), and optional nullable **`fee`** (`numeric(10,2)` — UI displays with ₹ via `formatAppointmentFeeInr`). **Staff:** fee hidden on create; on edit, fee field + header fee only when **`status === completed`**, field **`DetailForm` `readOnly`** (not disabled styling). **Edit mode:** entering a positive fee from empty/zero auto-sets status to **completed** + Sonner toast (not on create; staff only see the fee field when already completed, so they do not trigger this path).
 - **`AppointmentDetailPanel` sidebar (edit):** **Documents** lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`.
 
 ### Documents

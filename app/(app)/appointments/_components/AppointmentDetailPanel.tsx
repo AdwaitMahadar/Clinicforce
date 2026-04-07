@@ -6,8 +6,8 @@
  * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { DefaultValues } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFormContext, useWatch, type DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar, CalendarDays, FileText, Upload } from "lucide-react";
@@ -44,9 +44,59 @@ import {
   updateAppointment,
   deleteAppointment,
 } from "@/lib/actions/appointments";
-import { usePermission } from "@/lib/auth/session-context";
+import { useAppSession, usePermission } from "@/lib/auth/session-context";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import { AppointmentPatientCombobox } from "./AppointmentPatientCombobox";
+
+/** True when the fee input represents a positive amount (triggers auto-complete in edit). */
+function feeInputHasPositiveAmount(raw: unknown): boolean {
+  if (raw === "" || raw === null || raw === undefined) return false;
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+  return Number.isFinite(n) && n > 0;
+}
+
+/**
+ * Edit mode only: when fee goes from empty/zero → positive and status is not completed,
+ * set status to completed and toast. Uses RHF context (via DetailForm `insideForm`).
+ */
+function FeeAutoCompleteStatusEffect({ isCreate }: { isCreate: boolean }) {
+  const { control, setValue, getValues } = useFormContext<
+    CreateAppointmentInput | UpdateAppointmentInput
+  >();
+  /** `useWatch` subscribes to updates; `watch("fee")` alone does not re-render this component (RHF v7). */
+  const fee = useWatch({
+    control,
+    name: "fee",
+    disabled: isCreate,
+  });
+  const initializedRef = useRef(false);
+  const prevHadPositiveFeeRef = useRef(false);
+
+  useEffect(() => {
+    if (isCreate) return;
+
+    const nowPositive = feeInputHasPositiveAmount(fee);
+
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      prevHadPositiveFeeRef.current = nowPositive;
+      return;
+    }
+
+    const hadPositiveBefore = prevHadPositiveFeeRef.current;
+    prevHadPositiveFeeRef.current = nowPositive;
+
+    if (!hadPositiveBefore && nowPositive) {
+      const status = getValues("status") as UpdateAppointmentInput["status"];
+      if (status !== "completed") {
+        setValue("status", "completed", { shouldDirty: true, shouldValidate: true });
+        toast.success("Status set to Completed because a fee was added.");
+      }
+    }
+  }, [fee, isCreate, setValue, getValues]);
+
+  return null;
+}
 
 // ─── Appointment status styles (sidebar list; mirrors PatientDetailPanel) ─────
 
@@ -269,7 +319,9 @@ function AppointmentPatientAppointmentsTab({
 function buildAppointmentFormFields(
   doctorOptions: AppointmentSelectOption[],
   includeNotes: boolean,
-  includeTitle: boolean
+  includeTitle: boolean,
+  showFee: boolean,
+  feeReadOnly: boolean
 ): FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] {
   const all: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>[] = [
     {
@@ -327,16 +379,21 @@ function buildAppointmentFormFields(
       colSpan: 1,
       options: APPOINTMENT_DURATIONS.map((d) => ({ label: d.label, value: d.value })),
     },
-    {
-      name:        "fee",
-      label:       "Fee",
-      type:        "number",
-      colSpan:     1,
-      prefix:      "₹",
-      placeholder: "Appointment Fee",
-      step:        "0.01",
-      min:         "0",
-    },
+    ...(showFee
+      ? [
+          {
+            name:        "fee" as const,
+            label:       "Fee",
+            type:        "number" as const,
+            colSpan:     1 as const,
+            prefix:      "₹",
+            placeholder: "Appointment Fee",
+            step:        "0.01",
+            min:         "0",
+            readOnly:    feeReadOnly,
+          } satisfies FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput>,
+        ]
+      : []),
     { name: "actualCheckIn", label: "Actual time", type: "time", colSpan: 2 },
     {
       name:    "status",
@@ -393,8 +450,18 @@ export function AppointmentDetailPanel({
   const isCreate = mode === "create";
   const router   = useRouter();
   const formRef  = useRef<DetailFormHandle | null>(null);
+  const { user } = useAppSession();
+  const isStaff = user.type === "staff";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
   const canViewAppointmentTitle = usePermission("viewAppointmentTitle");
+
+  const showAppointmentFeeField = isCreate
+    ? !isStaff
+    : !isStaff || appointment!.status === "completed";
+  const appointmentFeeReadOnly =
+    isStaff && !isCreate && appointment!.status === "completed";
+  const showHeaderFeeLine =
+    !isCreate && (!isStaff || appointment!.status === "completed");
 
   const createDefaults = useMemo(
     () =>
@@ -567,12 +634,14 @@ export function AppointmentDetailPanel({
                 Duration:{" "}
                 <span style={{ color: "var(--color-text-primary)" }}>{appointment!.duration} min</span>
               </span>
-              <span>
-                Fee:{" "}
-                <span style={{ color: "var(--color-text-primary)" }}>
-                  {formatAppointmentFeeInr(appointment!.fee)}
+              {showHeaderFeeLine && (
+                <span>
+                  Fee:{" "}
+                  <span style={{ color: "var(--color-text-primary)" }}>
+                    {formatAppointmentFeeInr(appointment!.fee)}
+                  </span>
                 </span>
-              </span>
+              )}
             </p>
           )}
         </div>
@@ -605,7 +674,9 @@ export function AppointmentDetailPanel({
       ...buildAppointmentFormFields(
         doctorOptions,
         canViewClinicalNotes,
-        canViewAppointmentTitle
+        canViewAppointmentTitle,
+        showAppointmentFeeField,
+        appointmentFeeReadOnly
       ),
     ];
   }, [
@@ -614,6 +685,8 @@ export function AppointmentDetailPanel({
     isCreate,
     canViewClinicalNotes,
     canViewAppointmentTitle,
+    showAppointmentFeeField,
+    appointmentFeeReadOnly,
   ]);
 
   const form = (
@@ -623,6 +696,7 @@ export function AppointmentDetailPanel({
       defaultValues={defaultValues}
       fields={formFields}
       onSubmit={handleSubmit}
+      insideForm={<FeeAutoCompleteStatusEffect isCreate={isCreate} />}
     />
   );
 

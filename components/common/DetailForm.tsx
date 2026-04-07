@@ -91,6 +91,11 @@ export interface TextField<TValues extends FieldValues> extends BaseField<TValue
   /** For `type: "number"` only — passed to `<Input />`. */
   step?: string;
   min?: string;
+  /**
+   * Non-editable without disabled styling (normal contrast). Uses HTML `readOnly`;
+   * while saving (`isSaving`), the control still becomes `disabled` for the whole form.
+   */
+  readOnly?: boolean;
 }
 
 export interface TextareaField<TValues extends FieldValues> extends BaseField<TValues> {
@@ -214,7 +219,12 @@ function renderFieldControl<TValues extends FieldValues>(
 
   // text | date | email | number | time
   const tf = descriptor as TextField<TValues>;
-  const disabled = descriptor.disabled ?? isSaving;
+  const readOnlyVisual = tf.readOnly === true;
+  const descriptorDisabled = descriptor.disabled ?? false;
+  /** Native disabled for saving or explicit `disabled`; not used for `readOnly`-only fields. */
+  const disabledNative = isSaving || (descriptorDisabled && !readOnlyVisual);
+  /** Read-only without muted disabled styles; dropped while saving so `disabled` applies. */
+  const readOnly = readOnlyVisual && !isSaving;
   const numberExtra =
     descriptor.type === "number"
       ? { step: tf.step ?? undefined, min: tf.min ?? undefined }
@@ -224,9 +234,10 @@ function renderFieldControl<TValues extends FieldValues>(
     <Input
       type={descriptor.type}
       placeholder={descriptor.placeholder}
-      disabled={disabled}
       {...field}
       value={String(field.value ?? "")}
+      disabled={disabledNative && !readOnly}
+      readOnly={readOnly}
       {...numberExtra}
       className={cn(
         tf.prefix &&
@@ -236,12 +247,13 @@ function renderFieldControl<TValues extends FieldValues>(
   );
 
   if (tf.prefix) {
+    const shellMuted = disabledNative && !readOnly;
     return (
       <div
         className={cn(
           "flex h-9 w-full min-w-0 items-stretch rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] dark:bg-input/30",
           "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
-          disabled && "pointer-events-none opacity-50"
+          shellMuted && "pointer-events-none opacity-50"
         )}
       >
         <span
