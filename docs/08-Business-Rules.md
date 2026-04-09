@@ -86,6 +86,9 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - Default status on creation is `scheduled`.
 - `createdBy` is set to the authenticated user's ID at creation and is immutable.
 
+### Follow-up window (shared constant)
+- **`FOLLOW_UP_WINDOW_DAYS`** is **`60`**, exported from **`lib/constants/appointment.ts`**. It defines the calendar-day window used for **follow-up-oriented** appointment create behaviour (e.g. form prefill from a recent completed visit). Implementations must import the constant rather than hard-code the value.
+
 ### Status Transitions
 Currently, all appointment status transitions are permitted freely. Any status can be changed to any other status without restriction.
 

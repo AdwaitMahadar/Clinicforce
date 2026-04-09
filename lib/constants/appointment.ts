@@ -49,3 +49,10 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
 
 /** Default appointment length in minutes — used in DB schema default and form initial state. */
 export const DEFAULT_APPOINTMENT_DURATION_MINUTES = 15;
+
+/**
+ * Calendar-day window for follow-up-style appointment create defaults (e.g. prefill
+ * doctor and category from the patient’s last completed visit when it falls within this
+ * many days). Import from here — do not duplicate the number in UI or server code.
+ */
+export const FOLLOW_UP_WINDOW_DAYS = 60;
