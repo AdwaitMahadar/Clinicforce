@@ -69,7 +69,7 @@ For full action contracts per entity — exact input shapes, output shapes, and 
 
 The general pattern for every action follows the anatomy above:
 - **List actions**: Accept `clinicId` (from session), `page`, `pageSize`, `search`, `sort`, and entity-specific filters. Always return a paginated shape with `{ data, total }`.
-- **`getPatients` list rows:** Each row has `status: "active" | "inactive"` only (mapped from DB in the query). There is no `isActive` on that payload — UI mappers must pass through `row.status`, not `row.isActive`. **`lastVisit` / `assignedDoctor`** use only **completed**, **past** (`scheduled_at < now()`), **active** appointment rows (`docs/08-Business-Rules.md`).
+- **`getPatients` list rows:** Each row has `status: "active" | "inactive"` only (mapped from DB in the query). There is no `isActive` on that payload — UI mappers must pass through `row.status`, not `row.isActive`. **`lastVisit` / `assignedDoctor` / `lastVisitCategory` / `lastVisitDoctorId`** use the same **completed**, **past** (`scheduled_at < now()`), **active** appointment row (`docs/08-Business-Rules.md`); category + doctor id are for appointment prefill, not table columns yet.
 - **Get actions**: Accept `id` + `clinicId`. Return a fully joined aggregate including nested `eventLog` and `documents` where applicable.
 - **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.
 - **Update actions**: Accept `id` + validated Zod payload. Scope the UPDATE with `clinic_id` to prevent cross-tenant writes. Example: `updateAppointment` never updates `patientId` and rejects if the client sends a different `patientId` than the row.

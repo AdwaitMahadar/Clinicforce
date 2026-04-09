@@ -70,7 +70,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - All roles can edit patient fields.
 
 ### Patients directory (“Last visit” column)
-- The patients list **`lastVisit`** value is the latest `scheduled_at` among **active** appointments for that patient where **`status` is `completed`** and **`scheduled_at` is strictly before** the database’s current timestamp (`now()`). Future-dated completed rows, scheduled/cancelled/no-show rows, and inactive appointment rows are excluded. **`assignedDoctor`** on the same list row comes from that qualifying appointment.
+- The patients list **`lastVisit`** value is the latest `scheduled_at` among **active** appointments for that patient where **`status` is `completed`** and **`scheduled_at` is strictly before** the database’s current timestamp (`now()`). Future-dated completed rows, scheduled/cancelled/no-show rows, and inactive appointment rows are excluded. **`assignedDoctor`**, **`lastVisitCategory`** (`appointment_category` on that row), and **`lastVisitDoctorId`** (`doctor_id` on that row) on the same list payload come from that qualifying appointment (null when there is none).
 
 ---
 

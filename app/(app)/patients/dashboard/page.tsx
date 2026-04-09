@@ -68,6 +68,8 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
       ? format(new Date(r.lastVisit), "MMM d, yyyy")
       : "No visits",
     assignedDoctor: r.assignedDoctor ?? "—",
+    lastVisitCategory: r.lastVisitCategory ?? null,
+    lastVisitDoctorId: r.lastVisitDoctorId ?? null,
     /** List rows from `getPatients` carry `status` only — `isActive` is not on the payload. */
     status:         r.status,
   }));

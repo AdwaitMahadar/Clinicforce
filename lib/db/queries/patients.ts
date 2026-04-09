@@ -32,6 +32,10 @@ export interface DbPatientRow {
   lastVisit: Date | null;
   /** Display name of the doctor from that same visit, or null. */
   assignedDoctor: string | null;
+  /** `appointment_category` from that same visit, or null if no qualifying appointment. */
+  lastVisitCategory: string | null;
+  /** `doctor_id` from that same visit, or null if no qualifying appointment. */
+  lastVisitDoctorId: string | null;
   status: "active" | "inactive";
 }
 
@@ -87,8 +91,9 @@ export interface GetPatientsParams {
  * Returns a paginated, filtered, sorted patient list for a clinic.
  *
  * `lastVisit` is MAX(appointments.scheduled_at) per patient over **completed**
- * appointments with `scheduled_at < now()` (DB clock). `assignedDoctor` is the
- * doctor name from that same row (second subquery joined on the same timestamp).
+ * appointments with `scheduled_at < now()` (DB clock). `assignedDoctor`,
+ * `lastVisitCategory`, and `lastVisitDoctorId` come from that same row (second
+ * subquery joined on the same timestamp).
  *
  * Always scoped to `clinicId`.
  */
@@ -129,6 +134,7 @@ export async function getPatients(
     .select({
       patientId: appointments.patientId,
       doctorId: appointments.doctorId,
+      category: appointments.category,
       apptDate: appointments.scheduledAt,
     })
     .from(appointments)
@@ -203,6 +209,8 @@ export async function getPatients(
         isActive: patients.isActive,
         lastVisit: lastVisitSq.lastVisitDate,
         assignedDoctor: doctorUser.doctorName,
+        lastVisitCategory: lastApptSq.category,
+        lastVisitDoctorId: lastApptSq.doctorId,
       })
       .from(patients)
       .leftJoin(lastVisitSq, eq(patients.id, lastVisitSq.patientId))
@@ -243,6 +251,8 @@ export async function getPatients(
       phone: r.phone,
       lastVisit: r.lastVisit ?? null,
       assignedDoctor: r.assignedDoctor ?? null,
+      lastVisitCategory: r.lastVisitCategory ?? null,
+      lastVisitDoctorId: r.lastVisitDoctorId ?? null,
       status: r.isActive ? "active" : "inactive",
     })),
     total: countResult[0]?.count ?? 0,
