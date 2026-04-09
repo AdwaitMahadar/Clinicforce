@@ -29,7 +29,8 @@ export interface PatientRow {
   lastName:       string;
   email:          string;
   phone:          string;
-  lastVisit:      string;         // display string e.g. "Nov 5, 2024" or "No visits"
+  /** Formatted date of last completed visit before “now”, or `"No visits"` — see `getPatients` query. */
+  lastVisit:      string;
   assignedDoctor: string;
   status:         PatientStatus;
 }

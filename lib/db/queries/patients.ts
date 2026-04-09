@@ -8,7 +8,7 @@
  * Used by server actions only — never import from client components.
  */
 
-import { and, asc, desc, eq, ilike, or, sql, max } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, lt, or, sql, max } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { patients, appointments, users } from "@/lib/db/schema";
 import type { DocumentSummary } from "./documents";
@@ -28,9 +28,9 @@ export interface DbPatientRow {
   lastName: string;
   email: string | null;
   phone: string | null;
-  /** ISO timestamp of most recent appointment, or null if none. */
+  /** ISO timestamp of most recent completed past visit, or null if none. */
   lastVisit: Date | null;
-  /** Display name of the doctor from the most recent appointment, or null. */
+  /** Display name of the doctor from that same visit, or null. */
   assignedDoctor: string | null;
   status: "active" | "inactive";
 }
@@ -86,9 +86,9 @@ export interface GetPatientsParams {
 /**
  * Returns a paginated, filtered, sorted patient list for a clinic.
  *
- * `lastVisit` is derived from MAX(appointments.scheduled_at) for each patient via
- * a subquery. `assignedDoctor` is the doctor name from that same
- * most-recent appointment (joined via a second subquery on the same date).
+ * `lastVisit` is MAX(appointments.scheduled_at) per patient over **completed**
+ * appointments with `scheduled_at < now()` (DB clock). `assignedDoctor` is the
+ * doctor name from that same row (second subquery joined on the same timestamp).
  *
  * Always scoped to `clinicId`.
  */
@@ -106,6 +106,13 @@ export async function getPatients(
     sortDir = "asc",
   } = params;
 
+  const lastVisitAppointmentWhere = and(
+    eq(appointments.clinicId, clinicId),
+    eq(appointments.isActive, true),
+    eq(appointments.status, "completed"),
+    lt(appointments.scheduledAt, sql`now()`)
+  );
+
   // ── Subquery: last visit date per patient ─────────────────────────────────
   const lastVisitSq = db
     .select({
@@ -113,12 +120,7 @@ export async function getPatients(
       lastVisitDate: max(appointments.scheduledAt).as("last_visit_date"),
     })
     .from(appointments)
-    .where(
-      and(
-        eq(appointments.clinicId, clinicId),
-        eq(appointments.isActive, true)
-      )
-    )
+    .where(lastVisitAppointmentWhere)
     .groupBy(appointments.patientId)
     .as("last_visit_sq");
 
@@ -130,12 +132,7 @@ export async function getPatients(
       apptDate: appointments.scheduledAt,
     })
     .from(appointments)
-    .where(
-      and(
-        eq(appointments.clinicId, clinicId),
-        eq(appointments.isActive, true)
-      )
-    )
+    .where(lastVisitAppointmentWhere)
     .as("last_appt_sq");
 
   // ── Build WHERE for the patients table ────────────────────────────────────

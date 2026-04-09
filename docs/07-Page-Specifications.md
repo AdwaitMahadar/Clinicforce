@@ -234,11 +234,11 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 |---|---|---|---|
 | Patient (name + phone subtitle) | `first_name`, `last_name`, `phone` | ✓ by last_name | Search only |
 | Chart ID | `chart_id` | — | Search only |
-| Last Visit | Derived from most recent appointment `scheduled_at` | ✓ | — |
+| Last Visit | Derived from most recent **completed** appointment with `scheduled_at` strictly before DB `now()` | ✓ | — |
 | Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
 | Status | `is_active` boolean → mapped to `active` / `inactive` display | — | ✓ (select) |
 
-> **Note on "Last Visit":** Derived field — a subquery or join to appointments to get `MAX(scheduled_at)` for that patient. Not stored on the patient record directly.
+> **Note on "Last Visit":** Derived field — `MAX(appointments.scheduled_at)` per patient over rows where `status = 'completed'`, `is_active = true`, and `scheduled_at < now()` (database clock). Not stored on the patient record directly.
 
 > **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
@@ -277,8 +277,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     lastName:       string;
     email:          string;
     phone:          string;
-    lastVisit:      string | null;   // MAX(appointments.scheduled_at) for this patient
-    assignedDoctor: string | null;   // doctor name from that last appointment
+    lastVisit:      string | null;   // MAX(scheduled_at) over completed, past appointments (see table note)
+    assignedDoctor: string | null;   // doctor name from that same qualifying appointment
     status:         "active" | "inactive";
   }
   ```
