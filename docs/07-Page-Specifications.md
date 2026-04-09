@@ -138,7 +138,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 ### Layout
 `AppointmentDetailPanel` uses **`DetailPanel`** + **`DetailForm`** (single scrollable form column):
-- **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, **duration** + optional **Fee** (number, `DetailForm` **`prefix: "₹"`** input group, `step=0.01` — **admin/doctor:** always shown in create and edit; **staff:** hidden on create, shown in edit only when **`status === 'completed'`**, and non-editable via **`DetailForm` `TextField.readOnly`** (normal input appearance, not disabled/muted styling) when shown), **actual check-in** (time-only, full row), **status**, description, clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
+- **Form column:** All fields in one grid — **Patient** (create: `<AsyncSearchCombobox />` via `AppointmentPatientCombobox` — debounced **`searchPatientsForPicker`**, cmdk list capped at 8 rows + scroll, unless **`patientId`** is prefilled via **`initialValues`** then **disabled** with **`disabledDisplayLabel`**; edit: same control **disabled** with name + chart id label), doctor, **Title** (admin/doctor only — `usePermission("viewAppointmentTitle")`; immediately after doctor), **category** and **visit type** on one row (`colSpan: 1` each), scheduled date + scheduled time, **duration** + optional **Fee** (number, `DetailForm` **`prefix: "₹"`** input group, `step=0.01` — **admin/doctor:** always shown in create and edit; **staff:** hidden on create, shown in edit only when **`status === 'completed'`**, and non-editable via **`DetailForm` `TextField.readOnly`** (normal input appearance, not disabled/muted styling) when shown), **actual check-in** (time-only, full row), **status**, description, clinical notes (custom control). `patientId` is not sent on update. The **Assigned Doctor** select uses a capped **`SelectContent`** height (~six visible options, then scroll) via `selectContentClassName` on that field only. The client sends separate date/time strings; **`createAppointment` / `updateAppointment`** merge them into `scheduled_at`. Create defaults: today’s date and current local time (`HH:mm`). Schemas: `createAppointmentSchema` / `updateAppointmentSchema`.
 - **Header (edit):** primary title uses **`formatAppointmentHeading`** (`lib/utils/format-appointment-heading.ts`): `Category - Visit Type` or `Category - Visit Type (Title)`. Subline under the date/time shows **Duration** (minutes) always; **Fee** via **`formatAppointmentFeeInr`** (`lib/utils/format-appointment-fee.ts`) for admin/doctor always, for **staff** only when **`status === 'completed'`** (same rule as the fee field).
 - **Edit mode — fee → status:** When **not** creating, if the user enters a **positive** fee from a previously empty/zero fee and **status** is not already **`completed`**, the client sets **status** to **`completed`** via React Hook Form (`setValue`) and shows a Sonner toast: *“Status set to Completed because a fee was added.”* Implementation: `DetailForm` **`insideForm`** uses **`useWatch({ name: "fee" })`** (not `watch("fee")` alone) so the effect re-renders when the fee field changes. Does not run on create; does not re-fire when changing fee while already completed.
 - **Sidebar (edit only):** **Documents** tab (all documents assigned to the patient — same query as patient detail; upload still passes `appointmentId` + `patientId` so new files link to this visit) + **Appointments** tab (all active appointments for that patient, newest first; current visit has a **Current** label and blue border; each row navigates to `/appointments/view/[id]`) + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
@@ -198,6 +198,11 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 > **Status:** UI built (modal + full-page fallback). Server actions wired. **Doctor** options load on the server via `getActiveDoctors` (`lib/actions/appointments.ts`). **Patient** create picker uses debounced **`searchPatientsForPicker`** (`lib/actions/patients.ts`) — no bulk `getActivePatients` preload for appointments.
 
+### Query-string prefill (optional)
+- **`@modal/(.)appointments/new/page.tsx`** and **`appointments/new/page.tsx`** read **`searchParams`** and pass **`initialValues`** (`types/appointment.ts` **`AppointmentCreateInitialValues`**) into **`NewAppointmentModalClient`** / **`AppointmentDetailPanel`**.
+- Supported keys (validated in **`parseNewAppointmentSearchParams`** — `app/(app)/appointments/_lib/parse-new-appointment-search-params.ts`): **`patientId`** (UUID), **`patientLabel`** (closed combobox text), optional **`doctorId`**, optional **`category`** / **`visitType`** (must match `lib/constants/appointment.ts` enums). Unknown values are dropped.
+- **Create mode merge:** `initialValues` override blank **`createDefaults`** for patient, doctor, category, visit type. When **`patientId`** is prefilled, **`AppointmentPatientCombobox`** is **disabled** (same as edit) and shows **`patientDisplayLabel`** from **`patientLabel`**.
+
 ### Server Actions
 
 #### `createAppointment(data)`
@@ -237,13 +242,15 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 | Last Visit | Derived from most recent **completed** appointment with `scheduled_at` strictly before DB `now()` | ✓ | — |
 | Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
 | Status | `is_active` boolean → mapped to `active` / `inactive` display | — | ✓ (select) |
+| Actions | Icon buttons (view patient, new appointment) | — | — |
 
-> **Note on "Last Visit":** Derived field — `MAX(appointments.scheduled_at)` per patient over rows where `status = 'completed'`, `is_active = true`, and `scheduled_at < now()` (database clock). Not stored on the patient record directly. The same qualifying appointment row also supplies list-only fields **`lastVisitCategory`** (`appointment_category`) and **`lastVisitDoctorId`** (`doctor_id`) for consumers such as appointment-create prefill (not shown as table columns yet).
+> **Note on "Last Visit":** Derived field — `MAX(appointments.scheduled_at)` per patient over rows where `status = 'completed'`, `is_active = true`, and `scheduled_at < now()` (database clock). Not stored on the patient record directly. The same qualifying appointment row also supplies list-only fields **`lastVisitCategory`** (`appointment_category`) and **`lastVisitDoctorId`** (`doctor_id`). The dashboard maps the raw timestamp to **`lastVisitAt`** (ISO string on `PatientRow`) for client logic (e.g. follow-up window vs first visit when opening **New appointment**).
 
 > **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
 ### Interaction
 - **Row click:** Navigates to `/patients/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
+- **Actions column (rightmost):** **Eye** — same navigation as row click. **Calendar** — `router.push` to `/appointments/new?…` with validated query keys (`patientId`, `patientLabel`, `visitType`, optional `category`, optional `doctorId`) parsed on the server into `AppointmentDetailPanel` **`initialValues`** (intercepting modal or full-page). Visit type uses **`FOLLOW_UP_WINDOW_DAYS`** vs `lastVisitAt` (`follow-up-visit` when the last qualifying visit’s calendar day is within the window ending today, else `first-visit`). Action cells call **`stopPropagation`** so the row click handler does not run.
 
 ### Server Actions Needed
 
@@ -272,12 +279,13 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   ```ts
   {
     id:             string;
-    chartId:        string;
+    chartId:        number;          // raw integer; format in UI with `formatPatientChartId`
     firstName:      string;
     lastName:       string;
     email:          string;
     phone:          string;
-    lastVisit:      string | null;   // MAX(scheduled_at) over completed, past appointments (see table note)
+    lastVisit:      string;          // display e.g. "Nov 5, 2024" or "No visits"
+    lastVisitAt:    string | null;   // ISO instant for last qualifying visit; null if none
     assignedDoctor: string | null;   // doctor name from that same qualifying appointment
     lastVisitCategory: string | null; // appointment_category from that row; null if no visit
     lastVisitDoctorId: string | null; // doctor_id from that row; null if no visit

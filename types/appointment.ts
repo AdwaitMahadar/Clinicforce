@@ -41,6 +41,16 @@ export interface AppointmentEvent {
 /** Label/value pair for static selects in `AppointmentDetailPanel` (e.g. doctor). */
 export type AppointmentSelectOption = { label: string; value: string };
 
+/** Optional create-mode defaults for `AppointmentDetailPanel` and `/appointments/new` query prefill. */
+export interface AppointmentCreateInitialValues {
+  patientId?: string;
+  /** Closed combobox label when `patientId` is prefilled (e.g. `Name (#PT-12345)`). */
+  patientDisplayLabel?: string;
+  doctorId?: string;
+  category?: AppointmentCategory;
+  visitType?: AppointmentVisitType;
+}
+
 export interface AppointmentActivityEntry {
   id:        string;
   action:    string;

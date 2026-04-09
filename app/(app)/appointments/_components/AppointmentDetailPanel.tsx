@@ -22,7 +22,11 @@ import {
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import type { AppointmentDetail, AppointmentSelectOption } from "@/types/appointment";
+import type {
+  AppointmentCreateInitialValues,
+  AppointmentDetail,
+  AppointmentSelectOption,
+} from "@/types/appointment";
 import {
   createAppointmentSchema,
   updateAppointmentSchema,
@@ -435,19 +439,18 @@ type CreateProps = {
   appointment?: never;
   doctorOptions: AppointmentSelectOption[];
   onClose?: () => void;
+  initialValues?: AppointmentCreateInitialValues;
 };
 
 type AppointmentDetailPanelProps = EditProps | CreateProps;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function AppointmentDetailPanel({
-  mode = "edit",
-  appointment,
-  doctorOptions,
-  onClose,
-}: AppointmentDetailPanelProps) {
-  const isCreate = mode === "create";
+export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
+  const { doctorOptions, onClose } = props;
+  const isCreate = props.mode === "create";
+  const appointment = !isCreate ? props.appointment : undefined;
+  const initialValues = isCreate ? props.initialValues : undefined;
   const router   = useRouter();
   const formRef  = useRef<DetailFormHandle | null>(null);
   const { user } = useAppSession();
@@ -463,25 +466,31 @@ export function AppointmentDetailPanel({
   const showHeaderFeeLine =
     !isCreate && (!isStaff || appointment!.status === "completed");
 
-  const createDefaults = useMemo(
-    () =>
-      ({
-        title: "",
-        patientId: "",
-        doctorId: "",
-        category: "general",
-        visitType: "general",
-        status: "scheduled",
-        scheduledDate: format(new Date(), "yyyy-MM-dd"),
-        scheduledTime: format(new Date(), "HH:mm"),
-        duration: DEFAULT_APPOINTMENT_DURATION_MINUTES,
-        fee: "",
-        actualCheckIn: "",
-        description: "",
-        notes: "",
-      }) as unknown as DefaultValues<CreateAppointmentInput>,
-    []
-  );
+  const createDefaults = useMemo(() => {
+    const base = {
+      title: "",
+      patientId: "",
+      doctorId: "",
+      category: "general",
+      visitType: "general",
+      status: "scheduled",
+      scheduledDate: format(new Date(), "yyyy-MM-dd"),
+      scheduledTime: format(new Date(), "HH:mm"),
+      duration: DEFAULT_APPOINTMENT_DURATION_MINUTES,
+      fee: "",
+      actualCheckIn: "",
+      description: "",
+      notes: "",
+    } as unknown as DefaultValues<CreateAppointmentInput>;
+    if (!initialValues) return base;
+    return {
+      ...base,
+      patientId: initialValues.patientId ?? base.patientId,
+      doctorId: initialValues.doctorId ?? base.doctorId,
+      category: initialValues.category ?? base.category,
+      visitType: initialValues.visitType ?? base.visitType,
+    } as unknown as DefaultValues<CreateAppointmentInput>;
+  }, [initialValues]);
 
   const defaultValues = (
     isCreate
@@ -655,7 +664,8 @@ export function AppointmentDetailPanel({
   >[] => {
     const patientLockedLabel = !isCreate
       ? `${appointment!.patientName} (${formatPatientChartId(appointment!.patientChartId)})`
-      : undefined;
+      : initialValues?.patientDisplayLabel;
+    const patientComboboxDisabled = !isCreate || Boolean(initialValues?.patientId);
     const patientField: FormFieldDescriptor<CreateAppointmentInput | UpdateAppointmentInput> = {
       name: "patientId",
       label: "Patient",
@@ -664,7 +674,7 @@ export function AppointmentDetailPanel({
       renderControl: (field) => (
         <AppointmentPatientCombobox
           field={field}
-          disabled={!isCreate}
+          disabled={patientComboboxDisabled}
           disabledDisplayLabel={patientLockedLabel}
         />
       ),
@@ -683,6 +693,7 @@ export function AppointmentDetailPanel({
     appointment,
     doctorOptions,
     isCreate,
+    initialValues,
     canViewClinicalNotes,
     canViewAppointmentTitle,
     showAppointmentFeeField,

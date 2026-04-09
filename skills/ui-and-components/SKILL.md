@@ -33,7 +33,8 @@ This skill provides critical frontend rules, design tokens, and routing patterns
 Reuse existing components instead of building ad-hoc solutions. 
 
 **Domain Components (`components/common/` & `components/clinic/`)**
-*   `<DataTable />` — TanStack v8 list table: cell padding `px-4 py-3`, headers `px-4`, outer columns `first:pl-8 last:pr-8` for edge inset; sort handler on inner label+icon span only (not full header cell). Spacing is set in `DataTable` via `className` — do not edit `components/ui/table.tsx`. Initial load: route `loading.tsx` skeletons — no `isLoading` on DataTable.
+*   `<DataTable />` — TanStack v8 list table: cell padding `px-4 py-3`, headers `px-4`, outer columns `first:pl-8 last:pr-8` for edge inset; sort handler on inner label+icon span only (not full header cell). Spacing is set in `DataTable` via `className` — do not edit `components/ui/table.tsx`. Initial load: route `loading.tsx` skeletons — no `isLoading` on DataTable. **Patients directory:** rightmost **actions** column (Eye + Calendar icon buttons, `aria-label`); `stopPropagation` on the cell so **`onRowClick`** still opens patient detail; Calendar → `/appointments/new?…` prefill (`docs/07-Page-Specifications.md`).
+*   **`/appointments/new` prefill:** `parseNewAppointmentSearchParams` → **`AppointmentDetailPanel`** **`initialValues`**; prefilled **`patientId`** locks **`AppointmentPatientCombobox`** (like edit). Types: **`AppointmentCreateInitialValues`** (`types/appointment.ts`).
 *   `<SearchFilterBar />` / `<TableFilterBar />` - Notion-style search and filter row.
 *   `<TablePagination />` - Reusable pagination footer.
 *   `<Badge />` / `<StatusBadge />` - Unified badge for statuses, types, and chart IDs. Appointment statuses: `scheduled` | `completed` | `cancelled` | `no-show` (see `components/common/StatusBadge.tsx`).

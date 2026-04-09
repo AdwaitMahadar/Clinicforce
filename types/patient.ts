@@ -31,6 +31,8 @@ export interface PatientRow {
   phone:          string;
   /** Formatted date of last completed visit before “now”, or `"No visits"` — see `getPatients` query. */
   lastVisit:      string;
+  /** ISO instant of that visit (`scheduled_at`) for client logic; null if no qualifying visit. */
+  lastVisitAt:    string | null;
   assignedDoctor: string;
   /** DB `appointment_category` enum from the same visit as `lastVisit`; null when there is no qualifying visit. */
   lastVisitCategory: string | null;

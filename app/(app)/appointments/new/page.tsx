@@ -7,17 +7,25 @@
  */
 
 import { loadAppointmentDoctorOptions } from "../_lib/appointment-picker-options";
+import { parseNewAppointmentSearchParams } from "../_lib/parse-new-appointment-search-params";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { AppointmentDetailPanel } from "../_components/AppointmentDetailPanel";
 
-export default async function NewAppointmentPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function NewAppointmentPage({ searchParams }: PageProps) {
   const { doctorOptions } = await loadAppointmentDoctorOptions();
+  const sp = await searchParams;
+  const initialValues = parseNewAppointmentSearchParams(sp);
 
   return (
     <DetailPageShell breadcrumb="Appointments › New Appointment">
       <AppointmentDetailPanel
         mode="create"
         doctorOptions={doctorOptions}
+        initialValues={initialValues}
       />
     </DetailPageShell>
   );

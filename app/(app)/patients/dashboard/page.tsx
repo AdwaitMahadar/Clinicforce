@@ -67,6 +67,12 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
     lastVisit:      r.lastVisit
       ? format(new Date(r.lastVisit), "MMM d, yyyy")
       : "No visits",
+    lastVisitAt:
+      r.lastVisit != null
+        ? typeof r.lastVisit === "string"
+          ? r.lastVisit
+          : new Date(r.lastVisit as Date).toISOString()
+        : null,
     assignedDoctor: r.assignedDoctor ?? "—",
     lastVisitCategory: r.lastVisitCategory ?? null,
     lastVisitDoctorId: r.lastVisitDoctorId ?? null,
