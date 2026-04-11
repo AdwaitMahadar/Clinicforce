@@ -29,7 +29,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `lib/clinic/extract-subdomain-from-host.ts` | Host header → subdomain (shared: `middleware` + login server page) |
 | `middleware.ts` | Node runtime; `extractSubdomainFromHost` → resolver → guards routes → `x-clinic-id` + `x-subdomain`; matcher skips static paths so `public/` assets bypass middleware |
 | `app/(auth)/login/page.tsx` | Server: host → subdomain → clinic name + logo URL props |
-| `app/(auth)/login/login-page-client.tsx` | Client UI + RHF/Zod/Sonner; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`) |
+| `app/(auth)/login/login-page-client.tsx` | Client UI + RHF/Zod/Sonner; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`); **`signIn.email`:** `await` and read **`{ data, error }`** — do not rely on **`fetchOptions.onError`** alone (200 + error-shaped JSON); toast invalid credentials vs generic error; clear loading on failure only |
 
 ### Request pipeline
 

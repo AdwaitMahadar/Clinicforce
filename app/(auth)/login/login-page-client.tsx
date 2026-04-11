@@ -143,19 +143,32 @@ function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      await signIn.email({
+      const result = await signIn.email({
         email: data.email,
         password: data.password,
         callbackURL: returnUrl,
-        fetchOptions: {
-          onError: (ctx) => {
-            toast.error(
-              ctx.error.message ?? "Invalid credentials. Please try again."
-            );
-            setIsLoading(false);
-          },
-        },
       });
+
+      if (result.error) {
+        const status = (result.error as { status?: number }).status;
+        const serverOrOrigin =
+          status == null || status >= 500 || status === 403;
+        toast.error(
+          serverOrOrigin
+            ? "Something went wrong. Please try again."
+            : "Invalid credentials. Please try again.",
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const payload = result.data as { user?: unknown } | null | undefined;
+      const signedIn =
+        payload?.user != null && typeof payload.user === "object";
+      if (!signedIn) {
+        toast.error("Invalid credentials. Please try again.");
+        setIsLoading(false);
+      }
     } catch {
       toast.error("Something went wrong. Please try again.");
       setIsLoading(false);

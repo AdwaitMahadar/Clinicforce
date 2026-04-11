@@ -272,9 +272,9 @@ export async function createPatient(input: CreatePatientInput) {
 - **Forms + types:** The login form uses `useForm({ resolver: zodResolver(loginSchema) })` without an explicit generic (so types infer from the resolver), `z.infer<typeof loginSchema>` for the submit handler, and no `defaultValues` for Zod `.default()` fields such as `rememberMe`.
 - **UI-only (see `docs/06-UI-Design-System.md`):** Left-panel testimonial carousel with dot navigation; password field visibility toggle; footer copyright year from `new Date().getFullYear()`. These do not change auth behaviour.
 - Email + password form
-- On success: redirect to `/home/dashboard`
-- On failure: show inline error message — do not use a toast for auth errors, show them next to the form
-- No "remember me" toggle — session is always 7 days
+- On success: Better-Auth redirects using `callbackURL` passed from the client (`returnUrl` search param when middleware sent the user to login, otherwise `/home/dashboard`).
+- On failure: the submit handler **`await`s `signIn.email(...)`** and inspects the **return value**. The Better-Auth client (via `@better-fetch/fetch`) returns `{ data, error }`. **`fetchOptions.onError` is not sufficient on its own:** `onError` runs only for **non-2xx** HTTP responses, while failed email/password sign-in may still come back as **HTTP 200** with a JSON body that lacks a signed-in `user`. Treat **`result.error`** (after mapping 5xx / missing status / 403 to a generic message) or **`result.data` without a `user` object** as failure and show **Sonner** `toast.error("Invalid credentials. Please try again.")`; use **`toast.error("Something went wrong. Please try again.")`** for thrown errors and server/origin-style `result.error` statuses. Reset submit loading on every failure path; on success the page navigates away so loading state need not be cleared.
+- **Remember me:** optional checkbox exists in the form schema/UI; session length is still governed by Better-Auth `session.expiresIn` in `lib/auth/index.ts` unless the field is wired to the client API.
 - No "forgot password" link yet — can be added later as a single isolated feature
 - The login page must be the only page accessible without a session
 
