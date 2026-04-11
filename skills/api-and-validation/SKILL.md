@@ -69,6 +69,8 @@ For full action contracts per entity — exact input shapes, output shapes, and 
 
 The general pattern for every action follows the anatomy above:
 - **List actions**: Accept `clinicId` (from session), `page`, `pageSize`, `search`, `sort`, and entity-specific filters. Always return a paginated shape with `{ data, total }`.
+- **`getMedicines`:** optional **`isActive`** — omit to list active + deactivated rows; pass `true` / `false` to filter (`lib/db/queries/medicines.ts`).
+- **`updateMedicine`:** optional **`isActive: true`** in schema (`z.literal(true).optional()`) — reactivates the row; omit for normal field updates.
 - **`getPatients` list rows:** Each row has `status: "active" | "inactive"` only (mapped from DB in the query). There is no `isActive` on that payload — UI mappers must pass through `row.status`, not `row.isActive`. **`lastVisit` / `assignedDoctor` / `lastVisitCategory` / `lastVisitDoctorId`** use the same **completed**, **past** (`scheduled_at < now()`), **active** appointment row (`docs/08-Business-Rules.md`); dashboard also sets **`lastVisitAt`** (ISO) on **`PatientRow`** for client prefill logic. **`/appointments/new`** query prefill is parsed server-side (`parseNewAppointmentSearchParams`) — not part of `getPatients` response.
 - **Get actions**: Accept `id` + `clinicId`. Return a fully joined aggregate including nested `eventLog` and `documents` where applicable.
 - **Create actions**: Accept validated Zod payload. Map `session.userId` → `createdBy` and `session.clinicId` → `clinicId` before insertion. Never accept these from the client.

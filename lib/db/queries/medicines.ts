@@ -49,6 +49,7 @@ export interface GetMedicinesParams {
   search?: string;
   category?: string;
   form?: string;
+  /** When set, restrict to that activation state; when omitted, include active and inactive rows. */
   isActive?: boolean;
   page: number;
   pageSize: number;
@@ -70,7 +71,7 @@ export async function getMedicines(
     search,
     category,
     form,
-    isActive = true,
+    isActive,
     page,
     pageSize,
     sortBy = "name",
@@ -78,10 +79,10 @@ export async function getMedicines(
   } = params;
 
   // Build WHERE filters
-  const filters = [
-    eq(medicines.clinicId, clinicId),
-    eq(medicines.isActive, isActive),
-  ];
+  const filters = [eq(medicines.clinicId, clinicId)];
+  if (typeof isActive === "boolean") {
+    filters.push(eq(medicines.isActive, isActive));
+  }
 
   if (search) {
     filters.push(

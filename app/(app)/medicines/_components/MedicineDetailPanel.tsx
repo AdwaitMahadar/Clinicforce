@@ -15,10 +15,13 @@
  *   - @modal/(.)medicines/new/page.tsx
  */
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, Beaker, Syringe, FileText } from "lucide-react";
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { DetailPanel, DetailForm, PanelCloseButton } from "@/components/common";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
@@ -132,6 +135,9 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
   const isCreate = mode === "create";
   const router = useRouter();
   const formRef = useRef<DetailFormHandle | null>(null);
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [pendingReactivateValues, setPendingReactivateValues] =
+    useState<CreateMedicineInput | null>(null);
 
   const iconName = guessIcon(medicine?.form);
 
@@ -160,6 +166,9 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       } else {
         toast.error(result.error ?? "Failed to add medicine.");
       }
+    } else if (!medicine!.isActive) {
+      setPendingReactivateValues(values);
+      setReactivateDialogOpen(true);
     } else {
       const result = await updateMedicine({ id: medicine!.id, ...values });
       if (result.success) {
@@ -168,6 +177,23 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       } else {
         toast.error(result.error ?? "Failed to update medicine.");
       }
+    }
+  };
+
+  const handleConfirmReactivateAndSave = async () => {
+    if (!pendingReactivateValues || !medicine) return;
+    const result = await updateMedicine({
+      id: medicine.id,
+      ...pendingReactivateValues,
+      isActive: true,
+    });
+    if (result.success) {
+      setReactivateDialogOpen(false);
+      setPendingReactivateValues(null);
+      toast.success("Medicine reactivated and updated successfully.");
+      router.refresh();
+    } else {
+      toast.error(result.error ?? "Failed to update medicine.");
     }
   };
 
@@ -223,16 +249,70 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
   );
 
   return (
-    <DetailPanel
-      header={header}
-      formRef={formRef}
-      form={form}
-      events={isCreate ? [] : medicine!.activityLog}
-      isCreate={isCreate}
-      onCancel={onClose ?? (() => router.back())}
-      onDelete={isCreate ? undefined : handleDelete}
-      submitLabel={isCreate ? "Add Medicine" : "Save Changes"}
-      deleteLabel="Delete Medicine"
-    />
+    <>
+      <DetailPanel
+        header={header}
+        formRef={formRef}
+        form={form}
+        events={isCreate ? [] : medicine!.activityLog}
+        isCreate={isCreate}
+        onCancel={onClose ?? (() => router.back())}
+        onDelete={isCreate ? undefined : handleDelete}
+        submitLabel={isCreate ? "Add Medicine" : "Save Changes"}
+        deleteLabel="Delete Medicine"
+      />
+
+      {!isCreate && (
+        <AlertDialogPrimitive.Root
+          open={reactivateDialogOpen}
+          onOpenChange={(open) => {
+            setReactivateDialogOpen(open);
+            if (!open) setPendingReactivateValues(null);
+          }}
+        >
+          <AlertDialogPrimitive.Portal>
+            <AlertDialogPrimitive.Overlay
+              className={cn(
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50"
+              )}
+            />
+            <AlertDialogPrimitive.Content
+              className={cn(
+                "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg"
+              )}
+            >
+              <AlertDialogPrimitive.Title className="sr-only">
+                Confirm reactivation
+              </AlertDialogPrimitive.Title>
+              <AlertDialogPrimitive.Description
+                className="text-sm"
+                style={{ color: "var(--color-text-primary)" }}
+              >
+                This medicine is currently inactive. Saving these changes will
+                reactivate it. Do you want to continue?
+              </AlertDialogPrimitive.Description>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <AlertDialogPrimitive.Cancel asChild>
+                  <Button type="button" variant="outline" size="sm">
+                    Cancel
+                  </Button>
+                </AlertDialogPrimitive.Cancel>
+                <Button
+                  type="button"
+                  size="sm"
+                  style={{
+                    background: "var(--color-ink)",
+                    color: "var(--color-ink-fg)",
+                  }}
+                  onClick={() => void handleConfirmReactivateAndSave()}
+                >
+                  Confirm
+                </Button>
+              </div>
+            </AlertDialogPrimitive.Content>
+          </AlertDialogPrimitive.Portal>
+        </AlertDialogPrimitive.Root>
+      )}
+    </>
   );
 }

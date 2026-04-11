@@ -76,6 +76,9 @@ export const updateMedicineSchema = z.object({
   lastPrescribedDate: z.string().optional(),
 
   description: z.string().optional(),
+
+  /** When `true`, persists reactivation (`is_active = true`). Omitted on normal edits. */
+  isActive: z.literal(true).optional(),
 });
 
 // ─── Inferred TypeScript Types ────────────────────────────────────────────────

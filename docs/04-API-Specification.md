@@ -67,3 +67,9 @@ After a successful **`createAppointment`**, **`updateAppointment`**, or **`delet
 **`getAppointmentDetail` aggregate:** In addition to the appointment row, the action returns **`patientDocuments`** (same shape as `getPatientDetail` documents — `getDocumentsByAssignment` for the appointment’s patient) and **`patientAppointments`** (same summary shape as `getPatientDetail` appointments — `getPatientAppointmentSummaries`; nested `title` staff-redacted like `getPatientDetail`). DB query layer: `getAppointmentById` in `lib/db/queries/appointments.ts` composes `getDocumentsByAssignment` + `getPatientAppointmentSummaries` from `lib/db/queries/patients.ts` / `documents.ts`.
 
 **`PatientRow.chartId`** is a **`number`** (raw integer from DB). The table display layer (`PatientsTable`) is responsible for calling `formatPatientChartId` — the dashboard page must not pre-format it to a string before passing to the row shape.
+
+## Medicines (`lib/actions/medicines.ts`)
+
+**`getMedicines`** (via `lib/db/queries/medicines.ts`): optional **`isActive`** boolean. When **omitted**, the query returns **both** active and deactivated (`is_active`) rows for the clinic (dashboard default). When **`true`** or **`false`**, results are restricted to that activation state. Other list inputs (`search`, `category`, `form`, pagination, sort) are unchanged. RBAC: `requireRole(session, ["admin", "doctor"])`.
+
+**`updateMedicine`:** `updateMedicineSchema` allows optional **`isActive: true`** (`z.literal(true).optional()`). When present, the action sets **`is_active = true`** (reactivation) together with any other allowed field updates. Normal saves omit this key. Deactivation remains **`deactivateMedicine`** only.

@@ -92,7 +92,8 @@ Detail records MUST use `/view/[id]` (e.g., `/appointments/view/123`), NEVER a b
     *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` (RHF + Zod): DOB + Age sync via `PatientDobAgeSync` (`insideForm`); admin/doctor see **Patient's Past History** (`pastHistoryNotes`); sidebar tabs Documents | Appointments; create hides sidebar. List row subtitle: **phone** under name. Intercepting modal: `NewPatientModalClient` / `PatientViewModalClient` pass `onClose` → successful **create** or **update** runs `router.back()` + `refresh` (full-page routes keep the URL; no auto-back).
     *   `/reports`: Placeholder view.
 *   **Medicines**: 
-    *   `/dashboard`: DataTable (Search by name, filter by category/form); first column = category-mapped Lucide icon in `surface-alt` square + name/brand (same flex pattern as patients + `InitialsBadge`); row click → `/medicines/view/[id]` (intercepting modal).
+    *   `/dashboard`: DataTable (Search by name, filter by category/form); lists **active and inactive** medicines; Status column = `StatusBadge`; first column = category-mapped Lucide icon in `surface-alt` square + name/brand (same flex pattern as patients + `InitialsBadge`); row click → `/medicines/view/[id]` (intercepting modal).
+    *   Medicine **detail** (`MedicineDetailPanel`): saving while **`isActive === false`** opens an **`AlertDialog`** (`radix-ui`); confirm → **`updateMedicine`** with **`isActive: true`** + form fields.
     *   `/new` & `/view/[id]`: `<DetailPanel />` + `<DetailForm />` — form column + sidebar activity log in edit; create hides sidebar. After create/update/deactivate: `router.refresh()` (and full-page create pushes to dashboard), same pattern as patients.
     *   `/reports`: Placeholder view.
 

@@ -36,7 +36,7 @@ const getMedicinesInputSchema = z.object({
   search:    z.string().optional(),
   category:  z.string().optional(),
   form:      z.string().optional(),
-  isActive:  z.boolean().optional().default(true),
+  isActive:  z.boolean().optional(),
   page:      z.number().int().min(1).default(1),
   pageSize:  z.number().int().min(1).max(100).default(10),
   sortBy:    z.enum(["name", "lastPrescribedDate"]).optional().default("name"),
@@ -155,8 +155,16 @@ export async function updateMedicine(input: unknown) {
     }
 
     const { clinicId } = session.user;
-    const { id, name, category, brand, form, lastPrescribedDate, description } =
-      parsed.data;
+    const {
+      id,
+      name,
+      category,
+      brand,
+      form,
+      lastPrescribedDate,
+      description,
+      isActive,
+    } = parsed.data;
 
     // Verify ownership before update
     const existing = await getMedicineById(clinicId, id);
@@ -177,6 +185,7 @@ export async function updateMedicine(input: unknown) {
             ? new Date(lastPrescribedDate)
             : null,
         }),
+        ...(isActive === true && { isActive: true }),
         updatedAt: new Date(),
       })
       .where(

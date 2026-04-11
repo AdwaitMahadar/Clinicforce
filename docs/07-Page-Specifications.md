@@ -446,7 +446,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 | Medicine | `name` (+ `brand` subline); **leading icon** from `category` (Lucide mapping in `MedicinesTable`, same flex layout pattern as `InitialsBadge` on patients) | ✓ by name | Search |
 | Category | `category` | — | ✓ (select) |
 | Last Prescribed | `last_prescribed_date` | ✓ | — |
-| Status | `is_active` | — | ✓ (select: Active / Inactive) |
+| Status | `is_active` (`StatusBadge`: Active / Inactive) | — | — |
 
 **Filters not shown as columns:** `form` is available in `TableFilterBar` only (not a table column). **Brand** appears under the medicine name, not as its own column.
 
@@ -465,7 +465,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
     search?:     string;   // matches name, brand, category
     category?:   string;
     form?:       string;
-    isActive?:   boolean;  // default: true only
+    isActive?:   boolean;  // omit = active + inactive; `true` / `false` = filter to that subset
     page:        number;
     pageSize:    number;   // default 10
     sortBy?:     "name" | "lastPrescribedDate";
@@ -501,8 +501,9 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 
 ### Layout
 `MedicineDetailPanel` uses **`DetailPanel`** + **`DetailForm`**:
-- **Form column:** Single scrollable grid of medicine fields (name, identifiers, category, form, dates, description, active, etc.).
+- **Form column:** Single scrollable grid of medicine fields (name, identifiers, category, form, dates, description).
 - **Sidebar (edit only):** Activity log via `events`. Create mode hides the sidebar (`isCreate`).
+- **Inactive row (`isActive === false`):** Saving opens a Radix **`AlertDialog`** (via `radix-ui`) confirming that the update will **reactivate** the medicine; **Confirm** calls **`updateMedicine`** with **`isActive: true`** and shows the reactivation success toast; **Cancel** closes the dialog without saving.
 
 ### Server Actions Needed
 
@@ -529,7 +530,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 
 #### `updateMedicine(id, data)`
 - **Input:** `id`, `UpdateMedicineInput` (from `lib/validators/medicine.ts`), `clinicId` from session
-- **Validates:** `{ name, category, brand, form, lastPrescribedDate?, description? }`
+- **Validates:** `{ name, category, brand, form, lastPrescribedDate?, description?, isActive? }` — **`isActive`** may only be the literal **`true`** (reactivation); omit on normal edits
 - **Enforces:** `clinicId` and `createdBy` are immutable
 - **RBAC:** Admin and Doctor only.
 
