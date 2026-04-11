@@ -143,6 +143,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **Edit mode — fee → status:** When **not** creating, if the user enters a **positive** fee from a previously empty/zero fee and **status** is not already **`completed`**, the client sets **status** to **`completed`** via React Hook Form (`setValue`) and shows a Sonner toast: *“Status set to Completed because a fee was added.”* Implementation: `DetailForm` **`insideForm`** uses **`useWatch({ name: "fee" })`** (not `watch("fee")` alone) so the effect re-renders when the fee field changes. Does not run on create; does not re-fire when changing fee while already completed.
 - **Sidebar (edit only):** **Documents** tab (all documents assigned to the patient — same query as patient detail; upload still passes `appointmentId` + `patientId` so new files link to this visit) + **Appointments** tab (all active appointments for that patient, newest first; current visit has a **Current** label and blue border; each row navigates to `/appointments/view/[id]`) + activity log in the sidebar bottom zone (`events`). Create mode (`isCreate`) hides the sidebar.
 - **Footer:** Save, Cancel, **Cancel Appointment** (delete) via `DetailPanel`; submit through `formRef`.
+- **After successful save or cancel appointment:** **`useDetailExit`** with **`listHref`** **`/appointments/dashboard`** — **intercepting modal:** **`AppointmentViewModalClient`** supplies **`onClose`** (`router.back`); **`exitAfterMutation`** runs **`onClose`** + **`router.refresh()`** inside **`startTransition`**; **full-page:** **`router.replace`** to the dashboard + immediate **`router.refresh()`**.
 
 ### Server Actions Needed
 
@@ -215,7 +216,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   - Default `status = 'scheduled'`
   - `createdBy` = `session.userId` (immutable after creation)
   - `clinicId` = `session.clinicId` (immutable after creation)
-- **Returns:** Created appointment `{ id }` (client then navigates to detail view)
+- **Returns:** Created appointment `{ id }` — client uses **`useDetailExit`** (modal: **`startTransition`** + back + refresh; full-page: **`replace`** `/appointments/dashboard` + immediate refresh); does not auto-open the new detail view.
 - **RBAC:** All roles.
 
 #### Supporting data (form pickers)
@@ -308,7 +309,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **Form column:** `<DetailForm />` with all patient fields, including **Date of Birth** and **Age** (synced; UI-only age), then **Gender** on its own row (`colSpan: 2` + `constrainControlToHalfRow` so the control matches one column width), then **Phone** and **Email** side-by-side, then **Blood Group** and **Allergies**, and, for admin/doctor, a tall **Patient's Past History** (`pastHistoryNotes`) textarea (`rows` + `min-height` via `DetailForm` textarea `className`) at the bottom. Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`. `PatientDobAgeSync` keeps DOB and age aligned inside the form (`DetailForm` `insideForm` slot).
 - **Sidebar:** `DetailSidebar` tabbed — Documents | Appointments (same list/upload behaviour as before). In **create** mode (`isCreate`), the sidebar column is hidden
 - **Activity log:** `events` prop on `DetailPanel` (always-visible bottom zone in the sidebar)
-- **After save:** On successful `updatePatient`, the **intercepting modal** closes via `onClose` (`router.back()`) + `router.refresh()` so the user returns to the patients table with the same URL state. The **full-page** `/patients/view/[id]` route stays on the same URL and only `router.refresh()` runs.
+- **After successful save:** **`useDetailExit`** with **`listHref`** **`/patients/dashboard`** — **intercepting modal:** **`PatientViewModalClient`** supplies **`onClose`** (`router.back`); **`exitAfterMutation`** uses **`startTransition`** for **`onClose`** + **`router.refresh()`**; **full-page:** **`router.replace('/patients/dashboard')`** + immediate **`router.refresh()`**. **`updatePatient`** calls **`revalidatePath("/patients/dashboard")`** on success (same as **`createPatient`**).
 
 ### Server Actions Needed
 
@@ -373,6 +374,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   - Either `dateOfBirth` (after trim) or `age` (UI) must be provided; server normalizes to `date_of_birth` only
   - `clinicId` and `createdBy` are immutable
 - **RBAC:** All roles may submit; `pastHistoryNotes` is only applied for admin/doctor (see `docs/05-Authentication.md`).
+- **Returns:** On success, calls **`revalidatePath("/patients/dashboard")`** before returning (list cache aligned with **`createPatient`**).
 
 #### Patient past history (`pastHistoryNotes`)
 The **Patient's Past History** textarea is backed by `patients.past_history_notes` and is updated with the rest of the form on **Save**.
@@ -410,7 +412,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 ### Implementation notes
 - **Form:** Submit and cancel controls must live inside the same `<form>` as the fields so **Save** triggers `onSubmit` (native submit buttons outside a form do not submit it).
 - **Gender:** The select is populated from `PATIENT_GENDERS` in `lib/validators/patient.ts` (`male` | `female` | `other`).
-- **After create:** On success, `createPatient` calls `revalidatePath("/patients/dashboard")` after insert. The client then **closes the modal** (`router.back()` via `onClose`) when opened from the dashboard, or **`router.push('/patients/dashboard')`** from the full-page route, and **`router.refresh()`** so the table shows the new row without losing dashboard URL state (search/filters/pagination) in the modal case.
+- **After create:** On success, `createPatient` calls `revalidatePath("/patients/dashboard")` after insert. The client uses the same **`useDetailExit`** path as edit: **modal** → **`startTransition`** wrapping **`onClose`** + **`refresh`**; **full-page** → **`replace('/patients/dashboard')`** + immediate **`refresh`**.
 
 ### Server Actions Needed
 
@@ -425,7 +427,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
   - Sets `createdBy = session.userId` (immutable)
   - Sets `clinicId = session.clinicId` (immutable)
   - Sets `is_active = true`
-- **Returns:** `{ id }` — after success, modal context uses `router.back()` + `router.refresh()`; full-page `/patients/new` uses `router.push('/patients/dashboard')` + `router.refresh()`. `revalidatePath` runs in the action.
+- **Returns:** `{ id }` — after success, client uses **`useDetailExit`** (modal: **`startTransition`** + **`onClose`** + **`refresh`**; full-page: **`replace('/patients/dashboard')`** + immediate **`refresh`**). `revalidatePath` runs in the action.
 - **RBAC:** All roles.
 
 ---
@@ -503,7 +505,8 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 `MedicineDetailPanel` uses **`DetailPanel`** + **`DetailForm`**:
 - **Form column:** Single scrollable grid of medicine fields (name, identifiers, category, form, dates, description).
 - **Sidebar (edit only):** Activity log via `events`. Create mode hides the sidebar (`isCreate`).
-- **Inactive row (`isActive === false`):** Saving opens a Radix **`AlertDialog`** (via `radix-ui`) confirming that the update will **reactivate** the medicine; **Confirm** calls **`updateMedicine`** with **`isActive: true`** and shows the reactivation success toast; **Cancel** closes the dialog without saving.
+- **Inactive row (`isActive === false`):** Saving opens a Radix **`AlertDialog`** (via `radix-ui`) confirming that the update will **reactivate** the medicine; **Confirm** calls **`updateMedicine`** with **`isActive: true`**, shows the reactivation success toast, then **`exitAfterMutation()`** (same **`useDetailExit`** as other saves — modal dismiss or **`replace('/medicines/dashboard')`**). **Cancel** closes the dialog without saving.
+- **After successful save or deactivate:** **`useDetailExit`** (`listHref` **`/medicines/dashboard`**) — **`MedicineViewModalClient`** passes **`onClose`** for the intercepting modal; **`exitAfterMutation`** uses **`startTransition`** for **`onClose`** + **`refresh`**; full-page uses **`replace`** + immediate **`refresh`**. **`createMedicine`**, **`updateMedicine`**, and **`deactivateMedicine`** call **`revalidatePath("/medicines/dashboard")`** on success.
 
 ### Server Actions Needed
 
@@ -675,7 +678,7 @@ The application provides intercepting routes to display forms seamlessly over th
 
 - **`@modal/(.)appointments/view/[id]/`, `@modal/(.)medicines/view/[id]/`**:
   > **Status:** UI built.
-  Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`, using the same **`ModalShell` + inner `Suspense`** pattern as patient view.
+  Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`, using the same **`ModalShell` + inner `Suspense`** pattern as patient view. Client wrappers **`AppointmentViewModalClient`** and **`MedicineViewModalClient`** pass **`onClose`** (`router.back`) into the detail panel so Save / delete / reactivation-dismiss match patient modal behavior.
 
 ---
 

@@ -4,11 +4,13 @@
  * app/(app)/appointments/_components/AppointmentDetailPanel.tsx
  *
  * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
+ * Post-mutation exit: useDetailExit (modal onClose from AppointmentViewModalClient / NewAppointmentModalClient).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext, useWatch, type DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { toast } from "sonner";
 import { Calendar, CalendarDays, FileText, Upload } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -444,6 +446,8 @@ type CreateProps = {
 
 type AppointmentDetailPanelProps = EditProps | CreateProps;
 
+const APPOINTMENT_LIST_HREF = "/appointments/dashboard";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
@@ -451,7 +455,11 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
   const isCreate = props.mode === "create";
   const appointment = !isCreate ? props.appointment : undefined;
   const initialValues = isCreate ? props.initialValues : undefined;
-  const router   = useRouter();
+  const router = useRouter();
+  const { exitAfterMutation } = useDetailExit({
+    listHref: APPOINTMENT_LIST_HREF,
+    onClose,
+  });
   const formRef  = useRef<DetailFormHandle | null>(null);
   const { user } = useAppSession();
   const isStaff = user.type === "staff";
@@ -525,12 +533,7 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
       });
       if (result.success) {
         toast.success("Appointment scheduled successfully.");
-        if (onClose) {
-          onClose();
-        } else {
-          router.push("/appointments/dashboard");
-        }
-        router.refresh();
+        exitAfterMutation();
       } else {
         toast.error(result.error ?? "Failed to create appointment.");
       }
@@ -558,7 +561,7 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
       });
       if (result.success) {
         toast.success("Appointment updated successfully.");
-        router.refresh();
+        exitAfterMutation();
       } else {
         toast.error(result.error ?? "Failed to update appointment.");
       }
@@ -569,12 +572,11 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
     const result = await deleteAppointment(appointment!.id);
     if (result.success) {
       toast.success("Appointment cancelled.");
-      onClose?.();
-      router.refresh();
+      exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to cancel appointment.");
     }
-  }, [appointment, onClose, router]);
+  }, [appointment, exitAfterMutation]);
 
   // Header subtitle
   const headerSubtitle = isCreate

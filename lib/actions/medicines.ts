@@ -13,6 +13,7 @@
  */
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
@@ -133,6 +134,7 @@ export async function createMedicine(input: unknown) {
       })
       .returning({ id: medicines.id });
 
+    revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
@@ -192,6 +194,7 @@ export async function updateMedicine(input: unknown) {
         and(eq(medicines.clinicId, clinicId), eq(medicines.id, id))
       );
 
+    revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
@@ -226,6 +229,7 @@ export async function deactivateMedicine(id: unknown) {
         and(eq(medicines.clinicId, clinicId), eq(medicines.id, parsed.data))
       );
 
+    revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };

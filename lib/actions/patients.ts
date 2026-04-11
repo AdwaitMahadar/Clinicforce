@@ -301,6 +301,7 @@ export async function updatePatient(input: unknown) {
       })
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)));
 
+    revalidatePath("/patients/dashboard");
     return { success: true as const, data: { id } };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };

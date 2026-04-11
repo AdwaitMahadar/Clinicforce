@@ -317,6 +317,11 @@ Popover (`modal={false}` for use inside intercepting `Dialog`s) + shadcn **`Comm
 
 Layout for entity create/edit: **header** slot, **form** slot (usually `<DetailForm />`), optional **sidebar** (`DetailSidebar` — ~40% width in edit mode) with tabbed content + activity log, **footer** with Save, Cancel, and optional destructive action. Set **`isCreate`** to hide the sidebar and give the form full width.
 
+### `useDetailExit` — post-mutation navigation for detail panels
+**Location:** `lib/hooks/use-detail-exit.ts`
+
+Entity panels (**`PatientDetailPanel`**, **`AppointmentDetailPanel`**, **`MedicineDetailPanel`**) call **`useDetailExit({ listHref, onClose })`** and invoke **`exitAfterMutation()`** after a successful save, delete/deactivate, or (medicines) reactivation confirm. **Intercepting modal** routes pass **`onClose`** (typically **`router.back()`** via a small `*ViewModalClient` / `New*ModalClient` wrapper) so the list behind the modal keeps its URL state; **`exitAfterMutation`** wraps **`onClose()`** and **`router.refresh()`** in React **`startTransition`** so navigation and refresh are coordinated as one transition (avoids an immediate post-**`back`** refresh targeting the wrong segment). **Full-page** `/view/[id]` and `/new` routes omit **`onClose`** so **`exitAfterMutation`** uses **`router.replace(listHref)`** (entity dashboard) then an **immediate** **`router.refresh()`**. **Cancel** still uses **`onClose ?? (() => router.back())`** on the panel — unchanged.
+
 ### `<DetailSidebar />` — Tabbed Sidebar + Activity Log
 **Location:** `components/common/DetailSidebar.tsx`
 
@@ -408,7 +413,7 @@ Avoid heavy shadows. Use borders instead of box-shadows for card separation. The
 - Every form uses **React Hook Form** with a **Zod schema** from `lib/validators/`.
 - Zod schemas are the **single source of truth** — the same schema is used for both client-side form validation and server-side API/action validation. Never duplicate validation logic.
 - Forms that create or edit records open in an **intercepting modal** (Dialog). Full-page forms are only used if a form is too complex for a modal (more than ~8 fields).
-- On submit: show a loading state on the submit button (disabled + spinner). On success: close modal, show a Sonner toast, invalidate and refetch the relevant data. On error: show field-level errors from Zod, show a Sonner error toast for server errors.
+- On submit: show a loading state on the submit button (disabled + spinner). On success: leave the detail surface via **`useDetailExit`** (§5 — modal: **`startTransition`** around **`onClose`** + **`router.refresh()`**; full-page: **`router.replace`** then immediate **`router.refresh()`**), and show a Sonner toast. On error: show field-level errors from Zod, show a Sonner error toast for server errors.
 
 ---
 

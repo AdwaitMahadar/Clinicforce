@@ -40,6 +40,7 @@ import {
 } from "@/lib/validators/patient";
 import { PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
 import { createPatient, updatePatient } from "@/lib/actions/patients";
+import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { usePermission } from "@/lib/auth/session-context";
 import { PatientDobAgeSync } from "./PatientDobAgeSync";
 
@@ -271,8 +272,14 @@ function PatientAppointmentsTab({ patient }: { patient: PatientDetail }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const PATIENT_LIST_HREF = "/patients/dashboard";
+
 export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPanelProps) {
   const router = useRouter();
+  const { exitAfterMutation } = useDetailExit({
+    listHref: PATIENT_LIST_HREF,
+    onClose,
+  });
   const formRef = useRef<DetailFormHandle | null>(null);
 
   const isCreate = mode === "create";
@@ -309,12 +316,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
     const result = await createPatient(values);
     if (result.success) {
       toast.success("Patient registered successfully.");
-      if (onClose) {
-        onClose();
-      } else {
-        router.push("/patients/dashboard");
-      }
-      router.refresh();
+      exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to register patient.");
     }
@@ -324,10 +326,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
     const result = await updatePatient(values);
     if (result.success) {
       toast.success("Patient updated successfully.");
-      if (onClose) {
-        onClose();
-      }
-      router.refresh();
+      exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to update patient.");
     }

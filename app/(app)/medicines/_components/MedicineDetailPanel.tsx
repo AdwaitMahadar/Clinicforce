@@ -10,13 +10,14 @@
  *
  * Shared across:
  *   - medicines/view/[id]/page.tsx
- *   - @modal/(.)medicines/view/[id]/page.tsx
+ *   - @modal/(.)medicines/view/[id]/page.tsx (via MedicineViewModalClient — onClose)
  *   - medicines/new/page.tsx
  *   - @modal/(.)medicines/new/page.tsx
  */
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { Pill, Beaker, Syringe, FileText } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
@@ -129,11 +130,17 @@ type CreateProps = {
 
 type MedicineDetailPanelProps = EditProps | CreateProps;
 
+const MEDICINE_LIST_HREF = "/medicines/dashboard";
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: MedicineDetailPanelProps) {
   const isCreate = mode === "create";
   const router = useRouter();
+  const { exitAfterMutation } = useDetailExit({
+    listHref: MEDICINE_LIST_HREF,
+    onClose,
+  });
   const formRef = useRef<DetailFormHandle | null>(null);
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [pendingReactivateValues, setPendingReactivateValues] =
@@ -157,12 +164,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       const result = await createMedicine(values);
       if (result.success) {
         toast.success("Medicine added successfully.");
-        if (onClose) {
-          onClose();
-        } else {
-          router.push("/medicines/dashboard");
-        }
-        router.refresh();
+        exitAfterMutation();
       } else {
         toast.error(result.error ?? "Failed to add medicine.");
       }
@@ -173,7 +175,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       const result = await updateMedicine({ id: medicine!.id, ...values });
       if (result.success) {
         toast.success("Medicine updated successfully.");
-        router.refresh();
+        exitAfterMutation();
       } else {
         toast.error(result.error ?? "Failed to update medicine.");
       }
@@ -191,7 +193,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
       setReactivateDialogOpen(false);
       setPendingReactivateValues(null);
       toast.success("Medicine reactivated and updated successfully.");
-      router.refresh();
+      exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to update medicine.");
     }
@@ -201,8 +203,7 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
     const result = await deactivateMedicine(medicine!.id);
     if (result.success) {
       toast.success("Medicine deactivated.");
-      onClose?.();
-      router.refresh();
+      exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to deactivate medicine.");
     }
