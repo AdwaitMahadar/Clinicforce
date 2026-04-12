@@ -1,7 +1,7 @@
 "use client";
 
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
-import { Calendar, Eye } from "lucide-react";
+import { Calendar, Eye, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DataTable, InitialsBadge, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
@@ -122,19 +122,21 @@ function PatientRowActions({ row }: { row: PatientRow }) {
       >
         <Eye className="size-4" strokeWidth={1.75} />
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={iconBtnClass}
-        style={{ color: "var(--color-text-muted)" }}
-        aria-label="New appointment for patient"
-        onClick={() =>
-          router.push(`/appointments/new?${newAppointmentSearchParams(row)}`)
-        }
-      >
-        <Calendar className="size-4" strokeWidth={1.75} />
-      </Button>
+      {row.status !== "inactive" && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={iconBtnClass}
+          style={{ color: "var(--color-text-muted)" }}
+          aria-label="New appointment for patient"
+          onClick={() =>
+            router.push(`/appointments/new?${newAppointmentSearchParams(row)}`)
+          }
+        >
+          <Calendar className="size-4" strokeWidth={1.75} />
+        </Button>
+      )}
     </div>
   );
 }
@@ -153,10 +155,19 @@ export function PatientsTable({ data }: PatientsTableProps) {
       enableSorting
       onRowClick={(row) => router.push(`/patients/view/${row.id}`)}
       emptyState={
-        <div className="flex flex-col items-center gap-2 py-10">
+        <div className="flex flex-col items-center gap-3 py-10">
           <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
             No patients match your filters.
           </p>
+          <Button
+            type="button"
+            className="gap-2 shadow-sm"
+            style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
+            onClick={() => router.push("/patients/new")}
+          >
+            <Plus size={15} />
+            New Patient
+          </Button>
         </div>
       }
     />

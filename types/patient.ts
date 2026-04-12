@@ -92,6 +92,8 @@ export interface PatientDetail {
   /** Patient past history from DB (`past_history_notes`). */
   pastHistoryNotes?: string;
   assignedDoctor:       string;
+  /** DB `patients.is_active` — use with `status` for reactivation flows. */
+  isActive:             boolean;
   status:               PatientStatus;
   appointments:         PatientAppointment[];
   documents:            PatientDocument[];

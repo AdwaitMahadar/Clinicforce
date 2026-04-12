@@ -93,7 +93,7 @@ const { user } = useAppSession(); // user.type, user.firstName, …
 
 // Boolean check for a single permission
 import { usePermission } from "@/lib/auth/session-context";
-const canDelete = usePermission("deletePatient"); // true | false
+const canDelete = usePermission("deletePatient"); // true for all roles (patient deactivate/reactivate)
 
 // Declarative gate — renders children or fallback
 import { RoleGate } from "@/components/common/RoleGate";

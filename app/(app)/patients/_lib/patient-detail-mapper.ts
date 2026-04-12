@@ -52,6 +52,7 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
     emergencyContactPhone: r.emergencyContactPhone ?? "",
     pastHistoryNotes:      r.pastHistoryNotes ?? "",
     assignedDoctor:        "",
+    isActive:              r.isActive,
     status:                r.isActive ? "active" : "inactive",
     appointments: (r.appointments ?? []).map((a) => ({
       id:        a.id,

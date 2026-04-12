@@ -20,8 +20,8 @@ export const PERMISSIONS = {
   viewPatients: ["admin", "doctor", "staff"],
   createPatient: ["admin", "doctor", "staff"],
   editPatient: ["admin", "doctor", "staff"],
-  /** Permanently delete / hard-deactivate a patient record. */
-  deletePatient: ["admin", "doctor"],
+  /** Soft-deactivate / reactivate a patient record (server: `deactivatePatient`, `updatePatient` with `isActive: true`). */
+  deletePatient: ["admin", "doctor", "staff"],
 
   // ── Clinical / history text (appointment notes + patient past history) ────
   /** View appointment clinical notes and patient past history. Hidden from staff; server actions redact for staff. */
@@ -66,7 +66,7 @@ export type Permission = keyof typeof PERMISSIONS;
  * Returns `true` when `role` is listed for `permission` in the PERMISSIONS map.
  *
  * @example
- * hasPermission("staff", "deletePatient") // false
+ * hasPermission("staff", "deletePatient") // true
  * hasPermission("admin", "deletePatient") // true
  */
 export function hasPermission(role: UserType, permission: Permission): boolean {

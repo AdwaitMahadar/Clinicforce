@@ -46,7 +46,7 @@ RBAC is enforced in **server actions** (`requireRole` in `lib/auth/rbac.ts`) and
 | **Appointments** — view / create / edit | Yes | Yes | Yes |
 | **Appointments** — delete (soft cancel) | Yes | Yes | Yes |
 | **Patients** — view / create / edit | Yes | Yes | Yes |
-| **Patients** — deactivate (“delete”) | — | Yes | Yes |
+| **Patients** — deactivate (“delete”) / reactivate | Yes | Yes | Yes |
 | **Appointment clinical notes** (`appointments.notes`) and **patient past history** (`patients.past_history_notes`) | — | Yes | Yes |
 | **Appointment title** (optional label on create/edit form; DB `appointments.title`) | — | Yes | Yes |
 | **Detail sidebar** (tabs + activity area on detail views) | — | Yes | Yes |

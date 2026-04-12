@@ -363,7 +363,7 @@ The full permission map reflects the PRD RBAC table:
 | :--- | :---: | :---: | :---: |
 | `manageUsers` | — | — | ✓ |
 | `viewPatients` / `createPatient` / `editPatient` | ✓ | ✓ | ✓ |
-| `deletePatient` | — | ✓ | ✓ |
+| `deletePatient` | ✓ | ✓ | ✓ |
 | `viewClinicalNotes` / `editClinicalNotes` | — | ✓ | ✓ |
 | `viewAppointmentTitle` | — | ✓ | ✓ |
 | `viewDetailSidebar` | — | ✓ | ✓ |

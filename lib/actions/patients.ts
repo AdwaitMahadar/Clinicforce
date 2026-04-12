@@ -9,8 +9,7 @@
  * Never throw.
  *
  * RBAC (docs/08-Business-Rules.md §3, §8):
- *   View / Create / Edit : all roles
- *   Deactivate           : admin and doctor only
+ *   View / Create / Edit / Deactivate / Reactivate (updatePatient + isActive): all roles
  */
 
 import { z } from "zod";
@@ -267,7 +266,7 @@ export async function updatePatient(input: unknown) {
     }
 
     const { clinicId } = session.user;
-    const { id, age: _age, ...fields } = parsed.data;
+    const { id, age: _age, isActive, ...fields } = parsed.data;
 
     // Verify ownership
     const existing = await getPatientById(clinicId, id);
@@ -299,6 +298,7 @@ export async function updatePatient(input: unknown) {
         ...(canNotes && fields.pastHistoryNotes !== undefined && {
           pastHistoryNotes: n(fields.pastHistoryNotes),
         }),
+        ...(isActive === true && { isActive: true }),
         updatedAt: new Date(),
       })
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)));
@@ -309,6 +309,39 @@ export async function updatePatient(input: unknown) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[updatePatient]", err);
     return { success: false as const, error: "Failed to update patient." };
+  }
+}
+
+// ─── deactivatePatient ──────────────────────────────────────────────────────────
+
+export async function deactivatePatient(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    const { clinicId } = session.user;
+
+    const existing = await getPatientById(clinicId, parsed.data);
+    if (!existing) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    await db
+      .update(patients)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(and(eq(patients.clinicId, clinicId), eq(patients.id, parsed.data)));
+
+    revalidatePath("/patients/dashboard");
+    return { success: true as const, data: { id: parsed.data } };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[deactivatePatient]", err);
+    return { success: false as const, error: "Failed to deactivate patient." };
   }
 }
 

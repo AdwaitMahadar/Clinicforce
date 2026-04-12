@@ -27,7 +27,7 @@ const STATUS_MAP: Record<AppStatus, StatusStyle> = {
   "no-show": { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)", label: "No-show"     },
   // ── Patient statuses ────────────────────────────────────────────────────────
   active:   { bg: "var(--color-green-bg)",  text: "var(--color-green)",  border: "var(--color-green-border)",  label: "Active"   },
-  inactive: { bg: "var(--color-surface-alt)", text: "var(--color-text-secondary)", border: "var(--color-border)", label: "Inactive" },
+  inactive: { bg: "var(--color-red-bg)", text: "var(--color-red)", border: "var(--color-red-border)", label: "Inactive" },
 };
 
 /** Used when runtime data does not match a known status (should not happen for typed rows). */

@@ -18,7 +18,10 @@ import {
   CalendarDays,
   Plus,
 } from "lucide-react";
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   InitialsBadge,
   StatusBadge,
@@ -39,7 +42,11 @@ import {
   type UpdatePatientInput,
 } from "@/lib/validators/patient";
 import { PATIENT_BLOOD_GROUPS } from "@/lib/constants/patient";
-import { createPatient, updatePatient } from "@/lib/actions/patients";
+import {
+  createPatient,
+  updatePatient,
+  deactivatePatient,
+} from "@/lib/actions/patients";
 import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { usePermission } from "@/lib/auth/session-context";
 import { PatientDobAgeSync } from "./PatientDobAgeSync";
@@ -281,6 +288,9 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
     onClose,
   });
   const formRef = useRef<DetailFormHandle | null>(null);
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [pendingReactivateValues, setPendingReactivateValues] =
+    useState<UpdatePatientInput | null>(null);
 
   const isCreate = mode === "create";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
@@ -323,12 +333,44 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
   };
 
   const handleSubmitUpdate = async (values: UpdatePatientInput) => {
+    if (!patient?.isActive) {
+      setPendingReactivateValues(values);
+      setReactivateDialogOpen(true);
+      return;
+    }
     const result = await updatePatient(values);
     if (result.success) {
       toast.success("Patient updated successfully.");
       exitAfterMutation();
     } else {
       toast.error(result.error ?? "Failed to update patient.");
+    }
+  };
+
+  const handleConfirmReactivateAndSave = async () => {
+    if (!pendingReactivateValues || !patient) return;
+    const result = await updatePatient({
+      ...pendingReactivateValues,
+      isActive: true,
+    });
+    if (result.success) {
+      setReactivateDialogOpen(false);
+      setPendingReactivateValues(null);
+      toast.success("Patient reactivated and updated successfully.");
+      exitAfterMutation();
+    } else {
+      toast.error(result.error ?? "Failed to update patient.");
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!patient) return;
+    const result = await deactivatePatient(patient.id);
+    if (result.success) {
+      toast.success("Patient deactivated.");
+      exitAfterMutation();
+    } else {
+      toast.error(result.error ?? "Failed to deactivate patient.");
     }
   };
 
@@ -410,26 +452,82 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
   );
 
   return (
-    <DetailPanel
-      header={header}
-      formRef={formRef}
-      form={form}
-      events={patient.activityLog}
-      sidebarTabs={[
-        {
-          label: "Documents",
-          icon: FileText,
-          content: <PatientDocumentsTab patient={patient} />,
-        },
-        {
-          label: "Appointments",
-          icon: CalendarDays,
-          content: <PatientAppointmentsTab patient={patient} />,
-        },
-      ]}
-      isCreate={false}
-      onCancel={onClose ?? (() => router.back())}
-      submitLabel="Save Changes"
-    />
+    <>
+      <DetailPanel
+        header={header}
+        formRef={formRef}
+        form={form}
+        events={patient.activityLog}
+        sidebarTabs={[
+          {
+            label: "Documents",
+            icon: FileText,
+            content: <PatientDocumentsTab patient={patient} />,
+          },
+          {
+            label: "Appointments",
+            icon: CalendarDays,
+            content: <PatientAppointmentsTab patient={patient} />,
+          },
+        ]}
+        isCreate={false}
+        onCancel={onClose ?? (() => router.back())}
+        onDelete={
+          !patient?.isActive ? undefined : () => void handleDeactivate()
+        }
+        deleteLabel="Deactivate Patient"
+        submitLabel="Save Changes"
+      />
+
+      <AlertDialogPrimitive.Root
+        open={reactivateDialogOpen}
+        onOpenChange={(open) => {
+          setReactivateDialogOpen(open);
+          if (!open) setPendingReactivateValues(null);
+        }}
+      >
+        <AlertDialogPrimitive.Portal>
+          <AlertDialogPrimitive.Overlay
+            className={cn(
+              "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50"
+            )}
+          />
+          <AlertDialogPrimitive.Content
+            className={cn(
+              "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg"
+            )}
+          >
+            <AlertDialogPrimitive.Title className="sr-only">
+              Confirm reactivation
+            </AlertDialogPrimitive.Title>
+            <AlertDialogPrimitive.Description
+              className="text-sm"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              This patient is currently inactive. Saving these changes will
+              reactivate them. Do you want to continue?
+            </AlertDialogPrimitive.Description>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <AlertDialogPrimitive.Cancel asChild>
+                <Button type="button" variant="outline" size="sm">
+                  Cancel
+                </Button>
+              </AlertDialogPrimitive.Cancel>
+              <Button
+                type="button"
+                size="sm"
+                style={{
+                  background: "var(--color-ink)",
+                  color: "var(--color-ink-fg)",
+                }}
+                onClick={() => void handleConfirmReactivateAndSave()}
+              >
+                Confirm
+              </Button>
+            </div>
+          </AlertDialogPrimitive.Content>
+        </AlertDialogPrimitive.Portal>
+      </AlertDialogPrimitive.Root>
+    </>
   );
 }

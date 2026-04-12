@@ -243,15 +243,16 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 | Last Visit | Derived from most recent **completed** appointment with `scheduled_at` strictly before DB `now()` | ✓ | — |
 | Last Consulted Dr. | JOIN appointments → users | — | ✓ (select) |
 | Status | `is_active` boolean → mapped to `active` / `inactive` display | — | ✓ (select) |
-| Actions | Icon buttons (view patient, new appointment) | — | — |
+| Actions | Icon buttons (view patient; new appointment **only when** `status === "active"`) | — | — |
 
 > **Note on "Last Visit":** Derived field — `MAX(appointments.scheduled_at)` per patient over rows where `status = 'completed'`, `is_active = true`, and `scheduled_at < now()` (database clock). Not stored on the patient record directly. The same qualifying appointment row also supplies list-only fields **`lastVisitCategory`** (`appointment_category`) and **`lastVisitDoctorId`** (`doctor_id`). The dashboard maps the raw timestamp to **`lastVisitAt`** (ISO string on `PatientRow`) for client logic (e.g. follow-up window vs first visit when opening **New appointment**).
 
-> **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
+> **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. **`StatusBadge`** renders **inactive** with the red token family (`--color-red` / `--color-red-bg` / `--color-red-border`), same semantic weight as a cancelled appointment. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
 ### Interaction
 - **Row click:** Navigates to `/patients/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
-- **Actions column (rightmost):** **Eye** — same navigation as row click. **Calendar** — `router.push` to `/appointments/new?…` with validated query keys (`patientId`, `patientLabel`, `visitType`, optional `category`, optional `doctorId`) parsed on the server into `AppointmentDetailPanel` **`initialValues`** (intercepting modal or full-page). Visit type uses **`FOLLOW_UP_WINDOW_DAYS`** vs `lastVisitAt` (`follow-up-visit` when the last qualifying visit’s calendar day is within the window ending today, else `first-visit`). Action cells call **`stopPropagation`** so the row click handler does not run.
+- **Actions column (rightmost):** **Eye** — same navigation as row click (all rows). **Calendar** — shown **only for active rows** (`status !== "inactive"`); `router.push` to `/appointments/new?…` with validated query keys (`patientId`, `patientLabel`, `visitType`, optional `category`, optional `doctorId`) parsed on the server into `AppointmentDetailPanel` **`initialValues`** (intercepting modal or full-page). Visit type uses **`FOLLOW_UP_WINDOW_DAYS`** vs `lastVisitAt` (`follow-up-visit` when the last qualifying visit’s calendar day is within the window ending today, else `first-visit`). Action cells call **`stopPropagation`** so the row click handler does not run.
+- **Empty table:** `DataTable` **`emptyState`** shows the no-results copy plus a **New Patient** button matching the page header control (`gap-2 shadow-sm`, ink fill) using **`router.push("/patients/new")`**.
 
 ### Server Actions Needed
 
@@ -309,7 +310,9 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **Form column:** `<DetailForm />` with all patient fields, including **Date of Birth** and **Age** (synced; UI-only age), then **Gender** on its own row (`colSpan: 2` + `constrainControlToHalfRow` so the control matches one column width), then **Phone** and **Email** side-by-side, then **Blood Group** and **Allergies**, and, for admin/doctor, a tall **Patient's Past History** (`pastHistoryNotes`) textarea (`rows` + `min-height` via `DetailForm` textarea `className`) at the bottom. Create mode uses `createPatientSchema`; view/edit uses `updatePatientSchema`. `PatientDobAgeSync` keeps DOB and age aligned inside the form (`DetailForm` `insideForm` slot).
 - **Sidebar:** `DetailSidebar` tabbed — Documents | Appointments (same list/upload behaviour as before). In **create** mode (`isCreate`), the sidebar column is hidden
 - **Activity log:** `events` prop on `DetailPanel` (always-visible bottom zone in the sidebar)
-- **After successful save:** **`useDetailExit`** with **`listHref`** **`/patients/dashboard`** — **intercepting modal:** **`PatientViewModalClient`** supplies **`onClose`** (`router.back`); **`exitAfterMutation`** uses **`startTransition`** for **`onClose`** + **`router.refresh()`**; **full-page:** **`router.replace('/patients/dashboard')`** + immediate **`router.refresh()`**. **`updatePatient`** calls **`revalidatePath("/patients/dashboard")`** on success (same as **`createPatient`**).
+- **After successful save, deactivate, or reactivation confirm:** **`useDetailExit`** with **`listHref`** **`/patients/dashboard`** — **intercepting modal:** **`PatientViewModalClient`** supplies **`onClose`** (`router.back`); **`exitAfterMutation`** uses **`startTransition`** for **`onClose`** + **`router.refresh()`**; **full-page:** **`router.replace('/patients/dashboard')`** + immediate **`router.refresh()`**. **`updatePatient`** / **`deactivatePatient`** call **`revalidatePath("/patients/dashboard")`** on success (same as **`createPatient`**).
+- **Footer:** **`DetailPanel`** **`onDelete`** — label **Deactivate Patient**; shown **only when the patient is active** (`isActive === true`); all roles; **`deactivatePatient`** → toast **"Patient deactivated."** then **`exitAfterMutation`**. Inactive records omit **`onDelete`** (reactivate via save + **`AlertDialog`** only).
+- **Inactive record + Save:** Radix **`AlertDialog`** (same structure as medicine reactivation): copy explains save will reactivate; **Confirm** → **`updatePatient`** with **`isActive: true`** plus form payload → toast **"Patient reactivated and updated successfully."** → **`exitAfterMutation`**.
 
 ### Server Actions Needed
 
@@ -366,8 +369,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 - **RBAC:** All roles.
 
 #### `updatePatient(id, data)`
-- **Input:** `id`, patient form fields, `clinicId` from session
-- **Validates:** Zod schema (to be created at `lib/validators/patient.ts`)
+- **Input:** `id`, patient form fields, optional **`isActive: true`** for reactivation only, `clinicId` from session
+- **Validates:** Zod schema at `lib/validators/patient.ts` (`updatePatientSchema`; **`isActive`** is `z.literal(true).optional()`)
 - **Enforces:**
   - `phone` must be non-empty; `email` optional
   - `gender` required (`male` | `female` | `other`)
@@ -375,6 +378,12 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
   - `clinicId` and `createdBy` are immutable
 - **RBAC:** All roles may submit; `pastHistoryNotes` is only applied for admin/doctor (see `docs/05-Authentication.md`).
 - **Returns:** On success, calls **`revalidatePath("/patients/dashboard")`** before returning (list cache aligned with **`createPatient`**).
+
+#### `deactivatePatient(id)`
+- **Input:** patient UUID; **`clinicId`** from session
+- **Effect:** Sets **`patients.is_active = false`** (soft delete)
+- **RBAC:** **`requireRole(session, ["admin", "doctor", "staff"])`**
+- **Returns:** **`revalidatePath("/patients/dashboard")`** on success (mirrors **`deactivateMedicine`**)
 
 #### Patient past history (`pastHistoryNotes`)
 The **Patient's Past History** textarea is backed by `patients.past_history_notes` and is updated with the rest of the form on **Save**.
@@ -505,6 +514,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 `MedicineDetailPanel` uses **`DetailPanel`** + **`DetailForm`**:
 - **Form column:** Single scrollable grid of medicine fields (name, identifiers, category, form, dates, description).
 - **Sidebar (edit only):** Activity log via `events`. Create mode hides the sidebar (`isCreate`).
+- **Footer:** **`DetailPanel`** **`onDelete`** (**Delete Medicine**) is passed **only when the medicine is active**; inactive rows omit it (reactivate via save + **`AlertDialog`** only).
 - **Inactive row (`isActive === false`):** Saving opens a Radix **`AlertDialog`** (via `radix-ui`) confirming that the update will **reactivate** the medicine; **Confirm** calls **`updateMedicine`** with **`isActive: true`**, shows the reactivation success toast, then **`exitAfterMutation()`** (same **`useDetailExit`** as other saves — modal dismiss or **`replace('/medicines/dashboard')`**). **Cancel** closes the dialog without saving.
 - **After successful save or deactivate:** **`useDetailExit`** (`listHref` **`/medicines/dashboard`**) — **`MedicineViewModalClient`** passes **`onClose`** for the intercepting modal; **`exitAfterMutation`** uses **`startTransition`** for **`onClose`** + **`refresh`**; full-page uses **`replace`** + immediate **`refresh`**. **`createMedicine`**, **`updateMedicine`**, and **`deactivateMedicine`** call **`revalidatePath("/medicines/dashboard")`** on success.
 

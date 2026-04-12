@@ -4,7 +4,7 @@
  * Zod schema for the patient form (create + update).
  * Single source of truth for validation — used by:
  *   - <PatientDetailPanel> component (client-side React Hook Form)
- *   - Server actions: createPatient, updatePatient (`lib/actions/patients.ts`)
+ *   - Server actions: createPatient, updatePatient, reactivation flag (`isActive: true` on update) (`lib/actions/patients.ts`)
  *
  * `age` is UI-only (not persisted). Server resolves `dateOfBirth` from `age` when DOB is empty.
  *
@@ -160,6 +160,9 @@ export const updatePatientSchema = z
       .optional(),
 
     pastHistoryNotes: z.string().optional(),
+
+    /** When `true`, persists reactivation (`is_active = true`). Omitted on normal edits. */
+    isActive: z.literal(true).optional(),
   })
   .refine(hasDobOrAge, {
     message: "Enter date of birth or age",

@@ -35,7 +35,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 
 ## ⚠️ Edge Cases & Special Rules (Commonly Overlooked!)
 
-- **Inactive Patients:** You **cannot** schedule new appointments for an inactive patient. Any attempt must be rejected at the server layer.
+- **Inactive Patients:** You **cannot** schedule new appointments for an inactive patient (server rejects in **`createAppointment`**). **All roles** may **`deactivatePatient`** and reactivate via **`updatePatient`** + **`isActive: true`** (UI confirms on save when inactive). Directory **Calendar** action is hidden for inactive rows.
 - **Appointment Doctor Assignment:** The `doctorId` on an appointment MUST reference an *active* user whose role is exactly `'doctor'`. You cannot assign an inactive doctor or a non-doctor user.
 - **Soft vs. Hard Deletes:**
   - Users, Patients, Appointments, and Medicines are **never** hard-deleted (`is_active = false`).

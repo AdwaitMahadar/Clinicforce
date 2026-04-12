@@ -225,7 +225,7 @@ no-show      → purple background, purple text
 
 // Patient Status
 active       → green background, green text
-inactive     → grey background, grey text
+inactive     → red background, red text (`--color-red` / `--color-red-bg` / `--color-red-border` — same family as appointment **cancelled**; implemented in `components/common/StatusBadge.tsx`)
 critical     → red background, red text
 
 // Chart ID
@@ -443,7 +443,7 @@ UI elements are shown or hidden based on the current user's role. The role is av
 | Feature | Staff | Doctor | Admin |
 |---|---|---|---|
 | Users management link (top nav) | Hidden | Hidden | Visible |
-| "Delete / Deactivate" action on Patients | Hidden | Visible | Visible |
+| "Deactivate Patient" action on Patients | Visible | Visible | Visible |
 | "Delete" actions on Documents | Hidden | Visible | Visible |
 | "Edit / Deactivate" actions on Medicines | Visible | Visible | Visible |
 | "Deactivate" action on Appointments | Visible | Visible | Visible |

@@ -61,10 +61,10 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 
 ### Deactivation
 - Patients are never hard-deleted. Set `isActive = false`.
-- Only Admin and Doctor roles can deactivate a patient.
+- Any role (Admin, Doctor, Staff) can deactivate a patient (`deactivatePatient`) and reactivate via **`updatePatient`** with **`isActive: true`** (confirmed in UI when saving an inactive record).
 - A deactivated patient **cannot** have new appointments scheduled for them. Any attempt to create an appointment for an inactive patient must be rejected at the server layer.
 - A deactivated patient's existing records (past appointments, documents) remain fully visible to roles with access; **staff** cannot view or upload documents regardless of patient status (see Document Rules).
-- A deactivated patient can be reactivated by an Admin or Doctor at any time.
+- A deactivated patient can be reactivated by any role that can edit patients.
 
 ### Editing
 - All roles can edit patient fields.
