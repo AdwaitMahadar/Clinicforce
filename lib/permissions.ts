@@ -45,8 +45,10 @@ export const PERMISSIONS = {
   deleteAppointment: ["admin", "doctor", "staff"],
 
   // ── Documents ────────────────────────────────────────────────────────────
-  viewDocuments: ["admin", "doctor", "staff"],
-  uploadDocument: ["admin", "doctor", "staff"],
+  /** View / search / open documents (staff: no access — server actions + empty detail lists). */
+  viewDocuments: ["admin", "doctor"],
+  /** Presigned upload flow (staff: no access). */
+  uploadDocument: ["admin", "doctor"],
   editDocument: ["admin", "doctor"],
   deleteDocument: ["admin", "doctor"],
 

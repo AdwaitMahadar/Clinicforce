@@ -5,7 +5,7 @@ description: S3/Minio presigned PUT/GET for patient documents. Use when changing
 
 # File Upload Skill
 
-- **Flow:** `getUploadPresignedUrl` → browser `PUT` to Minio/S3 → `confirmDocumentUpload`. View: `getViewPresignedUrl` on demand; never persist GET URLs.
+- **Flow:** `getUploadPresignedUrl` → browser `PUT` to Minio/S3 → `confirmDocumentUpload`. View: `getViewPresignedUrl` on demand; never persist GET URLs. **RBAC:** all three actions use `requireRole(session, ["admin", "doctor"])` — staff cannot call them.
 - **`assignedToType`:** Both `getUploadPresignedUrl` and `confirmDocumentUpload` accept `assignedToType: "patient" | "user"`. The client must pass the same value in both calls. The server uses it to build the object key (step 1) and to perform the clinic-boundary check + DB insert (step 3). Do **not** hardcode `"patient"` on the server.
 - **Clinic-boundary check (step 3):** Before the `documents` INSERT, `confirmDocumentUpload` verifies `assignedToId` exists within the session `clinicId` (`patients` table for `"patient"`, `users` table for `"user"`). Returns an error on mismatch — never skip this check.
 - **Code:** Shared client in `lib/storage/s3-client.ts`; object keys via `lib/storage/document-object-key.ts` (`{clinicSubdomain}/docs/patients|users/{id}/…`). `clinicSubdomain` is on `session.user` — tenant pipeline in `docs/05-Authentication.md` §4. Zod in `lib/validators/document.ts` (`assignedToId` is non-empty string, not `.uuid()`, when the assignee can be a user with a non-UUID Better-Auth id).

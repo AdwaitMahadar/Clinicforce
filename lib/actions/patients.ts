@@ -165,11 +165,13 @@ export async function getPatientDetail(id: unknown) {
 
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
+    const canDocuments = hasPermission(session.user.type, "viewDocuments");
     return {
       success: true as const,
       data: {
         ...patient,
         pastHistoryNotes: canNotes ? patient.pastHistoryNotes : null,
+        documents: canDocuments ? patient.documents : [],
         appointments: patient.appointments.map((a) => ({
           ...a,
           title: canTitle ? a.title : null,

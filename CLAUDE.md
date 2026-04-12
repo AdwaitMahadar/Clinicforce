@@ -134,7 +134,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
-- `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results, document presigned open vs `router.push` for entities (wired from `TopNav`, ⌘/Ctrl+K)
+- `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results; Medicines group `usePermission("viewMedicines")`; Documents group + presigned open `usePermission("viewDocuments")`; other entities use `router.push` (wired from `TopNav`, ⌘/Ctrl+K)
 - `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
@@ -179,10 +179,11 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - Three roles: `admin` | `doctor` | `staff`
 - UI hiding is for UX only — all server actions must enforce role checks independently
 - See `docs/01-PRD.md` for the full permission matrix
-- **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`), all pages redirect (`getSession()` + `redirect`), all server actions use `requireRole(session, ["admin", "doctor"])`
+- **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`); all medicines **`page.tsx`** routes use **`requirePermission("viewMedicines")`** (including **reports**); server actions use `requireRole(session, ["admin", "doctor"])`; **`searchGlobal`** skips medicines query for staff (`medicines: []`); **`UniversalSearch`** hides Medicines group via `viewMedicines`
 - **Clinical notes / patient past history — staff excluded:** `AppointmentDetailPanel` filters appointment `notes`; `PatientDetailPanel` filters `pastHistoryNotes` when `usePermission("viewClinicalNotes")` is false. Patient/appointment server actions also redact or ignore these fields for staff (see `docs/05-Authentication.md`).
 - **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff; read actions (**`getAppointmentDetail`**, **`getAppointments`**, **`getPatientDetail`** nested appointments, **`searchGlobal`**, **`getRecentAppointments`**) return **`title: null`** for staff without changing the DB (see `docs/05-Authentication.md`).
 - **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
+- **Documents — staff excluded:** `viewDocuments` / `uploadDocument` are admin/doctor only. **`getUploadPresignedUrl`**, **`confirmDocumentUpload`**, **`getViewPresignedUrl`** use `requireRole(session, ["admin", "doctor"])`. **`getPatientDetail`** / **`getAppointmentDetail`** return empty document lists for staff; **`searchGlobal`** skips the documents query for staff. **`UniversalSearch`** hides the Documents group via `usePermission("viewDocuments")` (see `docs/05-Authentication.md`).
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
@@ -193,6 +194,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment
 - Stored via S3 presigned URLs — metadata in DB, file in object storage
+- **Staff** cannot upload, open, or search documents (server + `PERMISSIONS`); sidebar document UI is already absent for staff via `viewDetailSidebar`
 
 ---
 
@@ -254,7 +256,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - Authentication: Better-Auth integration, real `getSession()` (React `cache()` — one resolution per request), subdomain-aware middleware (Node runtime, in-memory subdomain→clinic cache + shared `lib/clinic/resolve-by-subdomain` on miss), `/api/auth/*` route handler, `/api/clinic` subdomain resolver; session `cookieCache` (5 min) reduces auth DB hits
 - Login (`app/(auth)/login/page.tsx` + `login-page-client.tsx`) — server-resolved tenant name + logo URL from host subdomain (`extractSubdomainFromHost`, `getActiveClinicBySubdomain`, `buildClinicLogoPublicUrl`); split 50/50 layout, `ClinicBrandMark` on the right when resolved; `public/clinicforce-mark.png` in Clinicforce rows; testimonial carousel (dots + auto-advance); password visibility toggle; dynamic footer year; React Hook Form + Zod in client; Sonner toasts; `returnUrl` redirect; client submit **`await`s `signIn.email`** and handles **`{ data, error }`** (not `fetchOptions.onError` alone) so failed sign-in still surfaces toasts when the API returns 200 without a `user`
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
-- Document upload: presigned URLs (`lib/actions/documents.ts`), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail
+- Document upload: presigned URLs (`lib/actions/documents.ts` — admin/doctor only), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail (sidebar; staff use neither)
 
 **Not yet built (planned):**
 - All **Reports** views (placeholder UI only; no analytics backend yet)

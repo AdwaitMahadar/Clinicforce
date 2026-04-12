@@ -63,7 +63,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 - Patients are never hard-deleted. Set `isActive = false`.
 - Only Admin and Doctor roles can deactivate a patient.
 - A deactivated patient **cannot** have new appointments scheduled for them. Any attempt to create an appointment for an inactive patient must be rejected at the server layer.
-- A deactivated patient's existing records (past appointments, documents) remain fully visible.
+- A deactivated patient's existing records (past appointments, documents) remain fully visible to roles with access; **staff** cannot view or upload documents regardless of patient status (see Document Rules).
 - A deactivated patient can be reactivated by an Admin or Doctor at any time.
 
 ### Editing
@@ -116,7 +116,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 ## 5. Document Rules
 
 ### Creation
-- All roles can upload (create) and view documents. Only Admin and Doctor can delete documents.
+- Only **Admin** and **Doctor** can upload (create) or view documents via server actions (`getUploadPresignedUrl`, `confirmDocumentUpload`, `getViewPresignedUrl`). **Staff** receive empty `documents` / `patientDocuments` on patient and appointment detail reads and no document hits from global search; they cannot open or upload files through the API. Only Admin and Doctor can delete documents.
 - Every document must have an `assignedToId` and `assignedToType` (`patient` or `user`). A document must always belong to someone.
 - **Clinic-boundary enforcement:** `confirmDocumentUpload` verifies that `assignedToId` belongs to the session's `clinicId` before inserting the DB record. For `assignedToType: "patient"` this queries the `patients` table; for `"user"` it queries the `users` table. A mismatch returns an error and prevents cross-clinic attachment.
 - `appointmentId` is optional. It links an upload to a specific visit in metadata; the appointment detail UI still lists every document assigned to that patient (`assigned_to_type = 'patient'`). There is no behavioural restriction based on `appointmentId` beyond audit/context.

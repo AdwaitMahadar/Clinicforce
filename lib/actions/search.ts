@@ -3,6 +3,8 @@
 /**
  * Global search across patients, appointments, medicines, and documents.
  * Anatomy: getSession → requireRole → safeParse → parallel scoped queries.
+ * Document query runs only when `hasPermission(..., "viewDocuments")` (staff: skipped, `documents: []`).
+ * Medicines query is skipped when `session.user.type === "staff"` (`medicines: []`).
  */
 
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
@@ -49,6 +51,8 @@ export async function searchGlobal(query: unknown) {
     const q = parsed.data;
     const { clinicId } = session.user;
     const like = `%${q}%`;
+    const canSearchDocuments = hasPermission(session.user.type, "viewDocuments");
+    const isStaff = session.user.type === "staff";
 
     const [patientRows, appointmentRows, medicineRows, documentRows] = await Promise.all([
       db
@@ -105,57 +109,80 @@ export async function searchGlobal(query: unknown) {
         .orderBy(desc(appointments.scheduledAt))
         .limit(5),
 
-      db
-        .select({
-          id: medicines.id,
-          name: medicines.name,
-          category: medicines.category,
-          brand: medicines.brand,
-        })
-        .from(medicines)
-        .where(
-          and(
-            eq(medicines.clinicId, clinicId),
-            eq(medicines.isActive, true),
-            or(ilike(medicines.name, like), ilike(medicines.brand, like))
+      isStaff
+        ? Promise.resolve(
+            [] as {
+              id: string;
+              name: string;
+              category: string | null;
+              brand: string | null;
+            }[]
           )
-        )
-        .orderBy(asc(medicines.name))
-        .limit(5),
-
-      db
-        .select({
-          id: documents.id,
-          title: documents.title,
-          fileName: documents.fileName,
-          mimeType: documents.mimeType,
-          type: documents.type,
-          assignedToType: documents.assignedToType,
-          patientFirstName: patients.firstName,
-          patientLastName: patients.lastName,
-          patientId: patients.id,
-        })
-        .from(documents)
-        .leftJoin(
-          patients,
-          and(
-            eq(documents.assignedToType, "patient"),
-            sql`${documents.assignedToId} = ${patients.id}::text`,
-            eq(patients.clinicId, clinicId)
-          )
-        )
-        .where(
-          and(
-            eq(documents.clinicId, clinicId),
-            or(
-              ilike(documents.title, like),
-              ilike(documents.fileName, like),
-              sql`COALESCE(${documents.description}, '') ILIKE ${like}`
+        : db
+            .select({
+              id: medicines.id,
+              name: medicines.name,
+              category: medicines.category,
+              brand: medicines.brand,
+            })
+            .from(medicines)
+            .where(
+              and(
+                eq(medicines.clinicId, clinicId),
+                eq(medicines.isActive, true),
+                or(ilike(medicines.name, like), ilike(medicines.brand, like))
+              )
             )
-          )
-        )
-        .orderBy(desc(documents.createdAt))
-        .limit(5),
+            .orderBy(asc(medicines.name))
+            .limit(5),
+
+      canSearchDocuments
+        ? db
+            .select({
+              id: documents.id,
+              title: documents.title,
+              fileName: documents.fileName,
+              mimeType: documents.mimeType,
+              type: documents.type,
+              assignedToType: documents.assignedToType,
+              patientFirstName: patients.firstName,
+              patientLastName: patients.lastName,
+              patientId: patients.id,
+            })
+            .from(documents)
+            .leftJoin(
+              patients,
+              and(
+                eq(documents.assignedToType, "patient"),
+                sql`${documents.assignedToId} = ${patients.id}::text`,
+                eq(patients.clinicId, clinicId)
+              )
+            )
+            .where(
+              and(
+                eq(documents.clinicId, clinicId),
+                or(
+                  ilike(documents.title, like),
+                  ilike(documents.fileName, like),
+                  sql`COALESCE(${documents.description}, '') ILIKE ${like}`
+                )
+              )
+            )
+            .orderBy(desc(documents.createdAt))
+            .limit(5)
+        : Promise.resolve(
+            [] as {
+              id: string;
+              title: string;
+              fileName: string;
+              mimeType: string;
+              type: string;
+              assignedToType: string;
+              patientFirstName: string | null;
+              patientLastName: string | null;
+              patientId: string | null;
+            }[]
+          ),
     ]);
 
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");

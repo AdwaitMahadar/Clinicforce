@@ -21,8 +21,8 @@
  *   - If S3 fails, DB row is not deleted.
  *
  * RBAC (docs/08-Business-Rules §5, §8):
- *   View / Upload : all roles
- *   Delete        : doctor, admin
+ *   View / Upload : admin, doctor
+ *   Delete        : admin, doctor
  *
  * Allowed mime types: application/pdf, image/jpeg, image/png, image/webp
  * Max file size    : 10 MB
@@ -64,7 +64,7 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 export async function getUploadPresignedUrl(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = getUploadPresignedUrlSchema.safeParse(input);
     if (!parsed.success) {
@@ -127,7 +127,7 @@ export async function getUploadPresignedUrl(input: unknown) {
 export async function confirmDocumentUpload(input: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = confirmDocumentUploadSchema.safeParse(input);
     if (!parsed.success) {
@@ -206,7 +206,7 @@ export async function confirmDocumentUpload(input: unknown) {
 export async function getViewPresignedUrl(documentId: unknown) {
   try {
     const session = await getSession();
-    requireRole(session, ["admin", "doctor", "staff"]);
+    requireRole(session, ["admin", "doctor"]);
 
     const parsed = documentIdSchema.safeParse(documentId);
     if (!parsed.success) {

@@ -36,13 +36,15 @@ Duplicating defaults in `useForm` or forcing `z.infer` as the form generic while
 | `getViewPresignedUrl` | Returns `{ url }` presigned GET for opening in a new tab. |
 | `deleteDocument` | Deletes S3 object then DB row (doctor/admin only). |
 
+**RBAC:** `getUploadPresignedUrl`, `confirmDocumentUpload`, and `getViewPresignedUrl` call `requireRole(session, ["admin", "doctor"])`. `deleteDocument` is also admin/doctor only. Staff cannot presign upload, persist metadata, or open files via these actions.
+
 See `docs/09-File-Upload-Flow.md` for the browser sequence and Minio env vars.
 
 ## Global search
 
 | Action | Purpose |
 |--------|---------|
-| `searchGlobal` | Accepts a trimmed query string (min 2 characters). Runs four parallel scoped reads (`LIMIT 5` each): patients (name/email/phone/chart id match; each hit includes `phone` for UI), active appointments (title / patient / doctor name; each hit includes `category`, `visitType`, nullable `title` for `formatAppointmentHeading` in UI), active medicines (name / brand match; each hit includes `category` and `brand` for UI), documents (title / file name / description; includes `mimeType` for list icons) with optional patient join for display name. Returns `GroupedSearchResults` (`types/search.ts`). Schema: `searchGlobalQuerySchema` in `lib/validators/search.ts`. Client: `UniversalSearch` in `components/common/UniversalSearch.tsx` (TopNav, ⌘/Ctrl+K). |
+| `searchGlobal` | Accepts a trimmed query string (min 2 characters). Runs up to four parallel scoped reads (`LIMIT 5` each), all scoped by `clinicId`: patients (name/email/phone/chart id; `phone` on hits), active appointments (title / patient / doctor; `category`, `visitType`, nullable `title` for `formatAppointmentHeading`). **Medicines:** queried only when **`session.user.type !== "staff"`**; **staff** receive **`medicines: []`** (no medicines query). **Documents:** queried only when the user has `viewDocuments` (admin/doctor); **staff** skip the documents query and receive **`documents: []`**. Document hits (when run): title / file name / description; `mimeType` for list icons; optional patient join. Returns `GroupedSearchResults` (`types/search.ts`). Schema: `searchGlobalQuerySchema` in `lib/validators/search.ts`. Client: `UniversalSearch` (Medicines group: `usePermission("viewMedicines")`; Documents: `usePermission("viewDocuments")`). |
 
 ## Appointments (`lib/actions/appointments.ts`)
 
@@ -64,9 +66,11 @@ After a successful **`createAppointment`**, **`updateAppointment`**, or **`delet
 
 **Sensitive narrative fields (RBAC):** For **staff**, `getPatientDetail` returns `pastHistoryNotes: null`; `getAppointmentDetail` and list **`getAppointments`** return `notes: null`; **`createPatient`** / **`updatePatient`** do not persist `past_history_notes` from staff; **`createAppointment`** / **`updateAppointment`** do not persist `notes` from staff (and updates from staff omit `notes` even if tampered). Admin and doctor receive full values.
 
+**Documents (RBAC):** For **staff**, `getPatientDetail` returns **`documents: []`** and `getAppointmentDetail` returns **`patientDocuments: []`** (response-only; DB unchanged). Admin and doctor receive full lists from the query layer.
+
 **Appointment title (RBAC):** For **staff**, **`createAppointment`** always persists `title` as null (ignores any client-supplied title). **`updateAppointment`** removes `title` from the parsed payload for staff so existing titles are not updated or cleared via the API. **Read redaction (DB unchanged):** for **staff**, `getAppointmentDetail`, **`getAppointments`**, **`getPatientDetail`** (each nested appointment row’s `title`), **`searchGlobal`** (appointment hits), and **`getRecentAppointments`** return `title: null`. Admin and doctor receive stored titles.
 
-**`getAppointmentDetail` aggregate:** In addition to the appointment row, the action returns **`patientDocuments`** (same shape as `getPatientDetail` documents — `getDocumentsByAssignment` for the appointment’s patient) and **`patientAppointments`** (same summary shape as `getPatientDetail` appointments — `getPatientAppointmentSummaries`; nested `title` staff-redacted like `getPatientDetail`). DB query layer: `getAppointmentById` in `lib/db/queries/appointments.ts` composes `getDocumentsByAssignment` + `getPatientAppointmentSummaries` from `lib/db/queries/patients.ts` / `documents.ts`.
+**`getAppointmentDetail` aggregate:** In addition to the appointment row, the action returns **`patientDocuments`** (same shape as `getPatientDetail` documents — `getDocumentsByAssignment` for the appointment’s patient; **staff: `[]` in the action response**) and **`patientAppointments`** (same summary shape as `getPatientDetail` appointments — `getPatientAppointmentSummaries`; nested `title` staff-redacted like `getPatientDetail`). DB query layer: `getAppointmentById` in `lib/db/queries/appointments.ts` composes `getDocumentsByAssignment` + `getPatientAppointmentSummaries` from `lib/db/queries/patients.ts` / `documents.ts`.
 
 **`PatientRow.chartId`** is a **`number`** (raw integer from DB). The table display layer (`PatientsTable`) is responsible for calling `formatPatientChartId` — the dashboard page must not pre-format it to a string before passing to the row shape.
 

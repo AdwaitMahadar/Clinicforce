@@ -50,11 +50,11 @@ RBAC is enforced in **server actions** (`requireRole` in `lib/auth/rbac.ts`) and
 | **Appointment clinical notes** (`appointments.notes`) and **patient past history** (`patients.past_history_notes`) | — | Yes | Yes |
 | **Appointment title** (optional label on create/edit form; DB `appointments.title`) | — | Yes | Yes |
 | **Detail sidebar** (tabs + activity area on detail views) | — | Yes | Yes |
-| **Documents** — view / upload | Yes | Yes | Yes |
+| **Documents** — view / upload | — | Yes | Yes |
 | **Documents** — edit metadata / delete | — | Yes | Yes |
 | **Medicines** — any access | — | Yes | Yes |
 
-*Staff (receptionist) has **no** Medicines top-nav or routes: `viewMedicines` and related permissions are **admin + doctor** only.*
+*Staff (receptionist) has **no** Medicines top-nav or routes: `viewMedicines` and related permissions are **admin + doctor** only. Staff also has **no** document view or upload: `viewDocuments` / `uploadDocument` and presigned document server actions are **admin + doctor** only.*
 
 ---
 

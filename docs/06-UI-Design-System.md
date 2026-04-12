@@ -16,7 +16,7 @@ The app navigation works like a coordinate system. The **top navbar** is the X-a
 | `patients` | Patients | Patient records and directory |
 | `medicines` | Medicines | Medicine reference library |
 
-The top nav also exposes **global search** (`components/common/UniversalSearch.tsx`): a `Dialog` + cmdk `Command` palette (⌘/Ctrl+K) that calls `searchGlobal` and navigates or opens documents via presigned URL.
+The top nav also exposes **global search** (`components/common/UniversalSearch.tsx`): a `Dialog` + cmdk `Command` palette (⌘/Ctrl+K) that calls `searchGlobal` and navigates to entities or opens documents via presigned URL when permitted. **Medicines** and **Documents** result groups are shown only when the user has **`viewMedicines`** and **`viewDocuments`** respectively (staff see neither group).
 
 ### Left Sidebar (Y-axis) — View Selection
 | Key | Label | Description |

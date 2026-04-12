@@ -33,6 +33,7 @@ import { DocumentMimeTypeIcon } from "@/components/common/DocumentMimeTypeIcon";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
+import { usePermission } from "@/lib/auth/session-context";
 
 const DEBOUNCE_MS = 300;
 
@@ -57,6 +58,8 @@ export interface UniversalSearchProps {
 
 export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
   const router = useRouter();
+  const canViewDocuments = usePermission("viewDocuments");
+  const canViewMedicines = usePermission("viewMedicines");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -293,7 +296,10 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
               </CommandGroup>
             )}
 
-            {!loading && results && results.medicines.length > 0 && (
+            {!loading &&
+              canViewMedicines &&
+              results &&
+              results.medicines.length > 0 && (
               <CommandGroup
                 heading="Medicines"
                 className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
@@ -345,7 +351,10 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
               </CommandGroup>
             )}
 
-            {!loading && results && results.documents.length > 0 && (
+            {!loading &&
+              canViewDocuments &&
+              results &&
+              results.documents.length > 0 && (
               <CommandGroup
                 heading="Documents"
                 className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5"
@@ -408,3 +417,4 @@ export function UniversalSearch({ open, onClose }: UniversalSearchProps) {
     </Dialog>
   );
 }
+

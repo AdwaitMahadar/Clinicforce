@@ -576,6 +576,8 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 
 > **Status:** UI built (placeholder only). No reporting backend yet.
 
+- **RBAC:** `await requirePermission("viewMedicines")` at the top of `page.tsx` (same pattern as other medicines routes).
+
 ---
 
 ## 15. Cross-Cutting: Document Upload Flow
@@ -597,18 +599,18 @@ This flow spans multiple pages and is described here once.
 - **Input:** `fileName`, `mimeType`, `fileSize`, `assignedToType` (`patient` | `user`), `assignedToId`, optional `appointmentId`
 - **Key:** uses `session.user.clinicSubdomain` + `assignedToType` + `assignedToId` (see `docs/09-File-Upload-Flow.md` §7)
 - **Output:** `{ uploadUrl: string, fileKey: string }` — the `fileKey` is the S3 object key to be confirmed after upload
-- **RBAC:** All roles.
+- **RBAC:** Admin and Doctor only.
 
 #### `confirmDocumentUpload({ fileKey, fileName, fileSize, mimeType, title?, type, assignedToId, assignedToType, appointmentId? })`
 - Creates the `documents` record in DB after the S3 upload confirms success
 - **Clinic-boundary check:** verifies `assignedToId` belongs to the session `clinicId` before inserting (`patients` table for `"patient"`, `users` table for `"user"`)
 - Sets `assignedToType` from the validated input; sets `uploadedBy = session.userId`, `clinicId = session.clinicId`; revalidates patient/appointment detail paths
-- **RBAC:** All roles.
+- **RBAC:** Admin and Doctor only.
 
 #### `getViewPresignedUrl(documentId)`
 - Returns a presigned GET URL valid for 60 minutes
 - Verifies `clinic_id = session.clinicId` before generating
-- **RBAC:** All roles.
+- **RBAC:** Admin and Doctor only.
 
 #### `deleteDocument(documentId)`
 - Deletes S3 object AND the DB record atomically

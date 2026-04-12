@@ -64,7 +64,7 @@ Two server-side operations are required:
 - **Input:** `fileKey`, `fileName`, `fileSize`, `mimeType`, `title`, `description`, `type` (document type enum), `assignedToId` (patient row UUID when `assignedToType` is `patient`, or Better-Auth user id when `assignedToType` is `user`; Zod: `z.string().min(1)`), `assignedToType` (`"patient" | "user"`), `appointmentId` (optional)
 - **What it does:**
   - Calls `getSession()` — auth + clinicId check
-  - Enforces RBAC — staff, doctor, and admin can all upload
+  - Enforces RBAC — **admin and doctor** only (`requireRole(session, ["admin", "doctor"])`); same for `getUploadPresignedUrl` and `getViewPresignedUrl`
   - **Clinic-boundary check:** verifies `assignedToId` belongs to the session's `clinicId` by querying `patients` (for `"patient"`) or `users` (for `"user"`) before any DB write. Returns `"Patient not found."` / `"User not found."` on mismatch. Prevents cross-clinic document attachment.
   - Inserts into `documents` table with `assignedToType` from the validated input
   - Sets `appointmentId` only if provided (i.e. uploaded from appointment page)

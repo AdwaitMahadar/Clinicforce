@@ -132,13 +132,13 @@ const session = await requirePermission("manageUsers");
 | **Users Management** | — | — | Full CRUD |
 | **Appointments** | Full CRUD | Full CRUD | Full CRUD |
 | **Patients** | View / Create / Update | Full CRUD | Full CRUD |
-| **Documents** | View / Upload | Full CRUD | Full CRUD |
+| **Documents** | **No access** (presign/view/upload API blocked; empty lists + no search hits) | View / upload / delete | View / upload / delete |
 | **Medicines** | **No access** | Full CRUD | Full CRUD |
 | **Appt. clinical notes + patient past history** | **Hidden + API redacted** | Full | Full |
 | **Appt. title field (form) + title API** | **Hidden; create stores null; update strips title; reads return `title: null`** | Full | Full |
 | **Detail Sidebar** | **Hidden** | Visible | Visible |
 
-Staff **cannot** delete patients or documents. Staff has **no access to medicines** (nav tab hidden, pages redirect, server actions reject with `requireRole(session, ["admin", "doctor"])`). Appointment `notes` and patient `pastHistoryNotes` are hidden in UI and **redacted/ignored in patient + appointment server actions** for staff. The detail sidebar is hidden for staff — `DetailPanel` auto-hides it via `usePermission("viewDetailSidebar")`. `ModalDetailPanelBodySkeleton` applies the **same `noSidebar` logic** so the Suspense fallback skeleton matches the final rendered layout with no layout shift.
+Staff **cannot** delete patients or documents, or **view/upload/open** documents (`getUploadPresignedUrl` / `confirmDocumentUpload` / `getViewPresignedUrl` → `requireRole(session, ["admin", "doctor"])`; `getPatientDetail` / `getAppointmentDetail` return empty document arrays; `searchGlobal` skips the documents query; `UniversalSearch` hides the Documents group via `viewDocuments`). Staff has **no access to medicines** (nav tab hidden; every medicines `page.tsx` uses `requirePermission("viewMedicines")`; server actions `requireRole(session, ["admin", "doctor"])`; `searchGlobal` skips medicines query → `medicines: []`; `UniversalSearch` hides Medicines group via `viewMedicines`). Appointment `notes` and patient `pastHistoryNotes` are hidden in UI and **redacted/ignored in patient + appointment server actions** for staff. The detail sidebar is hidden for staff — `DetailPanel` auto-hides it via `usePermission("viewDetailSidebar")`. `ModalDetailPanelBodySkeleton` applies the **same `noSidebar` logic** so the Suspense fallback skeleton matches the final rendered layout with no layout shift.
 
 ### `requireRole()` Usage
 
