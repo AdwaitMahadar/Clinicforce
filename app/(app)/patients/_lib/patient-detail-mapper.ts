@@ -81,6 +81,7 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
           ? d.uploadedAt.toISOString()
           : String(d.uploadedAt),
     })),
-    activityLog: [],
+    activityLog: r.activityLog,
+    activityLogHasMore: r.activityLogHasMore,
   };
 }

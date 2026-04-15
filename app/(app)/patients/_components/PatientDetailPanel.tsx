@@ -406,7 +406,6 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         header={header}
         formRef={formRef}
         form={form}
-        events={[]}
         isCreate
         onCancel={onClose ?? (() => router.back())}
         submitLabel="Save Patient"
@@ -458,6 +457,9 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         formRef={formRef}
         form={form}
         events={patient.activityLog}
+        hasMoreEvents={patient.activityLogHasMore}
+        entityType="patient"
+        entityId={patient.id}
         sidebarTabs={[
           {
             label: "Documents",

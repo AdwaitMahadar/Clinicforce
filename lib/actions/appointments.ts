@@ -30,6 +30,8 @@ import {
   updateAppointmentSchema,
 } from "@/lib/validators/appointment";
 import { idSchema, n } from "@/lib/validators/common";
+import { appendActivityLog } from "@/lib/activity-log";
+import { getEntityActivity } from "@/lib/actions/activity-log";
 
 // ─── Input schemas ─────────────────────────────────────────────────────────────
 
@@ -96,6 +98,16 @@ function normalizeHmInput(raw: string): string {
   return t;
 }
 
+/** Formats an appointment heading for activity log entity descriptors. */
+function formatApptDescriptor(category: string, visitType: string): string {
+  const cat = category.charAt(0).toUpperCase() + category.slice(1);
+  const vt = visitType
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return `${cat} · ${vt}`;
+}
+
 // ─── getAppointments ───────────────────────────────────────────────────────────
 
 export async function getAppointments(input: unknown) {
@@ -154,6 +166,22 @@ export async function getAppointmentDetail(id: unknown) {
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     const canDocuments = hasPermission(session.user.type, "viewDocuments");
+    const isStaff = session.user.type === "staff";
+
+    // Staff never see the activity sidebar — skip the query entirely
+    let activityLogEntries: import("@/types/activity-log").ActivityLogEntry[] = [];
+    let activityLogHasMore = false;
+    if (!isStaff) {
+      const activityResult = await getEntityActivity({
+        entityType: "appointment",
+        entityId: parsed.data,
+      });
+      if (activityResult.success) {
+        activityLogEntries = activityResult.data.entries;
+        activityLogHasMore = activityResult.data.hasMore;
+      }
+    }
+
     return {
       success: true as const,
       data: {
@@ -165,8 +193,8 @@ export async function getAppointmentDetail(id: unknown) {
           ...a,
           title: canTitle ? a.title : null,
         })),
-        // TODO: Implement when audit_log table is built.
-        activityLog: [] as never[],
+        activityLog: activityLogEntries,
+        activityLogHasMore,
       },
     };
   } catch (err) {
@@ -204,7 +232,7 @@ export async function createAppointment(input: unknown) {
 
     // Business rule: patient must be active (docs/08-Business-Rules §4)
     const [patient] = await db
-      .select({ id: patients.id, isActive: patients.isActive })
+      .select({ id: patients.id, isActive: patients.isActive, firstName: patients.firstName, lastName: patients.lastName, chartId: patients.chartId })
       .from(patients)
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, v.patientId)))
       .limit(1);
@@ -258,6 +286,16 @@ export async function createAppointment(input: unknown) {
       })
       .returning({ id: appointments.id });
 
+    const descriptor = formatApptDescriptor(v.category, v.visitType);
+    await appendActivityLog({
+      session,
+      entityType: "appointment",
+      entityId: created.id,
+      action: "created",
+      metadata: { entityDescriptor: `${descriptor} added` },
+      subscribers: [{ entityType: "patient", entityId: v.patientId }],
+    });
+
     revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
@@ -290,7 +328,7 @@ export async function updateAppointment(input: unknown) {
     }
     const serverNow = new Date();
 
-    // Verify ownership
+    // Verify ownership — reuse this fetch for old-value diffing (no extra query)
     const existing = await getAppointmentById(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Appointment not found." };
@@ -372,6 +410,69 @@ export async function updateAppointment(input: unknown) {
       })
       .where(and(eq(appointments.clinicId, clinicId), eq(appointments.id, id)));
 
+    // ── Activity log ───────────────────────────────────────────────────────────
+    const descriptor = formatApptDescriptor(existing.category, existing.visitType);
+
+    type ChangedField = { field: string; label: string; oldValue: string; newValue: string };
+    const changedFields: ChangedField[] = [];
+
+    // Diff scalar fields present in the parsed payload
+    const scalarDiffs: Array<{
+      key: keyof typeof fields;
+      label: string;
+      oldVal: string | null | undefined;
+      newVal: string | null | undefined;
+    }> = [
+      { key: "title",       label: "title",       oldVal: existing.title,       newVal: fields.title !== undefined ? (fields.title.trim() || null) : undefined },
+      { key: "description", label: "description", oldVal: existing.description, newVal: fields.description !== undefined ? n(fields.description) : undefined },
+      { key: "doctorId",    label: "doctor",      oldVal: existing.doctorId,    newVal: fields.doctorId },
+      { key: "category",    label: "category",    oldVal: existing.category,    newVal: fields.category },
+      { key: "visitType",   label: "visit type",  oldVal: existing.visitType,   newVal: fields.visitType },
+      { key: "status",      label: "status",      oldVal: existing.status,      newVal: fields.status },
+      { key: "duration",    label: "duration",    oldVal: String(existing.duration), newVal: fields.duration !== undefined ? String(fields.duration) : undefined },
+      { key: "fee",         label: "fee",         oldVal: existing.fee != null ? String(existing.fee) : "", newVal: fields.fee !== undefined ? (fields.fee != null ? String(fields.fee) : "") : undefined },
+      { key: "notes",       label: "notes",       oldVal: existing.notes,       newVal: fields.notes !== undefined ? n(fields.notes) : undefined },
+    ];
+
+    for (const { key, label, oldVal, newVal } of scalarDiffs) {
+      if (newVal === undefined) continue; // field absent from parsed input — skip
+      const oldStr = oldVal ?? "";
+      const newStr = newVal ?? "";
+      if (oldStr !== newStr) {
+        changedFields.push({ field: key, label, oldValue: oldStr, newValue: newStr });
+      }
+    }
+
+    // Scheduled time diff
+    if (scheduledAt !== undefined) {
+      const oldStr = existing.scheduledAt.toISOString();
+      const newStr = scheduledAt.toISOString();
+      if (oldStr !== newStr) {
+        changedFields.push({ field: "scheduledAt", label: "scheduled at", oldValue: oldStr, newValue: newStr });
+      }
+    }
+
+    // Actual check-in diff
+    if (actualCheckIn !== undefined) {
+      const oldStr = existing.actualCheckIn?.toISOString() ?? "";
+      const newStr = actualCheckIn?.toISOString() ?? "";
+      if (oldStr !== newStr) {
+        changedFields.push({ field: "actualCheckIn", label: "actual check-in", oldValue: oldStr, newValue: newStr });
+      }
+    }
+
+    await appendActivityLog({
+      session,
+      entityType: "appointment",
+      entityId: id,
+      action: "updated",
+      metadata: {
+        entityDescriptor: `${descriptor} updated`,
+        ...(changedFields.length > 0 && { changedFields }),
+      },
+      subscribers: [{ entityType: "patient", entityId: existing.patientId }],
+    });
+
     revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id } };
   } catch (err) {
@@ -409,6 +510,16 @@ export async function deleteAppointment(id: unknown) {
           eq(appointments.id, parsed.data)
         )
       );
+
+    const descriptor = formatApptDescriptor(existing.category, existing.visitType);
+    await appendActivityLog({
+      session,
+      entityType: "appointment",
+      entityId: parsed.data,
+      action: "deleted",
+      metadata: { entityDescriptor: `${descriptor} deleted` },
+      subscribers: [{ entityType: "patient", entityId: existing.patientId }],
+    });
 
     revalidatePath("/appointments/dashboard");
     return { success: true as const, data: { id: parsed.data } };

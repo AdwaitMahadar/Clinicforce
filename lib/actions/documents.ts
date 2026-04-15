@@ -51,8 +51,31 @@ import {
   documentIdSchema,
   DOCUMENT_ALLOWED_MIME_TYPES,
 } from "@/lib/validators/document";
+import { appendActivityLog } from "@/lib/activity-log";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+/**
+ * Fetches the display name for a patient assigned to a document.
+ * Returns null if the patient is not found or assignedToType is not "patient".
+ */
+async function resolvePatientNameForDoc(
+  clinicId: string,
+  assignedToId: string,
+  assignedToType: string
+): Promise<{ name: string; chartId: number } | null> {
+  if (assignedToType !== "patient") return null;
+  const [row] = await db
+    .select({ firstName: patients.firstName, lastName: patients.lastName, chartId: patients.chartId })
+    .from(patients)
+    .where(and(eq(patients.clinicId, clinicId), eq(patients.id, assignedToId)))
+    .limit(1);
+  if (!row) return null;
+  return {
+    name: `${row.firstName} ${row.lastName}`.trim(),
+    chartId: row.chartId,
+  };
+}
 
 // ─── getUploadPresignedUrl ────────────────────────────────────────────────────
 
@@ -179,6 +202,32 @@ export async function confirmDocumentUpload(input: unknown) {
       })
       .returning({ id: documents.id });
 
+    // ── Activity log ───────────────────────────────────────────────────────────
+    const patientInfo = await resolvePatientNameForDoc(clinicId, v.assignedToId, v.assignedToType);
+    const docTypeLabel = v.type
+      .split("-")
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    let entityDescriptor: string;
+    const subscribers: Array<{ entityType: "patient"; entityId: string }> = [];
+
+    if (patientInfo) {
+      entityDescriptor = `${docTypeLabel} · ${title} uploaded to ${patientInfo.name} (#PT-${patientInfo.chartId})`;
+      subscribers.push({ entityType: "patient", entityId: v.assignedToId });
+    } else {
+      entityDescriptor = `${docTypeLabel} · ${title} uploaded`;
+    }
+
+    await appendActivityLog({
+      session,
+      entityType: "document",
+      entityId: created.id,
+      action: "created",
+      metadata: { entityDescriptor },
+      ...(subscribers.length > 0 && { subscribers }),
+    });
+
     revalidatePath("/patients", "layout");
     revalidatePath(`/patients/view/${v.assignedToId}`);
     revalidatePath("/appointments", "layout");
@@ -279,6 +328,32 @@ export async function deleteDocument(documentId: unknown) {
       .where(
         and(eq(documents.clinicId, clinicId), eq(documents.id, parsed.data))
       );
+
+    // ── Activity log ───────────────────────────────────────────────────────────
+    const patientInfo = await resolvePatientNameForDoc(clinicId, doc.assignedToId, doc.assignedToType);
+    const docTypeLabel = doc.type
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    let entityDescriptor: string;
+    const subscribers: Array<{ entityType: "patient"; entityId: string }> = [];
+
+    if (patientInfo) {
+      entityDescriptor = `${docTypeLabel} · ${doc.title} deleted from ${patientInfo.name} (#PT-${patientInfo.chartId})`;
+      subscribers.push({ entityType: "patient", entityId: doc.assignedToId });
+    } else {
+      entityDescriptor = `${docTypeLabel} · ${doc.title} deleted`;
+    }
+
+    await appendActivityLog({
+      session,
+      entityType: "document",
+      entityId: parsed.data,
+      action: "deleted",
+      metadata: { entityDescriptor },
+      ...(subscribers.length > 0 && { subscribers }),
+    });
 
     return { success: true as const, data: { id: parsed.data } };
   } catch (err) {

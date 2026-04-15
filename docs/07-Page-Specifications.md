@@ -36,10 +36,10 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 ## 1. Home Dashboard — `/home/dashboard`
 
-> **Status:** **Built** (stats + today’s schedule). **Recent activity** is a placeholder: `EventLog` renders with `events={[]}` until an audit/activity data source exists (`lib/actions/home.ts` / `app/(app)/home/dashboard/page.tsx`).
+> **Status:** **Built** — stats + today's schedule + real recent activity feed. `getRecentActivity()` is called in the `Promise.all` alongside stats and appointments. The "Recent Activity" column renders via `HomeDashboardActivityFeed` with a DataTable-style card and constrained scrollable area.
 
 ### Purpose
-High-level clinic overview — metric cards, today’s appointments strip, link to new appointment, reserved slot for future activity feed.
+High-level clinic overview — metric cards, today's appointments strip, link to new appointment, recent activity feed.
 
 ### Server actions (`lib/actions/home.ts`)
 
@@ -170,7 +170,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     description:        string | null;
     patientDocuments:   DocumentSummary[];  // `getDocumentsByAssignment(clinicId, patientId, "patient")`
     patientAppointments: PatientAppointmentSummary[]; // active rows for patient, `scheduled_at` DESC; nested `title` redacted for staff like `getPatientDetail`
-    activityLog:        LogEvent[];
+    activityLog:        ActivityLogEntry[];  // admin/doctor: first 20 real entries; staff: []
+    activityLogHasMore: boolean;             // admin/doctor: whether more pages exist; staff: false
     createdAt:          string;
     createdBy:          string;   // display name resolved from users
   }
@@ -340,7 +341,8 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
     createdBy:             string;   // display name
     appointments:          PatientAppointmentSummary[];
     documents:             DocumentSummary[];
-    activityLog:           LogEvent[];
+    activityLog:           ActivityLogEntry[];   // admin/doctor: first 20 real entries; staff: []
+    activityLogHasMore:    boolean;              // admin/doctor: whether more pages exist; staff: false
   }
   ```
   where `PatientAppointmentSummary` (query layer; UI maps `scheduledAt` to display date + time strings and adds `heading` via `formatAppointmentHeading`):
@@ -535,7 +537,8 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
     isActive:           boolean;
     createdAt:          string;
     createdBy:          string;
-    activityLog:        LogEvent[];
+    activityLog:        ActivityLogEntry[];  // admin/doctor: first 20 real entries (from getEntityActivity)
+    activityLogHasMore: boolean;             // whether more pages exist
   }
   ```
 - **Security:** Verify `clinic_id = session.clinicId`.
@@ -631,32 +634,43 @@ This flow spans multiple pages and is described here once.
 
 ## 16. Cross-Cutting: Activity Log
 
-The activity log appears in: Appointment Detail, Patient Detail, Medicine Detail.
+**Status: Implemented (Phase 1–7 complete).**
 
-When an `audit_log` (or equivalent) table exists, wire real rows into `EventLog` / detail sidebars. Until then, activity areas may be empty or placeholder data.
+The activity log records every meaningful state change (create, update, deactivate, reactivate, delete) across patients, appointments, medicines, and documents. Entries appear in entity detail page sidebars (Phase 6) and the home dashboard (Phase 7).
 
-### Planned Schema (`audit_log`)
+### Schema (`activity_log` table — `lib/db/schema/activity-log.ts`)
+
+See `docs/03-Database-Schema.md` for full column list and indexes.
+
+### Writer: `appendActivityLog` (`lib/activity-log/`)
+
+Called inside each mutation action **after** the successful DB write, **before** `revalidatePath`. Never throws — errors are caught internally. Import from `@/lib/activity-log` (barrel). See `docs/04-API-Specification.md §Activity Log`.
+
+### Reader: `getEntityActivity` / `getRecentActivity` (`lib/actions/activity-log.ts`)
+
+- `getEntityActivity`: all roles allowed by `requireRole`; gated by **`viewActivityLog`** (`hasPermission`) — admin/doctor only; staff receive `FORBIDDEN`. Returns `ActivityLogEntry[]` + `hasMore` for a specific entity + subscriber fan-out; sensitivity stripping applied server-side.
+- `getRecentActivity`: all roles; scoping controlled by **`viewFullActivityLog`** (`hasPermission`) — staff (`!hasPermission`) see only their own actions (`actorId = userId`); admin/doctor see full clinic feed; sensitivity stripping applied.
+
+### Wired into detail actions (Phase 6)
+
+- `getPatientDetail`, `getAppointmentDetail`, `getMedicineDetail`: call `getEntityActivity` after the main entity query; staff path returns `activityLog: []` + `activityLogHasMore: false` and skips the DB read. First page (20 entries) + `hasMore` are included in the SSR response.
+- **Detail mappers** (`*-detail-mapper.ts`): pass both `r.activityLog` and `r.activityLogHasMore` through.
+- **`DetailSidebar`**: fully wired — `allEntries` state (append-only), `hasMore` state, `pageRef` for stable pagination, `isFetchingRef` guard. `handleLoadMore` (`useCallback([entityType, entityId])`) calls `getEntityActivity({ entityType, entityId, page: pageRef.current + 1 })` and appends. Silent retry on failure.
+- **`DetailPanel`**: accepts `events?`, `hasMoreEvents?`, `entityType?`, `entityId?`; forwards all to `DetailSidebar` as `entries`, `initialHasMore`, `entityType`, `entityId`. Entity panels supply the entity `.id` + type string + `entity.activityLogHasMore`.
+
+### Wired into Home Dashboard (Phase 7)
+
+- `app/(app)/home/dashboard/page.tsx`: `getRecentActivity()` added to `Promise.all` alongside `getHomeStats` and `getRecentAppointments`. Returns page-1 entries + `hasMore` from SSR.
+- **`HomeDashboardActivityFeed`** (`app/(app)/home/_components/HomeDashboardActivityFeed.tsx`): `"use client"` component; receives `entries` + `initialHasMore` from the server page. Calls `getRecentActivity({ page: n })` client-side for subsequent pages. Same `pageRef` / `isFetchingRef` / `useEffect([entries])` reset pattern as `DetailSidebar`. Staff see only their own actions (enforced server-side in `getRecentActivity`); admin/doctor see full clinic feed.
+- **Card + scroll container (in `page.tsx`):** The "Recent Activity" `<section>` (the 1/3-width column in the `lg:grid-cols-3` main grid) wraps `HomeDashboardActivityFeed` in a card div (`background: var(--color-glass-fill-data)`, `border: var(--shadow-card-border)`, `box-shadow: var(--shadow-card)`, `rounded-xl overflow-hidden`) — matching the DataTable card treatment. Inside the card, a `max-height: min(50vh, 480px)` `overflow-y-auto` div constrains the feed height and enables in-card infinite scroll. The scroll container carries the `.scrollbar-hover` class (scrollbar hidden by default, revealed on hover). Padding `p-4` gives entries breathing room from the card edges.
+
+### Sensitive fields (`lib/activity-log/sensitive-fields.ts`)
+
+```ts
+{ patient: ["pastHistoryNotes"], appointment: ["notes"] }
 ```
-id:           uuid  (PK)
-clinic_id:    uuid
-entity_type:  enum ('appointment', 'patient', 'medicine', 'document', 'user')
-entity_id:    uuid
-action:       varchar(100)   e.g. "Status changed", "File uploaded"
-detail:       text
-performed_by: text           (references users.id)
-created_at:   timestamp
-```
 
-### Server Action Needed
-
-#### `getActivityLog(entityType, entityId)`
-- **Input:** `entityType`, `entityId`, `clinicId` from session
-- **Output:** `LogEvent[]` sorted by `created_at DESC`
-- **RBAC:** All roles.
-
-#### `appendActivityLog(entityType, entityId, action, detail)` *(internal only)*
-- Called inside other server actions (e.g. after `updateAppointment`) — never directly from the client
-- Captures `performedBy = session.userId`, `createdAt = now()`
+Sensitivity enforced at read time — raw values are stored in DB, stripped to `{ sensitive: true }` before client receives them.
 
 ---
 
@@ -669,7 +683,7 @@ All gaps have been reviewed and resolved as follows:
 | `patients.status` — UI had `active/inactive/critical` | **Keep as `is_active boolean`.** UI now maps it to only `active` / `inactive`. "Critical" is fully removed. | ✅ Resolved |
 | `medicines.category` — used in UI, missing from DB | **Add `category varchar(100)` to the `medicines` table.** Required before seeding. | ✅ Confirmed — add to schema |
 | `medicines.sku` — present in UI, not in DB | **Remove from UI.** SKU is not part of the product. Fully removed from types, mock data, and all components. | ✅ Resolved — removed |
-| `audit_log` table — activity log is mock data | **Keep as mock data for now.** Real `audit_log` table implementation deferred until end-to-end flow is running. | ✅ Deferred — no action needed yet |
+| `audit_log` table — activity log is mock data | **Implemented as `activity_log` table** (`lib/db/schema/activity-log.ts`). Writers in `lib/activity-log/`, readers in `lib/actions/activity-log.ts`. Wired into all mutation actions, detail sidebars (Phase 6), and home dashboard (Phase 7). | ✅ Complete |
 | Doctor/patient pickers for appointment form | **Implement `getActivePatients()` and `getActiveDoctors()`.** Approved — required for appointment create/edit. | ✅ Confirmed — add these actions |
 
 ---
@@ -745,7 +759,7 @@ Create or complete validators in `lib/validators/`. These are the single source 
 - [x] `getActivePatients()` — **`lib/actions/patients.ts`** (bulk list; not used for appointment form preload)
 - [x] `searchPatientsForPicker()` — **`lib/actions/patients.ts`** (appointment patient combobox)
 - [x] `getActiveDoctors()` — `lib/actions/appointments.ts`
-- [ ] `appendActivityLog()` — not implemented (`audit_log` / activity persistence not yet built)
+- [x] `appendActivityLog()` — `lib/activity-log/append-activity-log.ts` (fire-and-forget; wired into all mutation actions)
 
 ### Step 5 — Page Actions (build in this order)
 

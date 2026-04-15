@@ -57,6 +57,12 @@ export const PERMISSIONS = {
   createMedicine: ["admin", "doctor"],
   editMedicine: ["admin", "doctor"],
   deleteMedicine: ["admin", "doctor"],
+
+  // ── Activity Log ──────────────────────────────────────────────────────────
+  /** View activity log in entity detail page sidebars. */
+  viewActivityLog: ["admin", "doctor"],
+  /** See the full clinic activity feed on home dashboard. Staff always see only their own actions. */
+  viewFullActivityLog: ["admin", "doctor"],
 } as const satisfies Record<string, ReadonlyArray<UserType>>;
 
 /** All named permissions in the system. */

@@ -14,20 +14,22 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   StatCard,
-  EventLog,
 } from "@/components/common";
+import { HomeDashboardActivityFeed } from "../_components/HomeDashboardActivityFeed";
 import { HomeRecentTables } from "../_components/HomeRecentTables";
 import type { HomeRecentAppointmentRow } from "@/types/home";
 import { getHomeStats, getRecentAppointments } from "@/lib/actions/home";
+import { getRecentActivity } from "@/lib/actions/activity-log";
 import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomeDashboardPage() {
-  const [statsResult, apptsResult] = await Promise.all([
+  const [statsResult, apptsResult, activityResult] = await Promise.all([
     getHomeStats(),
     getRecentAppointments(5),
+    getRecentActivity(),
   ]);
 
   const stats = statsResult.success ? statsResult.data : null;
@@ -104,8 +106,25 @@ export default async function HomeDashboardPage() {
                 Recent Activity
               </h2>
             </div>
-            {/* TODO: Implement when audit_log table is built. */}
-            <EventLog events={[]} />
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{
+                background: "var(--color-glass-fill-data)",
+                border:     "var(--shadow-card-border)",
+                boxShadow:  "var(--shadow-card)",
+              }}
+            >
+              {/* Constrained, scrollable area — sentinel fires as user scrolls */}
+              <div
+                className="overflow-y-auto p-4 scrollbar-hover"
+                style={{ maxHeight: "min(50vh, 480px)" }}
+              >
+                <HomeDashboardActivityFeed
+                  entries={activityResult.success ? activityResult.data.entries : []}
+                  initialHasMore={activityResult.success ? activityResult.data.hasMore : false}
+                />
+              </div>
+            </div>
           </section>
 
         </div>

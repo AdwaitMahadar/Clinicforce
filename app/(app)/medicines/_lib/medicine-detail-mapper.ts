@@ -30,6 +30,7 @@ export function buildMedicineDetail(r: MedicineDetailData): MedicineDetail {
     isActive:  r.isActive ?? true,
     createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : "",
     createdBy: "",
-    activityLog: [],
+    activityLog: r.activityLog,
+    activityLogHasMore: r.activityLogHasMore,
   };
 }

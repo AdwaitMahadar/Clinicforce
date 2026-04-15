@@ -49,7 +49,8 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     actualCheckIn:   fmtHm(r.actualCheckIn),
     description:     r.description ?? "",
     notes:           r.notes ?? "",
-    activityLog:     [],
+    activityLog:     r.activityLog,
+    activityLogHasMore: r.activityLogHasMore,
     patientDocuments: (r.patientDocuments ?? []).map((d) => ({
       id:         d.id,
       title:      d.title,

@@ -31,6 +31,8 @@ import {
 } from "@/lib/validators/patient";
 import { idSchema, n } from "@/lib/validators/common";
 import { hasPermission } from "@/lib/permissions";
+import { appendActivityLog } from "@/lib/activity-log";
+import { getEntityActivity } from "@/lib/actions/activity-log";
 
 /** Resolve persisted DOB: trim input, or Jan 1 from age when DOB empty. */
 function resolveSaveDateOfBirth(
@@ -165,6 +167,22 @@ export async function getPatientDetail(id: unknown) {
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     const canDocuments = hasPermission(session.user.type, "viewDocuments");
+    const isStaff = session.user.type === "staff";
+
+    // Staff never see the activity sidebar — skip the query entirely
+    let activityLogEntries: import("@/types/activity-log").ActivityLogEntry[] = [];
+    let activityLogHasMore = false;
+    if (!isStaff) {
+      const activityResult = await getEntityActivity({
+        entityType: "patient",
+        entityId: parsed.data,
+      });
+      if (activityResult.success) {
+        activityLogEntries = activityResult.data.entries;
+        activityLogHasMore = activityResult.data.hasMore;
+      }
+    }
+
     return {
       success: true as const,
       data: {
@@ -175,8 +193,8 @@ export async function getPatientDetail(id: unknown) {
           ...a,
           title: canTitle ? a.title : null,
         })),
-        // TODO: Implement when audit_log table is built.
-        activityLog: [] as never[],
+        activityLog: activityLogEntries,
+        activityLogHasMore,
       },
     };
   } catch (err) {
@@ -242,6 +260,17 @@ export async function createPatient(input: unknown) {
       })
       .returning({ id: patients.id });
 
+    const patientName = `${v.firstName.trim()} ${v.lastName.trim()}`.trim();
+    const entityDescriptor = `${patientName} (#PT-${chartId}) added`;
+
+    await appendActivityLog({
+      session,
+      entityType: "patient",
+      entityId: created.id,
+      action: "created",
+      metadata: { entityDescriptor },
+    });
+
     revalidatePath("/patients/dashboard");
 
     return { success: true as const, data: { id: created.id } };
@@ -268,7 +297,7 @@ export async function updatePatient(input: unknown) {
     const { clinicId } = session.user;
     const { id, age: _age, isActive, ...fields } = parsed.data;
 
-    // Verify ownership
+    // Verify ownership — reuse this fetch for old-value diffing (no extra query)
     const existing = await getPatientById(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Patient not found." };
@@ -303,6 +332,60 @@ export async function updatePatient(input: unknown) {
       })
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)));
 
+    // ── Activity log ───────────────────────────────────────────────────────────
+    const isReactivation = isActive === true;
+    const patientName = `${existing.firstName} ${existing.lastName}`.trim();
+    const chartIdStr = `#PT-${existing.chartId}`;
+    const action = isReactivation ? "reactivated" : "updated";
+    const entityDescriptor = `${patientName} (${chartIdStr}) ${action}`;
+
+    // Build changedFields diff — only for updated/reactivated, exclude isActive itself
+    type ChangedField = { field: string; label: string; oldValue: string; newValue: string };
+    const changedFields: ChangedField[] = [];
+
+    if (!isReactivation) {
+      const fieldMap: Array<{
+        key: keyof typeof fields;
+        label: string;
+        oldVal: string | null | undefined;
+        newVal: string | null | undefined;
+      }> = [
+        { key: "firstName",             label: "first name",             oldVal: existing.firstName,             newVal: fields.firstName?.trim() },
+        { key: "lastName",              label: "last name",              oldVal: existing.lastName,              newVal: fields.lastName?.trim() },
+        { key: "email",                 label: "email",                  oldVal: existing.email,                 newVal: n(fields.email) },
+        { key: "phone",                 label: "phone",                  oldVal: existing.phone,                 newVal: n(fields.phone) },
+        { key: "dateOfBirth",           label: "date of birth",          oldVal: existing.dateOfBirth,           newVal: dobResolved },
+        { key: "gender",                label: "gender",                 oldVal: existing.gender,                newVal: fields.gender },
+        { key: "address",               label: "address",                oldVal: existing.address,               newVal: n(fields.address) },
+        { key: "bloodGroup",            label: "blood group",            oldVal: existing.bloodGroup,            newVal: fields.bloodGroup ?? null },
+        { key: "allergies",             label: "allergies",              oldVal: existing.allergies,             newVal: n(fields.allergies) },
+        { key: "emergencyContactName",  label: "emergency contact name", oldVal: existing.emergencyContactName,  newVal: n(fields.emergencyContactName) },
+        { key: "emergencyContactPhone", label: "emergency contact phone",oldVal: existing.emergencyContactPhone, newVal: n(fields.emergencyContactPhone) },
+        { key: "pastHistoryNotes",      label: "past history notes",     oldVal: existing.pastHistoryNotes,      newVal: canNotes ? n(fields.pastHistoryNotes) : undefined },
+      ];
+
+      for (const { key, label, oldVal, newVal } of fieldMap) {
+        // Only diff fields that were present in the parsed input
+        if (!(key in fields) && key !== "dateOfBirth") continue;
+        const oldStr = oldVal ?? "";
+        const newStr = newVal ?? "";
+        if (oldStr !== newStr) {
+          changedFields.push({ field: key, label, oldValue: oldStr, newValue: newStr });
+        }
+      }
+    }
+
+    await appendActivityLog({
+      session,
+      entityType: "patient",
+      entityId: id,
+      action,
+      metadata: {
+        entityDescriptor,
+        ...(changedFields.length > 0 && { changedFields }),
+      },
+    });
+
     revalidatePath("/patients/dashboard");
     return { success: true as const, data: { id } };
   } catch (err) {
@@ -335,6 +418,17 @@ export async function deactivatePatient(id: unknown) {
       .update(patients)
       .set({ isActive: false, updatedAt: new Date() })
       .where(and(eq(patients.clinicId, clinicId), eq(patients.id, parsed.data)));
+
+    const patientName = `${existing.firstName} ${existing.lastName}`.trim();
+    await appendActivityLog({
+      session,
+      entityType: "patient",
+      entityId: parsed.data,
+      action: "deactivated",
+      metadata: {
+        entityDescriptor: `${patientName} (#PT-${existing.chartId}) deactivated`,
+      },
+    });
 
     revalidatePath("/patients/dashboard");
     return { success: true as const, data: { id: parsed.data } };

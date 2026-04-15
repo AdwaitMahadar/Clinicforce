@@ -325,7 +325,54 @@ Entity panels (**`PatientDetailPanel`**, **`AppointmentDetailPanel`**, **`Medici
 ### `<DetailSidebar />` — Tabbed Sidebar + Activity Log
 **Location:** `components/common/DetailSidebar.tsx`
 
-Optional top **tabs** (`sidebarTabs`) and a persistent bottom **events** list (`EventLog`-compatible entries). Used inside `DetailPanel` for documents, related lists, and audit-style activity.
+Optional top **tabs** (`sidebarTabs`) and a persistent bottom **Activity Log** zone. Data arrives as SSR page-1 (`entries` / `initialHasMore` props); subsequent pages are fetched client-side via `getEntityActivity`. Manages `allEntries` (append-only), `hasMore`, `pageRef`, and `isFetchingRef` locally; `handleLoadMore` is a stable `useCallback([entityType, entityId])`.
+
+**Activity log card treatment:** The entries scroll area is wrapped in a subtle card — `background: var(--color-surface)` / `border: 1px solid var(--color-border)` / `rounded-lg` — so entries feel contained against the sidebar's `--color-surface-alt` background. The "ACTIVITY LOG" eyebrow label (`text-[10px] font-bold uppercase tracking-widest`, `--color-text-muted`) sits above the card, not inside it. The inner scroll container carries the `.scrollbar-hover` utility class (scrollbar hidden by default, revealed on container hover).
+
+### `<ActivityLog />` — Activity Timeline
+**Location:** `components/common/ActivityLog.tsx`
+
+Purely presentational — receives all data as props; does **not** fetch anything itself.
+
+**Props:**
+```ts
+entries:    ActivityLogEntry[]   // from types/activity-log.ts
+hasMore:    boolean
+onLoadMore: () => void
+isLoading:  boolean
+className?: string
+```
+
+**Features:**
+- Vertical timeline with per-action Lucide icons and **per-action icon colors** (from `ACTION_COLOR` map):
+  | Action | Icon | Color token |
+  |---|---|---|
+  | `created` | `Plus` | `--color-green` |
+  | `updated` | `Pencil` | `--color-blue` |
+  | `deactivated` | `Archive` | `--color-amber` |
+  | `reactivated` | `ArchiveRestore` | `--color-green` |
+  | `deleted` | `Trash2` | `--color-red` |
+- Dot circle: `size-[22px]` with `background: var(--color-surface)`, `border: 1.5px solid var(--color-border)`, `box-shadow: 0 0 0 3px var(--color-surface)`. Icon: `size={11}` `strokeWidth={2.5}`. Vertical rule centered at `left-[11px]` within `pl-2` container.
+- Actor name styled by role using `--role-color-*` tokens (no badge): admin = `--role-color-admin` (indigo), doctor = `--role-color-doctor` (teal), staff = `--role-color-staff` (ochre)
+- Entity descriptor line: `text-[11.5px]` `--color-text-secondary`
+- Changed-field rows (`text-[10.5px]`) for `updated`/`reactivated` only:
+  - Sensitive fields → `"updated"` (italic, muted)
+  - Normal fields → `oldValue → newValue`; when `oldValue` is empty/falsy, shows `"(empty)"` in italic muted text (not a struck-through dash) — distinguishes a blank prior value from the `→` arrow that follows. `newValue` still shows `"—"` when empty (clearing a field is an intentional state).
+  - Label column: `shrink-0` with no fixed `minWidth` — label wraps naturally to its content width.
+- **Infinite scroll** via `IntersectionObserver` sentinel — fires `onLoadMore` automatically when the zero-height sentinel div enters the viewport (`{ threshold: 0 }`, `root: null`). Works correctly inside `overflow-y-auto` containers: the spec clips the intersection rect through scrollable ancestors, so the observer sees the sentinel only when it's within the container's visible area. **Hook — `useIntersectionSentinel`:** `callback` stored in a `callbackRef` kept current by `useLayoutEffect` (no deps); `useEffect` depends only on `enabled`; observer torn down/recreated only when `hasMore && !isLoading` changes.
+- Three pulsing `Skeleton` dots at the bottom while `isLoading && entries.length > 0`
+- Full four-item skeleton when `isLoading && entries.length === 0` (initial load); skeleton dots are also `size-[22px]` to match live dots.
+- Empty state: `"No activity yet."`
+
+**Entry anatomy:** Each rendered entry has five parts, in order:
+
+1. **Timeline indicator** — vertical rule connecting entries; `size-[22px]` dot containing the action icon
+2. **Timestamp** — beside the dot (`Jan 12 · 2:34 PM` format: `MMM d · h:mm a`)
+3. **Title line** — `"{EntityType} {action} by {actorName}"` — actor name rendered with `--role-color-*` (no badge)
+4. **Entity descriptor** — specific reference to the affected record (e.g. `General · First Visit added`; wording per entity/action in `docs/04-API-Specification.md §appendActivityLog`)
+5. **Changed fields** — rendered only for `updated` / `reactivated`; sensitive fields show label + `"updated"` (italic, muted); normal fields show `label  oldValue → newValue`
+
+
 
 ### `<ModalShell />` — Intercepting Modal Wrapper
 **Location:** `components/common/ModalShell.tsx`
@@ -388,7 +435,14 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 --red:      #DC2626  --red-bg:    #FEE2E2
 --blue:     #2563EB  --blue-bg:   #EFF6FF
 --purple:   #7C3AED  --purple-bg: #F5F3FF
+
+/* Role identity (actor attribution only — not status colours) */
+--role-color-admin:  #4F46E5   /* Indigo  — management / authoritative */
+--role-color-doctor: #0D9488   /* Teal    — clinical / trusted          */
+--role-color-staff:  #B45309   /* Ochre   — operational / warm          */
 ```
+
+**Rule:** Use `--role-color-*` only for actor name text in activity log and any future role-attribution UI. Do not substitute status-badge colours (`--color-blue/green/amber`) for role identification — they have independent semantic meaning.
 
 **Intercepting modal (`ModalShell`):** `--color-modal-overlay` (scrim, `color-mix` on text primary) and `--shadow-modal` (panel elevation). Declared in `globals.css` `@theme inline`; consume only via `var(…)` in components.
 
@@ -405,6 +459,9 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 
 ### Shadows
 Avoid heavy shadows. Use borders instead of box-shadows for card separation. The design is flat and border-defined.
+
+### Scrollbar Utility
+**`.scrollbar-hover`** — defined in `app/globals.css`. Apply to any `overflow-y-auto` scroll container where the scrollbar should be unobtrusive by default and appear only when the user hovers over the container. Implementation: `::-webkit-scrollbar-thumb` is set to `transparent` by default and revealed to `--color-scrollbar-thumb` (hover: `--color-scrollbar-thumb-hover`) on container `:hover`. Firefox equivalent via `scrollbar-color`. Current consumers: the `DetailSidebar` activity log scroll div and the home dashboard "Recent Activity" card scroll div.
 
 ---
 

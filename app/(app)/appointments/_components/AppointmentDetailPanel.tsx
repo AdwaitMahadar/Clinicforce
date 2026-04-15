@@ -595,15 +595,6 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
         }
       })();
 
-  // Event log for the sidebar
-  const logEvents = !isCreate
-    ? appointment!.activityLog.map((e) => ({
-        title:  e.action,
-        body:   e.detail ? `${e.detail} · ${e.actor}` : e.actor,
-        time:   e.timestamp,
-        unread: e.color !== "muted",
-      }))
-    : [];
 
   const header = (
     <>
@@ -718,7 +709,10 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
       header={header}
       formRef={formRef}
       form={form}
-      events={logEvents}
+      events={!isCreate ? appointment!.activityLog : []}
+      hasMoreEvents={!isCreate ? appointment!.activityLogHasMore : false}
+      entityType="appointment"
+      entityId={!isCreate ? appointment!.id : ""}
       sidebarTabs={
         !isCreate
           ? [

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import { DetailSidebar } from "@/components/common/DetailSidebar";
 import type { DetailSidebarTab } from "@/components/common/DetailSidebar";
-import type { LogEvent } from "@/components/common/EventLog";
+import type { ActivityLogEntry } from "@/types/activity-log";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/lib/auth/session-context";
 
@@ -19,7 +19,16 @@ export interface DetailPanelProps {
   header: ReactNode;
   formRef: RefObject<DetailFormHandle | null>;
   form: React.ReactNode;
-  events: LogEvent[];
+  events?: ActivityLogEntry[];
+  /** Whether the server returned more activity log entries beyond the initial page. */
+  hasMoreEvents?: boolean;
+  /**
+   * Entity type for activity log pagination — forwarded to DetailSidebar.
+   * Required when the sidebar is visible (edit mode, admin/doctor).
+   */
+  entityType?: "patient" | "appointment" | "medicine" | "document" | "user";
+  /** Entity ID for activity log pagination — forwarded to DetailSidebar. */
+  entityId?: string;
   /** Passed to DetailSidebar; omitted or empty hides the tabbed top zone. */
   sidebarTabs?: DetailSidebarTab[];
   /** When true, sidebar column is hidden and the form column is full width. */
@@ -40,7 +49,10 @@ export function DetailPanel({
   header,
   formRef,
   form,
-  events,
+  events = [],
+  hasMoreEvents = false,
+  entityType,
+  entityId,
   sidebarTabs,
   isCreate = false,
   onSave,
@@ -99,7 +111,13 @@ export function DetailPanel({
             className="min-h-0 w-[40%] max-w-[40%] shrink-0"
             style={{ minWidth: 0 }}
           >
-            <DetailSidebar tabs={sidebarTabs} events={events} />
+            <DetailSidebar
+              tabs={sidebarTabs}
+              entries={events}
+              initialHasMore={hasMoreEvents}
+              entityType={entityType ?? "patient"}
+              entityId={entityId ?? ""}
+            />
           </div>
         )}
       </div>

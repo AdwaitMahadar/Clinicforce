@@ -256,6 +256,9 @@ export function MedicineDetailPanel({ mode = "edit", medicine, onClose }: Medici
         formRef={formRef}
         form={form}
         events={isCreate ? [] : medicine!.activityLog}
+        hasMoreEvents={isCreate ? false : medicine!.activityLogHasMore}
+        entityType="medicine"
+        entityId={isCreate ? "" : medicine!.id}
         isCreate={isCreate}
         onCancel={onClose ?? (() => router.back())}
         onDelete={

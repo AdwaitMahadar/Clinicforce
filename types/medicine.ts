@@ -4,7 +4,7 @@
  * Canonical medicine types derived from server action return shapes (UI layer).
  */
 
-import type { LogEvent } from "@/components/common";
+import type { ActivityLogEntry } from "@/types/activity-log";
 
 // ─── Dashboard row (list view) ────────────────────────────────────────────────
 
@@ -33,5 +33,7 @@ export interface MedicineDetail {
   isActive:           boolean;
   createdAt:          string;   // ISO datetime string
   createdBy:          string;   // display name
-  activityLog:        LogEvent[];
+  activityLog:        ActivityLogEntry[];
+  /** Whether the server has more activity log pages beyond the initial SSR batch. */
+  activityLogHasMore: boolean;
 }

@@ -14,6 +14,7 @@ import type {
   AppointmentStatus,
 } from "@/lib/constants/appointment";
 import type { PatientAppointment, PatientDocument } from "@/types/patient";
+import type { ActivityLogEntry } from "@/types/activity-log";
 
 export type { AppointmentStatus, AppointmentCategory, AppointmentVisitType };
 
@@ -51,14 +52,6 @@ export interface AppointmentCreateInitialValues {
   visitType?: AppointmentVisitType;
 }
 
-export interface AppointmentActivityEntry {
-  id:        string;
-  action:    string;
-  detail?:   string;
-  actor:     string;
-  timestamp: string;
-  color:     "green" | "blue" | "amber" | "red" | "muted";
-}
 
 export interface AppointmentDetail {
   id:                 string;
@@ -85,7 +78,9 @@ export interface AppointmentDetail {
   actualCheckIn:      string;
   description?:       string;
   notes:              string;
-  activityLog:        AppointmentActivityEntry[];
+  activityLog:        ActivityLogEntry[];
+  /** Whether the server has more activity log pages beyond the initial SSR batch. */
+  activityLogHasMore: boolean;
   /** All documents assigned to this patient (sidebar Documents tab). */
   patientDocuments:   PatientDocument[];
   /** Active appointments for this patient (sidebar Appointments tab). */

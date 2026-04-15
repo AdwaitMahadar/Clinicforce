@@ -4,7 +4,7 @@
  * Canonical patient types derived from server action return shapes (UI layer).
  */
 
-import type { LogEvent } from "@/components/common";
+import type { ActivityLogEntry } from "@/types/activity-log";
 import type { AppointmentStatus } from "@/types/appointment";
 
 // ─── Appointment combobox (`searchPatientsForPicker`) ─────────────────────────
@@ -97,5 +97,7 @@ export interface PatientDetail {
   status:               PatientStatus;
   appointments:         PatientAppointment[];
   documents:            PatientDocument[];
-  activityLog:          LogEvent[];
+  activityLog:          ActivityLogEntry[];
+  /** Whether the server has more activity log pages beyond the initial SSR batch. */
+  activityLogHasMore:   boolean;
 }

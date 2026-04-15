@@ -54,6 +54,13 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 - **`medicines`**:
   - Key fields: `name`, `category`, `brand`, `form`
   - Notes: Reference library only.
+- **`activity_log`**:
+  - Immutable audit trail — rows are never updated or deleted.
+  - Key fields: `entity_type` (enum: patient/appointment/medicine/document/user), `entity_id` (text), `action` (enum: created/updated/deactivated/reactivated/deleted), `actor_id`, `actor_name` (denormalised), `actor_role` (denormalised), `metadata` (jsonb: `{ entityDescriptor, changedFields? }`), `subscribers` (jsonb array: `[{ entityType, entityId }]` for cross-entity fan-out)
+  - Indexes: GIN on `subscribers` (containment queries `@>`), B-Tree on `(clinic_id, created_at)` (home feed), B-Tree on `(clinic_id, entity_type, entity_id)` (detail queries)
+  - Writer: `appendActivityLog(params)` in `lib/activity-log/append-activity-log.ts` — fire-and-forget; errors are caught and `console.error`'d, **never** rethrown. Call **after** the DB write and **before** `revalidatePath`. Import from `@/lib/activity-log`.
+  - Sensitivity: `SENSITIVE_FIELDS` in `lib/activity-log/sensitive-fields.ts` — enforced at the server **read** layer by stripping `oldValue`/`newValue` before the payload leaves the server; raw values always stored in DB.
+  - Reader actions: `getEntityActivity` (admin/doctor only; queries primary + subscribed entries) and `getRecentActivity` (all roles; staff-scoped to own actions) — both in `lib/actions/activity-log.ts`.
 
 ## Shared enums (`lib/constants/`)
 

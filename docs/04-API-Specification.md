@@ -85,3 +85,107 @@ After a successful **`createAppointment`**, **`updateAppointment`**, or **`delet
 **`updateMedicine`:** `updateMedicineSchema` allows optional **`isActive: true`** (`z.literal(true).optional()`). When present, the action sets **`is_active = true`** (reactivation) together with any other allowed field updates. Normal saves omit this key. Deactivation remains **`deactivateMedicine`** only.
 
 **List cache:** After a successful **`createMedicine`**, **`updateMedicine`**, or **`deactivateMedicine`**, the action calls **`revalidatePath("/medicines/dashboard")`** (aligned with appointments). Detail UIs call **`router.refresh()`** via **`useDetailExit`** after mutations.
+
+## Activity Log (`lib/activity-log/`)
+
+### Sensitive Fields Config (`lib/activity-log/sensitive-fields.ts`)
+
+`SENSITIVE_FIELDS: Record<string, string[]>` — single source of truth for which `changedFields[].field` values are sensitive per entity type.
+
+```ts
+{ patient: ["pastHistoryNotes"], appointment: ["notes"] }
+```
+
+Sensitivity is enforced **at read time on the server** — reader actions strip `oldValue`/`newValue` and replace with `{ sensitive: true }`. Raw values are always stored in the DB. Changing a field here applies universally to all historical log rows.
+
+### Writer Helper (`lib/activity-log/append-activity-log.ts`)
+
+**`appendActivityLog(params)`** — fire-and-forget insert into `activity_log`. Returns `Promise<void>`. Errors are caught and `console.error`'d; they never propagate to the calling server action.
+
+**Params:**
+| Field | Type | Description |
+|---|---|---|
+| `session` | `AppSession` | Derives `actorId`, `actorName`, `actorRole`, `clinicId` |
+| `entityType` | `"patient" \| "appointment" \| "medicine" \| "document" \| "user"` | Primary affected entity type |
+| `entityId` | `string` | UUID or better-auth id of the primary affected record |
+| `action` | `"created" \| "updated" \| "deactivated" \| "reactivated" \| "deleted"` | Mutation type |
+| `metadata?` | `{ entityDescriptor: string; changedFields?: ChangedField[] }` | Descriptor + field diffs (`updated`/`reactivated` only) |
+| `subscribers?` | `Array<{ entityType, entityId }>` | Secondary entities for cross-entity fan-out |
+
+**Import path:** `@/lib/activity-log`
+
+**Call site convention:** call **after** the successful DB write and **before** `revalidatePath`.
+
+#### `metadata.entityDescriptor` wording
+
+Construct the `entityDescriptor` string from data already available at the call site. Convention per entity and action:
+
+| Entity | created | updated | deactivated | reactivated | deleted |
+|---|---|---|---|---|---|
+| Patient | `Jane Doe (#PT-3821) added` | `Jane Doe (#PT-3821) updated` | `Jane Doe (#PT-3821) deactivated` | `Jane Doe (#PT-3821) reactivated` | — |
+| Appointment | `General · First Visit added` | `General · First Visit updated` | — | — | `General · First Visit deleted` |
+| Medicine | `Paracetamol (Tablet) added` | `Paracetamol (Tablet) updated` | `Paracetamol (Tablet) deactivated` | `Paracetamol (Tablet) reactivated` | — |
+| Document | `Lab Report · filename.pdf uploaded to Jane Doe (#PT-3821)` | — | — | — | `Lab Report · filename.pdf deleted from Jane Doe (#PT-3821)` |
+
+- Patient descriptor uses `firstName + ' ' + lastName + ' (#PT-' + chartId + ')'`.
+- Appointment descriptor uses `category label + ' · ' + visitType label` (human-readable labels, not raw enum values).
+- Medicine descriptor uses `name + ' (' + form + ')'`.
+- Document descriptor includes the assigned patient's name and chart ID; fetch the patient if not already in scope.
+
+### Reader Actions (`lib/actions/activity-log.ts`)
+
+#### `getEntityActivity(input)`
+
+- **RBAC:** `requireRole(session, ["admin", "doctor", "staff"])` (session presence for all roles) then `hasPermission(session.user.type, "viewActivityLog")` — staff receive `{ success: false, error: "FORBIDDEN" }` immediately
+- **Input:** `{ entityType, entityId, page?: number, limit?: number }` (default limit 20)
+- **Query:** `clinic_id = clinicId AND (entity_id = entityId AND entity_type = entityType OR subscribers @> [{entityType, entityId}])` — covers both primary and subscribed (cross-entity fan-out) entries
+- **Sensitivity:** `applyFieldSensitivity` strips `oldValue`/`newValue` for fields in `SENSITIVE_FIELDS[entityType]`, replacing with `{ sensitive: true }`
+- **Pagination:** fetches `limit + 1` rows; if the extra row exists, `hasMore = true`
+- **Returns:** `{ success: true, data: { entries: ActivityLogEntry[], hasMore: boolean } }`
+
+#### `getRecentActivity(input?)`
+
+- **RBAC:** all roles (`requireRole(session, ["admin", "doctor", "staff"])`)
+- **Input:** `{ page?: number, limit?: number }` (default limit 20)
+- **Scope:** staff → `actor_id = session.user.id AND clinic_id`; admin/doctor → full clinic feed
+- **Sensitivity:** same stripping as `getEntityActivity`, applied per-entry based on each row's own `entityType`
+- **Returns:** `{ success: true, data: { entries: ActivityLogEntry[], hasMore: boolean } }`
+
+### `ActivityLogEntry` type (`types/activity-log.ts`)
+
+```ts
+type ChangedField =
+  | { field: string; label: string; sensitive: true }
+  | { field: string; label: string; sensitive: false; oldValue: string; newValue: string }
+
+type ActivityLogEntry = {
+  id: string
+  entityType: string
+  entityId: string
+  action: 'created' | 'updated' | 'deactivated' | 'reactivated' | 'deleted'
+  actorName: string
+  actorRole: 'admin' | 'doctor' | 'staff'
+  entityDescriptor: string
+  changedFields: ChangedField[]   // empty array for created/deactivated/deleted
+  createdAt: string               // ISO 8601 string
+}
+```
+
+`changedFields` uses a discriminated union on `sensitive` — UI components check `entry.sensitive` to decide whether to render `oldValue → newValue` or a plain `"updated"` label.
+
+### Phase 6 — Wired into Detail Actions
+
+`getPatientDetail`, `getAppointmentDetail`, and `getMedicineDetail` now call `getEntityActivity` after the main query and include both `activityLog: ActivityLogEntry[]` and `activityLogHasMore: boolean` in their return payload. Staff path: `getEntityActivity` is skipped; `activityLog: []` + `activityLogHasMore: false` returned. `DetailPanel` accepts `events?`, `hasMoreEvents?`, `entityType?`, and `entityId?`; `DetailSidebar` uses them to fetch subsequent pages client-side via `getEntityActivity` with `page: pageRef.current + 1`, appending results into `allEntries` state.
+
+### Phase 7 — Wired into Home Dashboard
+
+`getRecentActivity()` is called in `app/(app)/home/dashboard/page.tsx`'s `Promise.all`. The returned `{ entries, hasMore }` is passed to `HomeDashboardActivityFeed` (`app/(app)/home/_components/HomeDashboardActivityFeed.tsx`) — a `"use client"` component using the same `pageRef`/`isFetchingRef`/`useEffect([entries])` pattern as `DetailSidebar` for subsequent-page fetches. Staff see only their own actions (enforced server-side).
+
+### Phase 8 — Permissions
+
+Two named permissions added to `lib/permissions.ts` (Activity Log section):
+
+| Permission | Holders | Used by |
+|---|---|---|
+| `viewActivityLog` | `admin`, `doctor` | `getEntityActivity` — `hasPermission` gate after `requireRole` |
+| `viewFullActivityLog` | `admin`, `doctor` | `getRecentActivity` — staff lacking this see only `actorId = userId` rows |

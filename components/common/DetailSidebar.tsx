@@ -3,12 +3,21 @@
 /**
  * Right-column shell: optional tabbed top zone + always-visible activity log.
  * Colours via CSS variables only — see globals.css.
+ *
+ * Phase 6+: ActivityLog pagination is fully wired.
+ *   - Page 1 entries arrive via SSR (entries / initialHasMore props).
+ *   - Subsequent pages are fetched client-side via getEntityActivity when
+ *     ActivityLog's IntersectionObserver sentinel fires at the bottom.
+ *   - Each page's entries are appended to the local accumulation — no replace.
+ *   - handleLoadMore is stable (useCallback with no deps that change on render);
+ *     page is tracked in a ref so the callback never goes stale.
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { EventLog } from "@/components/common/EventLog";
-import type { LogEvent } from "@/components/common/EventLog";
+import { ActivityLog } from "@/components/common/ActivityLog";
+import { getEntityActivity } from "@/lib/actions/activity-log";
+import type { ActivityLogEntry } from "@/types/activity-log";
 import { cn } from "@/lib/utils";
 
 export interface DetailSidebarTab {
@@ -20,13 +29,73 @@ export interface DetailSidebarTab {
 export interface DetailSidebarProps {
   /** When empty or omitted, the top zone is not rendered. */
   tabs?: DetailSidebarTab[];
-  events: LogEvent[];
+  /** Initial activity log entries from SSR (page 1). */
+  entries: ActivityLogEntry[];
+  /** Whether the server returned more entries beyond the initial page. */
+  initialHasMore: boolean;
+  /** Entity type for getEntityActivity pagination fetches. */
+  entityType: "patient" | "appointment" | "medicine" | "document" | "user";
+  /** Entity ID for getEntityActivity pagination fetches. */
+  entityId: string;
   className?: string;
 }
 
-export function DetailSidebar({ tabs, events, className }: DetailSidebarProps) {
+export function DetailSidebar({
+  tabs,
+  entries,
+  initialHasMore,
+  entityType,
+  entityId,
+  className,
+}: DetailSidebarProps) {
   const hasTabs = Boolean(tabs && tabs.length > 0);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // ── Activity log pagination state ─────────────────────────────────────────
+  // Entries accumulate across pages; page 1 comes from SSR.
+  const [allEntries, setAllEntries] = useState<ActivityLogEntry[]>(entries);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Use a ref for the current page so handleLoadMore is always stable (no
+  // deps that change on every render). This is safe because we only read
+  // pageRef.current inside the async callback, never during render.
+  const pageRef = useRef(1);
+  const isFetchingRef = useRef(false);
+
+  // ── Reset on fresh server data ────────────────────────────────────────────
+  // After a mutation, useDetailExit calls router.refresh(), which causes the
+  // server to re-render with a fresh `entries` array. The new array reference
+  // triggers this effect, discarding any client-accumulated pages so the log
+  // always reflects post-mutation state rather than a stale multi-page view.
+  useEffect(() => {
+    setAllEntries(entries);
+    setHasMore(initialHasMore);
+    pageRef.current = 1;
+    isFetchingRef.current = false;
+  }, [entries]); // intentionally omit initialHasMore — it always changes with entries
+
+  // Stable callback — never recreated, so ActivityLog's IntersectionObserver
+  // does not disconnect/reconnect whenever state changes.
+  const handleLoadMore = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setIsLoadingMore(true);
+
+    const nextPage = pageRef.current + 1;
+    const result = await getEntityActivity({ entityType, entityId, page: nextPage });
+
+    if (result.success) {
+      pageRef.current = nextPage;
+      setAllEntries((prev) => [...prev, ...result.data.entries]);
+      setHasMore(result.data.hasMore);
+    }
+    // On failure: silently stop — hasMore stays true and the user can scroll
+    // again; the IntersectionObserver will retry on next intersection.
+
+    setIsLoadingMore(false);
+    isFetchingRef.current = false;
+  }, [entityType, entityId]); // entityType + entityId are stable per panel mount
 
   return (
     <div
@@ -107,8 +176,24 @@ export function DetailSidebar({ tabs, events, className }: DetailSidebarProps) {
             Activity Log
           </p>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
-          <EventLog events={events} maxHeight="100%" className="h-full" />
+        <div className="min-h-0 flex-1 overflow-hidden px-5 pb-5">
+          <div
+            className="flex min-h-0 h-full flex-col overflow-hidden rounded-lg"
+            style={{
+              background: "var(--color-surface)",
+              border:     "1px solid var(--color-border)",
+            }}
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 scrollbar-hover">
+              <ActivityLog
+                entries={allEntries}
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
+                isLoading={isLoadingMore}
+                className="h-full"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

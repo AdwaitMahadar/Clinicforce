@@ -6,6 +6,8 @@ This document defines the PostgreSQL schema used by Clinicforce. We use **Drizzl
 
 `pgEnum` value lists for **appointments** (`appointment_status`, `appointment_category`, `appointment_visit_type`) and **patients** (`gender`) are built from the same `as const` arrays in `lib/constants/` that power Zod `z.enum()` and TypeScript types. When adding or renaming an enum value, update the constant module first, then run migrations.
 
+`pgEnum` values for **activity_log** (`activity_entity_type`, `activity_action`) are defined directly in `lib/db/schema/activity-log.ts` since they have no external constant counterpart.
+
 ## 1. SaaS & Multi-tenancy
 We use a **Column-based isolation** strategy. Almost every table includes a `clinic_id` to ensure data remains isolated between different clinics in a SaaS environment.
 
@@ -159,6 +161,21 @@ Better-Auth email/token verification records.
 - `created_at`: `timestamp`
 - `updated_at`: `timestamp`
 
+### `activity_log`
+Immutable audit trail of all meaningful state changes (create, update, deactivate, reactivate, delete) across all main entities.
+
+- `id`: `uuid` (Primary Key)
+- `clinic_id`: `uuid` **notNull** (References `clinics.id`)
+- `entity_type`: `enum` ('patient', 'appointment', 'medicine', 'document', 'user') **notNull**
+- `entity_id`: `text` **notNull** — uuid or better-auth id of the primary affected record
+- `action`: `enum` ('created', 'updated', 'deactivated', 'reactivated', 'deleted') **notNull**
+- `actor_id`: `text` **notNull** (References `users.id`)
+- `actor_name`: `text` **notNull** — denormalized display name captured at time of action
+- `actor_role`: `text` **notNull** — denormalized role at time of action ('admin' | 'doctor' | 'staff')
+- `metadata`: `jsonb` (nullable) — `{ entityDescriptor: string, changedFields?: Array<{ field, label, oldValue, newValue }> }`. `changedFields` only present on 'updated'/'reactivated'. Raw values always stored; sensitivity stripped at server read layer.
+- `subscribers`: `jsonb` (nullable) — `Array<{ entityType: string, entityId: string }>`. Secondary entity references for cross-entity fan-out (e.g. a patient linked to a new appointment).
+- `created_at`: `timestamp` **notNull** — no `updated_at`; rows are immutable.
+
 ---
 
 ## 5. Indexes & Constraints
@@ -174,6 +191,9 @@ Better-Auth email/token verification records.
 - `idx_appointment_scheduled_at`: B-Tree on `(clinic_id, scheduled_at)`
 - `idx_document_assignment`: B-Tree on `(assigned_to_id, assigned_to_type)`
 - `idx_appointment_status`: B-Tree on `(clinic_id, status)`
+- `idx_activity_log_subscribers`: GIN on `subscribers` — enables jsonb containment (`@>`) queries for cross-entity fan-out
+- `idx_activity_log_clinic_time`: B-Tree on `(clinic_id, created_at)` — home dashboard feed
+- `idx_activity_log_entity`: B-Tree on `(clinic_id, entity_type, entity_id)` — detail page queries
 
 ---
 

@@ -64,6 +64,20 @@
       "when": 1775456404196,
       "tag": "0008_redundant_quentin_quire",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776207919818,
+      "tag": "0009_sweet_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776208670188,
+      "tag": "0010_colorful_hemingway",
+      "breakpoints": true
     }
   ]
 }

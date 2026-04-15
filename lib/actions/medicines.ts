@@ -28,6 +28,8 @@ import {
   updateMedicineSchema,
 } from "@/lib/validators/medicine";
 import { idSchema, n } from "@/lib/validators/common";
+import { appendActivityLog } from "@/lib/activity-log";
+import { getEntityActivity } from "@/lib/actions/activity-log";
 
 // ─── Input schemas for list/filter params ─────────────────────────────────────
 // These are query-parameter shapes, not entity schemas — defined here because
@@ -85,12 +87,19 @@ export async function getMedicineDetail(id: unknown) {
       return { success: false as const, error: "Medicine not found." };
     }
 
+    const activityResult = await getEntityActivity({
+      entityType: "medicine",
+      entityId: parsed.data,
+    });
+    const activityLogEntries = activityResult.success ? activityResult.data.entries : [];
+    const activityLogHasMore = activityResult.success ? activityResult.data.hasMore : false;
+
     return {
       success: true as const,
       data: {
         ...medicine,
-        // TODO: Implement when audit_log table is built.
-        activityLog: [] as never[],
+        activityLog: activityLogEntries,
+        activityLogHasMore,
       },
     };
   } catch (err) {
@@ -134,6 +143,17 @@ export async function createMedicine(input: unknown) {
       })
       .returning({ id: medicines.id });
 
+    const formStr = form?.trim() ? ` (${form.trim()})` : "";
+    const entityDescriptor = `${name.trim()}${formStr} added`;
+
+    await appendActivityLog({
+      session,
+      entityType: "medicine",
+      entityId: created.id,
+      action: "created",
+      metadata: { entityDescriptor },
+    });
+
     revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id: created.id } };
   } catch (err) {
@@ -168,7 +188,7 @@ export async function updateMedicine(input: unknown) {
       isActive,
     } = parsed.data;
 
-    // Verify ownership before update
+    // Verify ownership — reuse this fetch for old-value diffing (no extra query)
     const existing = await getMedicineById(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Medicine not found." };
@@ -193,6 +213,60 @@ export async function updateMedicine(input: unknown) {
       .where(
         and(eq(medicines.clinicId, clinicId), eq(medicines.id, id))
       );
+
+    // ── Activity log ───────────────────────────────────────────────────────────
+    const isReactivation = isActive === true;
+    const effectiveName = (name?.trim() ?? existing.name).trim();
+    const effectiveForm = form !== undefined ? n(form) : existing.form;
+    const formStr = effectiveForm ? ` (${effectiveForm})` : "";
+    const action = isReactivation ? "reactivated" : "updated";
+    const entityDescriptor = `${effectiveName}${formStr} ${action}`;
+
+    type ChangedField = { field: string; label: string; oldValue: string; newValue: string };
+    const changedFields: ChangedField[] = [];
+
+    if (!isReactivation) {
+      const diffs: Array<{
+        key: string;
+        label: string;
+        oldVal: string | null | undefined;
+        newVal: string | null | undefined;
+        inPayload: boolean;
+      }> = [
+        { key: "name",               label: "name",               oldVal: existing.name,               newVal: name?.trim(),          inPayload: name !== undefined },
+        { key: "category",           label: "category",           oldVal: existing.category,           newVal: n(category),           inPayload: category !== undefined },
+        { key: "brand",              label: "brand",              oldVal: existing.brand,              newVal: n(brand),              inPayload: brand !== undefined },
+        { key: "form",               label: "form",               oldVal: existing.form,               newVal: n(form),               inPayload: form !== undefined },
+        { key: "description",        label: "description",        oldVal: existing.description,        newVal: n(description),        inPayload: description !== undefined },
+        {
+          key: "lastPrescribedDate",
+          label: "last prescribed date",
+          oldVal: existing.lastPrescribedDate?.toISOString() ?? "",
+          newVal: lastPrescribedDate !== undefined ? (lastPrescribedDate ? new Date(lastPrescribedDate).toISOString() : "") : undefined,
+          inPayload: lastPrescribedDate !== undefined,
+        },
+      ];
+
+      for (const { key, label, oldVal, newVal, inPayload } of diffs) {
+        if (!inPayload) continue;
+        const oldStr = oldVal ?? "";
+        const newStr = newVal ?? "";
+        if (oldStr !== newStr) {
+          changedFields.push({ field: key, label, oldValue: oldStr, newValue: newStr });
+        }
+      }
+    }
+
+    await appendActivityLog({
+      session,
+      entityType: "medicine",
+      entityId: id,
+      action,
+      metadata: {
+        entityDescriptor,
+        ...(changedFields.length > 0 && { changedFields }),
+      },
+    });
 
     revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id } };
@@ -228,6 +302,17 @@ export async function deactivateMedicine(id: unknown) {
       .where(
         and(eq(medicines.clinicId, clinicId), eq(medicines.id, parsed.data))
       );
+
+    const formStr = existing.form ? ` (${existing.form})` : "";
+    await appendActivityLog({
+      session,
+      entityType: "medicine",
+      entityId: parsed.data,
+      action: "deactivated",
+      metadata: {
+        entityDescriptor: `${existing.name}${formStr} deactivated`,
+      },
+    });
 
     revalidatePath("/medicines/dashboard");
     return { success: true as const, data: { id: parsed.data } };

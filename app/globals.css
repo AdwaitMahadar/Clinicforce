@@ -62,6 +62,14 @@
   --color-purple-bg:    #F5F3FF;
   --color-purple-border:#DDD6FE;
 
+  /* ── Role identity colours ───────────────────────────────────── */
+  /* Used for actor name text in ActivityLog and any future role      */
+  /* attribution UI. Separate from status-badge palette so they read  */
+  /* as "who did this" rather than "what state is this in".           */
+  --role-color-admin:  #4F46E5;   /* Indigo  — authoritative / management    */
+  --role-color-doctor: #0D9488;   /* Teal    — clinical / trusted            */
+  --role-color-staff:  #B45309;   /* Ochre   — operational / warm            */
+
   /* ── Glass / frosted surfaces ───────────────────────────────── */
   /* Named by opacity tier so components pick the right one       */
   --color-glass-fill:      rgba(255, 255, 255, 0.78); /* Nav island           */
@@ -175,6 +183,26 @@
   border: 1px solid var(--color-glass-border);
   border-radius: 0.875rem;
   box-shadow: var(--shadow-main);
+}
+
+/* ── Scrollbar — hidden by default, revealed on hover ─────────── */
+/* Apply to any overflow-y-auto container where the scrollbar     */
+/* should stay out of the way until the user hovers.              */
+.scrollbar-hover::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+.scrollbar-hover:hover::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+}
+.scrollbar-hover:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+/* Firefox */
+.scrollbar-hover {
+  scrollbar-color: transparent transparent;
+}
+.scrollbar-hover:hover {
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════
