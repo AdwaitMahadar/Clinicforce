@@ -34,7 +34,8 @@ export async function middleware(request: NextRequest) {
 
   // No subdomain — cannot determine which clinic
   if (!subdomain) {
-    return NextResponse.next();
+    if (pathname === "/") return NextResponse.next();
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   let clinicId = subdomainCache.get(subdomain) ?? null;

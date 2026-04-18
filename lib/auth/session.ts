@@ -54,7 +54,11 @@ export const getSession = cache(async (): Promise<AppSession> => {
   const headersList = await headers();
   const subdomainClinicId = headersList.get("x-clinic-id");
 
-  if (subdomainClinicId && row[0].clinicId !== subdomainClinicId) {
+  if (!subdomainClinicId) {
+    throw new Error("MISSING_CLINIC_CONTEXT");
+  }
+
+  if (row[0].clinicId !== subdomainClinicId) {
     throw new Error("CLINIC_MISMATCH");
   }
 

@@ -36,13 +36,13 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 ### Request pipeline
 
 - **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → **`extractSubdomainFromHost`** → `clinicId` via in-memory cache, DB on miss); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
-- **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Deduplicated per request via React `cache()`. Middleware and session serve different jobs (request vs user); both stay.
+- **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); strictly requires **`x-clinic-id`** to be set by middleware (throws **`MISSING_CLINIC_CONTEXT`** if missing) and throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Deduplicated per request via React `cache()`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour
 
 1. **`config.matcher`** excludes `_next/static`, `_next/image`, `favicon.ico`, and URL paths ending in listed static extensions (see `docs/05-Authentication.md` section 4) so root-level public files are not redirected.
 2. Public paths (`/login`, `/clinic-not-found`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
-3. No subdomain (apex / non-tenant host) → pass through to render marketing root (`/`).
+3. No subdomain (apex / non-tenant host) → If `pathname === "/"`, pass through to render marketing root (`/`). Otherwise, redirect to `/` to trap all un-routed apex requests to the marketing page.
 4. Subdomain extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`). Apex `clinicforce.app` is explicitly trapped and returned as `null` to avoid falsely resolving "clinicforce". `clinicId` from in-memory map (cap 500, FIFO eviction) or `getClinicIdBySubdomain()` on miss. Does not cache unknown/inactive subdomains.
 5. Subdomain but no active clinic → redirect to `/clinic-not-found`.
 6. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
