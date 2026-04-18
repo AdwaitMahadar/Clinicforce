@@ -138,7 +138,7 @@ The subdomain is the `subdomain` column in the `clinics` table. This is already 
 
 ### How it works (pipeline)
 
-1. **Middleware** (`middleware.ts`, Node runtime): reads **`x-forwarded-host`** (first, for reverse proxies such as Cloudflare) then **`host`** → **`extractSubdomainFromHost()`** in `lib/clinic/extract-subdomain-from-host.ts` (same rules as the login server page) → resolves `clinicId` via an **in-memory `Map`** (max 500 entries, FIFO eviction on overflow) with **`getClinicIdBySubdomain()`** as fallback on cache miss (same DB lookup as `GET /api/clinic`: **`getActiveClinicBySubdomain()`** in `lib/clinic/resolve-by-subdomain.ts`). Unknown or inactive subdomains are **not** cached (each miss still queries the DB). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. No subdomain or unknown clinic → redirect to `/login`. The **`config.matcher`** negative lookahead skips **`_next/static`**, **`_next/image`**, **`favicon.ico`**, and any path whose final segment ends in common static extensions (e.g. `.png`, `.svg`, `.woff2`, `.css`, `.js`) so files under **`public/`** (such as `/clinicforce-mark.png`) are not intercepted—Next.js serves them without running middleware.
+1. **Middleware** (`middleware.ts`, Node runtime): reads **`x-forwarded-host`** (first, for reverse proxies such as Cloudflare) then **`host`** → **`extractSubdomainFromHost()`** in `lib/clinic/extract-subdomain-from-host.ts` (same rules as the login server page) → resolves `clinicId` via an **in-memory `Map`** (max 500 entries, FIFO eviction on overflow) with **`getClinicIdBySubdomain()`** as fallback on cache miss (same DB lookup as `GET /api/clinic`: **`getActiveClinicBySubdomain()`** in `lib/clinic/resolve-by-subdomain.ts`). Unknown or inactive subdomains are **not** cached (each miss still queries the DB). Requires a session cookie for protected routes; sets **`x-clinic-id`** and **`x-subdomain`** on the forwarded request. **No subdomain** (apex / non-tenant host) → pass through to render marketing root (**`/`**). **Subdomain** present but no active clinic (`clinicId` not resolved) → redirect to **`/clinic-not-found`** (static public page; path is in **`PUBLIC_PATHS`** so middleware does not loop). The **`config.matcher`** negative lookahead skips **`_next/static`**, **`_next/image`**, **`favicon.ico`**, and any path whose final segment ends in common static extensions (e.g. `.png`, `.svg`, `.woff2`, `.css`, `.js`) so files under **`public/`** (such as `/clinicforce-mark.png`) are not intercepted—Next.js serves them without running middleware.
 2. **`getSession()`**: loads the user from the DB (joined to `clinics` for `clinicSubdomain`). If **`x-clinic-id`** is present, it must equal `user.clinicId` or **`CLINIC_MISMATCH`** is thrown — so a user cannot use a session on another tenant’s host.
 
 **Why two steps?** Middleware binds the **HTTP request** to a tenant before RSC/server actions run. The session binds the **user** to a clinic. Both are required; `clinicSubdomain` on the session is the DB slug (e.g. S3 paths), not a replacement for middleware resolution.
@@ -163,7 +163,7 @@ Protection is enforced in two places:
 1. **Middleware** — fast check before the page renders, redirects to `/login` if no session
 2. **Layout server component** — `app/(app)/layout.tsx` calls `getSession()` and redirects to `/login` on failure (e.g. invalid or missing session), as a safety net
 
-The `app/(auth)/` route group (login page) is public and must never call `getSession()`.
+The `app/(auth)/` route group (`/login`, `/clinic-not-found`) is public and must never call `getSession()`.
 
 ```typescript
 // app/(app)/layout.tsx (illustrative)
@@ -265,12 +265,13 @@ export async function createPatient(input: CreatePatientInput) {
 
 ---
 
-## 7. Login Page
+## 8. Auth Pages (`/login` & `/clinic-not-found`)
 
-**Route:** `/login` (inside `app/(auth)/`)
+**Routes:** Inside `app/(auth)/`
 
-- **Forms + types:** The login form uses `useForm({ resolver: zodResolver(loginSchema) })` without an explicit generic (so types infer from the resolver), `z.infer<typeof loginSchema>` for the submit handler, and no `defaultValues` for Zod `.default()` fields such as `rememberMe`.
-- **UI-only (see `docs/06-UI-Design-System.md`):** Left-panel testimonial carousel with dot navigation; password field visibility toggle; footer copyright year from `new Date().getFullYear()`. These do not change auth behaviour.
+- **Shared UI:** Both pages use a split-screen layout. The left panel (`AuthPanelLeft.tsx`) and an interactive `TestimonialCarousel.tsx` are extracted into `app/(auth)/_components/` and shared between the `/login` and `/clinic-not-found` pages.
+- **`/login` Forms + types:** The login form uses `useForm({ resolver: zodResolver(loginSchema) })` without an explicit generic (so types infer from the resolver), `z.infer<typeof loginSchema>` for the submit handler, and no `defaultValues` for Zod `.default()` fields such as `rememberMe`.
+- **UI-only (see `docs/06-UI-Design-System.md`):** Password field visibility toggle; footer copyright year from `new Date().getFullYear()`. These do not change auth behaviour.
 - Email + password form
 - On success: Better-Auth redirects using `callbackURL` passed from the client (`returnUrl` search param when middleware sent the user to login, otherwise `/home/dashboard`).
 - On failure: the submit handler **`await`s `signIn.email(...)`** and inspects the **return value**. The Better-Auth client (via `@better-fetch/fetch`) returns `{ data, error }`. **`fetchOptions.onError` is not sufficient on its own:** `onError` runs only for **non-2xx** HTTP responses, while failed email/password sign-in may still come back as **HTTP 200** with a JSON body that lacks a signed-in `user`. Treat **`result.error`** (after mapping 5xx / missing status / 403 to a generic message) or **`result.data` without a `user` object** as failure and show **Sonner** `toast.error("Invalid credentials. Please try again.")`; use **`toast.error("Something went wrong. Please try again.")`** for thrown errors and server/origin-style `result.error` statuses. Reset submit loading on every failure path; on success the page navigates away so loading state need not be cleared.
@@ -280,7 +281,7 @@ export async function createPatient(input: CreatePatientInput) {
 
 ---
 
-## 8. Client-Side Session Context & Permissions
+## 9. Client-Side Session Context & Permissions
 
 ### `AppSessionProvider` + `useAppSession()`
 
@@ -385,7 +386,7 @@ The full permission map reflects the PRD RBAC table:
 
 ---
 
-## 9. Implementation Status
+## 10. Implementation Status
 
 Auth integration is complete. All items below are done.
 

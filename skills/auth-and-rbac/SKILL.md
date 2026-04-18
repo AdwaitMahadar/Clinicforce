@@ -29,6 +29,8 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 | `lib/clinic/extract-subdomain-from-host.ts` | Host header → subdomain (shared: `middleware` + login server page) |
 | `middleware.ts` | Node runtime; `extractSubdomainFromHost` → resolver → guards routes → `x-clinic-id` + `x-subdomain`; matcher skips static paths so `public/` assets bypass middleware |
 | `app/(auth)/login/page.tsx` | Server: host → subdomain → clinic name + logo URL props |
+| `app/(auth)/clinic-not-found/page.tsx` | Server: static page when subdomain doesn't match an active clinic; shares split-screen UI with `/login` |
+| `app/(auth)/_components/AuthPanelLeft.tsx` | Pure UI split-screen left panel shared between `/login` and `/clinic-not-found` |
 | `app/(auth)/login/login-page-client.tsx` | Client UI + RHF/Zod/Sonner; `useForm` + `zodResolver` without explicit generic (see `docs/04-API-Specification.md`); **`signIn.email`:** `await` and read **`{ data, error }`** — do not rely on **`fetchOptions.onError`** alone (200 + error-shaped JSON); toast invalid credentials vs generic error; clear loading on failure only |
 
 ### Request pipeline
@@ -39,11 +41,12 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 ### Middleware Behaviour
 
 1. **`config.matcher`** excludes `_next/static`, `_next/image`, `favicon.ico`, and URL paths ending in listed static extensions (see `docs/05-Authentication.md` section 4) so root-level public files are not redirected.
-2. Public paths (`/login`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
-3. Subdomain is extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`).
-4. Middleware resolves `clinicId` from an in-memory subdomain→`clinicId` map (cap 500, FIFO eviction); on miss calls `getClinicIdBySubdomain()` (Drizzle). Does not cache unknown/inactive subdomains.
-5. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
-6. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
+2. Public paths (`/login`, `/clinic-not-found`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
+3. No subdomain (apex / non-tenant host) → pass through to render marketing root (`/`).
+4. Subdomain extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`); `clinicId` from in-memory map (cap 500, FIFO eviction) or `getClinicIdBySubdomain()` on miss. Does not cache unknown/inactive subdomains.
+5. Subdomain but no active clinic → redirect to `/clinic-not-found`.
+6. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
+7. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
 
 **Proxy / Railway:** If subdomain resolution looks wrong behind a reverse proxy, temporarily log `x-forwarded-host`, `host`, and the extracted subdomain in middleware and check platform logs; remove before ship (`docs/10-Environments-and-Dev-Workflow.md`).
 

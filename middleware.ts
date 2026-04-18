@@ -6,7 +6,14 @@ import { getClinicIdBySubdomain } from "@/lib/clinic/resolve-by-subdomain";
 const subdomainCache = new Map<string, string>();
 const CACHE_MAX = 500;
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/clinic", "/_next", "/favicon.ico"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/clinic-not-found",
+  "/api/auth",
+  "/api/clinic",
+  "/_next",
+  "/favicon.ico",
+];
 
 function extractSubdomain(request: NextRequest): string | null {
   const host =
@@ -27,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
   // No subdomain — cannot determine which clinic
   if (!subdomain) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.next();
   }
 
   let clinicId = subdomainCache.get(subdomain) ?? null;
@@ -41,7 +48,7 @@ export async function middleware(request: NextRequest) {
     }
   }
   if (!clinicId) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/clinic-not-found", request.url));
   }
 
   // Check for a valid Better-Auth session cookie
