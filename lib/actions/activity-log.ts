@@ -4,7 +4,7 @@
  * lib/actions/activity-log.ts
  *
  * Reader server actions for the activity log feature.
- * Anatomy: getSession → requireRole → DB → sensitivity strip → return.
+ * Anatomy: getSession → requireRole → DB → sensitivity strip → subscriber filter → return.
  * Always return { success: true, data } or { success: false, error }.
  * Never throw.
  *
@@ -12,6 +12,16 @@
  *   Raw old/new values are always stored in the DB (see append-activity-log.ts).
  *   This layer strips values for fields listed in SENSITIVE_FIELDS before the
  *   payload leaves the server — the client only ever receives { sensitive: true }.
+ *
+ * Subscriber filtering (getEntityActivity only):
+ *   When querying for entity X, the DB also returns entries whose `subscribers`
+ *   array contains X (cross-entity fan-out, e.g. appointment logs on a patient
+ *   page). These subscriber entries are filtered at read time:
+ *     - created / deleted / deactivated → included as-is
+ *     - updated / reactivated with a `status` field change → included, but only
+ *       the `status` ChangedField is returned (all others are stripped)
+ *     - updated / reactivated without a `status` field change → excluded entirely
+ *   This filter runs AFTER applyFieldSensitivity.
  *
  * Pagination:
  *   Both actions fetch (limit + 1) rows. If the extra row exists, hasMore = true
@@ -84,6 +94,39 @@ function applyFieldSensitivity(
       newValue: entry.newValue ?? "",
     };
   });
+}
+
+/**
+ * Filters an `ActivityLogEntry` that arrived via subscriber fan-out (i.e. the
+ * entry's entityType differs from the queried entityType).
+ *
+ * Rules (applied after sensitivity stripping):
+ *   - created / deleted / deactivated → returned as-is
+ *   - updated / reactivated WITH a `status` changedField → returned with only
+ *     the `status` field in changedFields (all other fields stripped)
+ *   - updated / reactivated WITHOUT a `status` changedField → null (excluded)
+ *
+ * Returns the (possibly modified) entry, or `null` if the entry should be dropped.
+ */
+function applySubscriberFilter(
+  entry: ActivityLogEntry,
+  queriedEntityType: string
+): ActivityLogEntry | null {
+  // Not a subscriber entry — pass through unchanged
+  if (entry.entityType === queriedEntityType) return entry;
+
+  const { action } = entry;
+
+  // Non-update actions are always relevant (creation, deletion, cancellation)
+  if (action === "created" || action === "deleted" || action === "deactivated") {
+    return entry;
+  }
+
+  // updated / reactivated: only surface a status change, drop everything else
+  const statusField = entry.changedFields.find((f) => f.field === "status");
+  if (!statusField) return null; // no status change — exclude entirely
+
+  return { ...entry, changedFields: [statusField] };
 }
 
 /**
@@ -183,7 +226,15 @@ export async function getEntityActivity(input: unknown) {
       .offset(offset);
 
     const hasMore = rows.length > limit;
-    const entries = rows.slice(0, limit).map(toEntry);
+    const rawEntries = rows.slice(0, limit).map(toEntry);
+
+    // Apply subscriber filtering: suppress noisy cross-entity field changes
+    // (e.g. appointment field diffs on a patient page). Only status changes
+    // and non-update actions survive for entries that arrived via fan-out.
+    const entries = rawEntries.flatMap((entry) => {
+      const filtered = applySubscriberFilter(entry, entityType);
+      return filtered ? [filtered] : [];
+    });
 
     return { success: true as const, data: { entries, hasMore } };
   } catch (err) {

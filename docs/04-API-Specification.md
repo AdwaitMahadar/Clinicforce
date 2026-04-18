@@ -140,6 +140,11 @@ Construct the `entityDescriptor` string from data already available at the call 
 - **Input:** `{ entityType, entityId, page?: number, limit?: number }` (default limit 20)
 - **Query:** `clinic_id = clinicId AND (entity_id = entityId AND entity_type = entityType OR subscribers @> [{entityType, entityId}])` — covers both primary and subscribed (cross-entity fan-out) entries
 - **Sensitivity:** `applyFieldSensitivity` strips `oldValue`/`newValue` for fields in `SENSITIVE_FIELDS[entityType]`, replacing with `{ sensitive: true }`
+- **Subscriber filter (read-time, `applySubscriberFilter`):** Runs after sensitivity stripping. An entry is a subscriber entry when `entry.entityType !== queriedEntityType` (e.g. an appointment log appearing on a patient page). Rules:
+  - `created` / `deleted` / `deactivated` → included as-is (actionable events, no field noise)
+  - `updated` / `reactivated` **with** a `status` changedField → included, but **only** the `status` field is returned (all other changedFields stripped)
+  - `updated` / `reactivated` **without** a `status` changedField → **excluded entirely** (pure field-diff noise)
+  - Primary entries (`entry.entityType === queriedEntityType`) are never filtered
 - **Pagination:** fetches `limit + 1` rows; if the extra row exists, `hasMore = true`
 - **Returns:** `{ success: true, data: { entries: ActivityLogEntry[], hasMore: boolean } }`
 
