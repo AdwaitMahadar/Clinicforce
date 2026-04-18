@@ -12,7 +12,10 @@ import { useFormContext, useWatch, type DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { toast } from "sonner";
-import { Calendar, CalendarDays, FileText, Upload } from "lucide-react";
+import { Calendar, CalendarDays, FileText, Upload, X } from "lucide-react";
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import {
   DocumentCard,
@@ -461,6 +464,8 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
     onClose,
   });
   const formRef  = useRef<DetailFormHandle | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogPending, setDeleteDialogPending] = useState(false);
   const { user } = useAppSession();
   const isStaff = user.type === "staff";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
@@ -568,13 +573,44 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
     }
   };
 
-  const handleDelete = useCallback(async () => {
-    const result = await deleteAppointment(appointment!.id);
-    if (result.success) {
-      toast.success("Appointment cancelled.");
-      exitAfterMutation();
-    } else {
-      toast.error(result.error ?? "Failed to cancel appointment.");
+  const handleOpenDeleteDialog = useCallback(() => {
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDeleteAppointment = useCallback(async () => {
+    if (!appointment) return;
+    setDeleteDialogPending(true);
+    try {
+      const result = await deleteAppointment(appointment.id);
+      if (result.success) {
+        setDeleteDialogOpen(false);
+        toast.success("Appointment cancelled.");
+        exitAfterMutation();
+      } else {
+        toast.error(result.error ?? "Failed to cancel appointment.");
+      }
+    } finally {
+      setDeleteDialogPending(false);
+    }
+  }, [appointment, exitAfterMutation]);
+
+  const handleConfirmCancelAppointmentStatus = useCallback(async () => {
+    if (!appointment) return;
+    setDeleteDialogPending(true);
+    try {
+      const result = await updateAppointment({
+        id: appointment.id,
+        status: "cancelled",
+      });
+      if (result.success) {
+        setDeleteDialogOpen(false);
+        toast.success("Appointment cancelled.");
+        exitAfterMutation();
+      } else {
+        toast.error(result.error ?? "Failed to update appointment.");
+      }
+    } finally {
+      setDeleteDialogPending(false);
     }
   }, [appointment, exitAfterMutation]);
 
@@ -705,37 +741,119 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
   );
 
   return (
-    <DetailPanel
-      header={header}
-      formRef={formRef}
-      form={form}
-      events={!isCreate ? appointment!.activityLog : []}
-      hasMoreEvents={!isCreate ? appointment!.activityLogHasMore : false}
-      entityType="appointment"
-      entityId={!isCreate ? appointment!.id : ""}
-      sidebarTabs={
-        !isCreate
-          ? [
-              {
-                label: "Documents",
-                icon: FileText,
-                content: <AppointmentDocumentsTab appointment={appointment!} />,
-              },
-              {
-                label: "Appointments",
-                icon: CalendarDays,
-                content: (
-                  <AppointmentPatientAppointmentsTab appointment={appointment!} />
-                ),
-              },
-            ]
-          : undefined
-      }
-      isCreate={isCreate}
-      onCancel={onClose ?? (() => router.back())}
-      onDelete={!isCreate ? handleDelete : undefined}
-      submitLabel={isCreate ? "Create Appointment" : "Save Changes"}
-      deleteLabel="Cancel Appointment"
-    />
+    <>
+      <DetailPanel
+        header={header}
+        formRef={formRef}
+        form={form}
+        events={!isCreate ? appointment!.activityLog : []}
+        hasMoreEvents={!isCreate ? appointment!.activityLogHasMore : false}
+        entityType="appointment"
+        entityId={!isCreate ? appointment!.id : ""}
+        sidebarTabs={
+          !isCreate
+            ? [
+                {
+                  label: "Documents",
+                  icon: FileText,
+                  content: <AppointmentDocumentsTab appointment={appointment!} />,
+                },
+                {
+                  label: "Appointments",
+                  icon: CalendarDays,
+                  content: (
+                    <AppointmentPatientAppointmentsTab appointment={appointment!} />
+                  ),
+                },
+              ]
+            : undefined
+        }
+        isCreate={isCreate}
+        onCancel={onClose ?? (() => router.back())}
+        onDelete={!isCreate ? handleOpenDeleteDialog : undefined}
+        submitLabel={isCreate ? "Create Appointment" : "Save Changes"}
+        deleteLabel="Delete appointment"
+      />
+
+      {!isCreate && (
+        <AlertDialogPrimitive.Root
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setDeleteDialogOpen(true);
+            } else if (!deleteDialogPending) {
+              setDeleteDialogOpen(false);
+            }
+          }}
+        >
+          <AlertDialogPrimitive.Portal>
+            <AlertDialogPrimitive.Overlay
+              className={cn(
+                "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+                deleteDialogPending && "pointer-events-none"
+              )}
+              onPointerDown={(e) => {
+                if (deleteDialogPending) return;
+                if (e.target === e.currentTarget) {
+                  setDeleteDialogOpen(false);
+                }
+              }}
+            />
+            <AlertDialogPrimitive.Content
+              className={cn(
+                "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg"
+              )}
+            >
+              <div className="relative flex items-start justify-between gap-3">
+                <AlertDialogPrimitive.Title
+                  className="text-lg font-semibold leading-none pr-10"
+                  style={{ color: "var(--color-text-primary)" }}
+                >
+                  Delete appointment?
+                </AlertDialogPrimitive.Title>
+                <AlertDialogPrimitive.Cancel asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={deleteDialogPending}
+                    className="absolute right-0 top-0 shrink-0"
+                    aria-label="Close"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </AlertDialogPrimitive.Cancel>
+              </div>
+              <AlertDialogPrimitive.Description
+                className="text-sm"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                This will permanently remove the appointment from the system. Or would you like to mark it as cancelled instead?
+              </AlertDialogPrimitive.Description>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={deleteDialogPending}
+                  onClick={() => void handleConfirmCancelAppointmentStatus()}
+                >
+                  Cancel appointment
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={deleteDialogPending}
+                  onClick={() => void handleConfirmDeleteAppointment()}
+                >
+                  Delete
+                </Button>
+              </div>
+            </AlertDialogPrimitive.Content>
+          </AlertDialogPrimitive.Portal>
+        </AlertDialogPrimitive.Root>
+      )}
+    </>
   );
 }
