@@ -4,6 +4,7 @@
  */
 export function extractSubdomainFromHost(hostHeader: string): string | null {
   const hostWithoutPort = hostHeader.split(":")[0] ?? "";
+  if (hostWithoutPort === "clinicforce.app") return null;
   const stripped = hostWithoutPort
     .replace(/\.clinicforce\.app$/, "")
     .replace(/\.localhost$/, "");

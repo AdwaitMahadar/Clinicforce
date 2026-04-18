@@ -43,7 +43,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 1. **`config.matcher`** excludes `_next/static`, `_next/image`, `favicon.ico`, and URL paths ending in listed static extensions (see `docs/05-Authentication.md` section 4) so root-level public files are not redirected.
 2. Public paths (`/login`, `/clinic-not-found`, `/api/auth/*`, `/api/clinic`, `/_next/*`, `/favicon.ico`) pass through without checks.
 3. No subdomain (apex / non-tenant host) → pass through to render marketing root (`/`).
-4. Subdomain extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`); `clinicId` from in-memory map (cap 500, FIFO eviction) or `getClinicIdBySubdomain()` on miss. Does not cache unknown/inactive subdomains.
+4. Subdomain extracted from `x-forwarded-host` or `host` (`demo-clinic.localhost:3000` → `demo-clinic`). Apex `clinicforce.app` is explicitly trapped and returned as `null` to avoid falsely resolving "clinicforce". `clinicId` from in-memory map (cap 500, FIFO eviction) or `getClinicIdBySubdomain()` on miss. Does not cache unknown/inactive subdomains.
 5. Subdomain but no active clinic → redirect to `/clinic-not-found`.
 6. If no Better-Auth session cookie → redirect to `/login?returnUrl=<path>`.
 7. On success, `x-clinic-id` and `x-subdomain` headers are forwarded to server components.
