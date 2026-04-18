@@ -75,7 +75,9 @@ export default function ClinicNotFoundPage() {
               <div className="mt-8">
                 {/* TODO: point to marketing landing page once one exists */}
                 <a
-                  href="#"
+                  href={process.env.NEXT_PUBLIC_APP_URL ?? "https://clinicforce.app"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex h-12 px-6 items-center justify-center text-xs font-bold rounded-[10px] transition-colors hover:opacity-80"
                   style={{
                     color: "var(--color-text-primary)",
