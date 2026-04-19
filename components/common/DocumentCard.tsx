@@ -58,7 +58,7 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
       className={`flex w-full items-start gap-2 rounded-lg border p-2.5 text-left transition-colors disabled:opacity-60 ${className}`}
       style={{
         borderColor: "var(--color-border)",
-        background: "var(--color-surface-alt)",
+        background: "var(--color-surface)",
         cursor: busy ? "wait" : "pointer",
       }}
     >

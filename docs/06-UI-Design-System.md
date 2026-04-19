@@ -329,6 +329,8 @@ Optional top **tabs** (`sidebarTabs`) and a persistent bottom **Activity Log** z
 
 **Activity log card treatment:** The entries scroll area is wrapped in a subtle card — `background: var(--color-surface)` / `border: 1px solid var(--color-border)` / `rounded-lg` — so entries feel contained against the sidebar's `--color-surface-alt` background. The "ACTIVITY LOG" eyebrow label (`text-[10px] font-bold uppercase tracking-widest`, `--color-text-muted`) sits above the card, not inside it. The inner scroll container carries the `.scrollbar-hover` utility class (scrollbar hidden by default, revealed on container hover).
 
+**Shared sidebar tab bodies** (`components/common/`): **`DocumentsTab`** — eyebrow **Documents**, ink-styled **Upload** control, 2-column **`DocumentCard`** grid, **`UploadDocumentDialog`**; props include **`documents`** (`PatientDocument[]`), **`patientId`**, optional **`appointmentId`** (appointment detail passes this so uploads link to the visit), and **`emptyMessage`**. **`AppointmentListTab`** — **`PatientAppointment`** cards on `var(--color-surface)` with per-status chips; each row navigates to **`/appointments/view/[id]`**; optional **`currentAppointmentId`** shows a **Current** badge and blue border on that row (used only on appointment detail). **`PatientDetailPanel`** and **`AppointmentDetailPanel`** compose these as **`sidebarTabs`** content.
+
 ### `<ActivityLog />` — Activity Timeline
 **Location:** `components/common/ActivityLog.tsx`
 

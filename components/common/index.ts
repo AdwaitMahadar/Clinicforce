@@ -53,4 +53,8 @@ export { DocumentCard } from "./DocumentCard";
 export type { DocumentCardProps } from "./DocumentCard";
 export { UploadDocumentDialog } from "./UploadDocumentDialog";
 export type { UploadDocumentDialogProps } from "./UploadDocumentDialog";
+export { DocumentsTab } from "./DocumentsTab";
+export type { DocumentsTabProps } from "./DocumentsTab";
+export { AppointmentListTab } from "./AppointmentListTab";
+export type { AppointmentListTabProps } from "./AppointmentListTab";
 

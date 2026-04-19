@@ -13,11 +13,7 @@ import { useRef, useState } from "react";
 import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { differenceInYears, isValid, parseISO } from "date-fns";
-import {
-  FileText,
-  CalendarDays,
-  Plus,
-} from "lucide-react";
+import { FileText, CalendarDays } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -25,8 +21,8 @@ import { Button } from "@/components/ui/button";
 import {
   InitialsBadge,
   StatusBadge,
-  DocumentCard,
-  UploadDocumentDialog,
+  DocumentsTab,
+  AppointmentListTab,
   DetailPanel,
   DetailForm,
   PanelCloseButton,
@@ -58,15 +54,6 @@ interface PatientDetailPanelProps {
   patient?: PatientDetail;
   onClose?: () => void;
 }
-
-// ─── Appointment status styles ────────────────────────────────────────────────
-
-const APPT_STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  scheduled: { bg: "var(--color-amber-bg)",   text: "var(--color-amber)",   border: "var(--color-amber-border)"   },
-  completed: { bg: "var(--color-blue-bg)",    text: "var(--color-blue)",    border: "var(--color-blue-border)"    },
-  cancelled: { bg: "var(--color-red-bg)",    text: "var(--color-red)",     border: "var(--color-red-border)"     },
-  "no-show": { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)" },
-};
 
 // ─── Gender / blood options for DetailForm selects ─────────────────────────────
 
@@ -197,85 +184,6 @@ const EMPTY_CREATE: DefaultValues<CreatePatientInput> = {
   emergencyContactPhone: "",
   pastHistoryNotes: "",
 };
-
-// ─── Sidebar tab: Documents ───────────────────────────────────────────────────
-
-function PatientDocumentsTab({ patient }: { patient: PatientDetail }) {
-  const [uploadOpen, setUploadOpen] = useState(false);
-
-  return (
-    <>
-      <div className="flex items-center justify-end mb-4">
-        <button
-          type="button"
-          onClick={() => setUploadOpen(true)}
-          className="size-7 flex items-center justify-center rounded-lg transition-colors"
-          style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
-          title="Upload document"
-        >
-          <Plus size={14} />
-        </button>
-      </div>
-      {patient.documents.length === 0 ? (
-        <p className="text-sm text-center py-10" style={{ color: "var(--color-text-muted)" }}>
-          No documents uploaded yet.
-        </p>
-      ) : (
-        patient.documents.map((doc) => (
-          <DocumentCard key={doc.id} document={doc} />
-        ))
-      )}
-      <UploadDocumentDialog
-        patientId={patient.id}
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
-      />
-    </>
-  );
-}
-
-// ─── Sidebar tab: Appointments ────────────────────────────────────────────────
-
-function PatientAppointmentsTab({ patient }: { patient: PatientDetail }) {
-  if (patient.appointments.length === 0) {
-    return (
-      <p className="text-sm text-center py-10" style={{ color: "var(--color-text-muted)" }}>
-        No appointments recorded.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-3">
-      {patient.appointments.map((appt) => {
-        const s = APPT_STATUS_STYLES[appt.status] ?? APPT_STATUS_STYLES.completed;
-        return (
-          <div
-            key={appt.id}
-            className="flex flex-col gap-2 p-3 rounded-xl cursor-pointer transition-all"
-            style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", opacity: appt.status === "cancelled" ? 0.7 : 1 }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-bold truncate" style={{ color: "var(--color-text-primary)" }}>{appt.heading}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>{appt.doctor}</p>
-              </div>
-              <span
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap shrink-0 capitalize"
-                style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
-              >
-                {appt.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-4 text-xs" style={{ color: "var(--color-text-secondary)" }}>
-              <span className="flex items-center gap-1"><CalendarDays size={12} /> {appt.date}</span>
-              <span>{appt.time}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -464,12 +372,23 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
           {
             label: "Documents",
             icon: FileText,
-            content: <PatientDocumentsTab patient={patient} />,
+            content: (
+              <DocumentsTab
+                documents={patient.documents}
+                patientId={patient.id}
+                emptyMessage="No documents uploaded yet."
+              />
+            ),
           },
           {
             label: "Appointments",
             icon: CalendarDays,
-            content: <PatientAppointmentsTab patient={patient} />,
+            content: (
+              <AppointmentListTab
+                appointments={patient.appointments}
+                emptyMessage="No appointments recorded."
+              />
+            ),
           },
         ]}
         isCreate={false}

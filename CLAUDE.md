@@ -134,6 +134,8 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab
+- `DocumentsTab.tsx` — Sidebar Documents tab: 2-column `DocumentCard` grid, ink **Upload** + `UploadDocumentDialog` (`patientId`, optional `appointmentId`); used by patient and appointment detail panels
+- `AppointmentListTab.tsx` — Sidebar appointments list: `PatientAppointment` cards on `var(--color-surface)`, navigate to `/appointments/view/[id]`; optional `currentAppointmentId` → **Current** badge + blue border (appointment detail only)
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results; Medicines group `usePermission("viewMedicines")`; Documents group + presigned open `usePermission("viewDocuments")`; other entities use `router.push` (wired from `TopNav`, ⌘/Ctrl+K)
 - `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
