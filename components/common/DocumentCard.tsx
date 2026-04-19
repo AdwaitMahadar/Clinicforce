@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, X } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteDocument, getViewPresignedUrl } from "@/lib/actions/documents";
 import type { PatientDocument } from "@/types/patient";
@@ -167,16 +167,16 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
               background: deleteExpanded ? "var(--color-red)" : "var(--color-surface)",
             }}
             initial={{ width: 22 }}
-            animate={{ width: deleteExpanded ? 60 : 22 }}
+            animate={{ width: deleteExpanded ? 62 : 22 }}
             transition={documentDeletePillWidth}
           >
             <AnimatePresence initial={false}>
               {!deleteExpanded ? (
                 <motion.button
-                  key="x"
+                  key="delete-trigger"
                   type="button"
-                  className="flex size-[22px] items-center justify-center shrink-0"
-                  style={{ color: "var(--color-text-secondary)", lineHeight: 0 }}
+                  className="flex size-[22px] cursor-pointer items-center justify-center shrink-0"
+                  style={{ color: "var(--color-red)", lineHeight: 0 }}
                   aria-label="Delete document"
                   exit={{ opacity: 0 }}
                   transition={{ opacity: documentDeleteLabelOpacity }}
@@ -185,7 +185,7 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
                     setDeleteExpanded(true);
                   }}
                 >
-                  <X
+                  <Trash2
                     className="m-0 size-3.5 shrink-0"
                     strokeWidth={2}
                     aria-hidden
@@ -196,7 +196,7 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
                 <motion.button
                   key="delete"
                   type="button"
-                  className="box-border m-0 flex h-[22px] items-center px-2.5 text-xs font-semibold whitespace-nowrap disabled:cursor-not-allowed"
+                  className="box-border m-0 flex h-[22px] cursor-pointer items-center pl-2.5 pr-3.5 text-xs font-semibold whitespace-nowrap disabled:cursor-not-allowed"
                   style={{ color: "var(--color-ink-fg)" }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -212,7 +212,7 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
                   {deleting ? (
                     <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
                   ) : (
-                    "Delete"
+                    "Delete?"
                   )}
                 </motion.button>
               )}

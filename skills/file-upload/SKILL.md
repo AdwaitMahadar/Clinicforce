@@ -9,7 +9,7 @@ description: S3/Minio presigned PUT/GET for patient documents. Use when changing
 - **`assignedToType`:** Both `getUploadPresignedUrl` and `confirmDocumentUpload` accept `assignedToType: "patient" | "user"`. The client must pass the same value in both calls. The server uses it to build the object key (step 1) and to perform the clinic-boundary check + DB insert (step 3). Do **not** hardcode `"patient"` on the server.
 - **Clinic-boundary check (step 3):** Before the `documents` INSERT, `confirmDocumentUpload` verifies `assignedToId` exists within the session `clinicId` (`patients` table for `"patient"`, `users` table for `"user"`). Returns an error on mismatch — never skip this check.
 - **Code:** Shared client in `lib/storage/s3-client.ts`; object keys via `lib/storage/document-object-key.ts` (`{clinicSubdomain}/docs/patients|users/{id}/…`). `clinicSubdomain` is on `session.user` — tenant pipeline in `docs/05-Authentication.md` §4. Zod in `lib/validators/document.ts` (`assignedToId` is non-empty string, not `.uuid()`, when the assignee can be a user with a non-UUID Better-Auth id).
-- **UI:** `UploadDocumentDialog`, `DocumentCard` in `components/common/`. **`DocumentCard`:** main click → `getViewPresignedUrl`; **`uploadDocument`** → top-right inline delete (circle→red pill, `deleteDocument`, Framer + `nav-motion` springs); staff see neither upload nor delete controls.
+- **UI:** `UploadDocumentDialog`, `DocumentCard` in `components/common/`. **`DocumentCard`:** main click → `getViewPresignedUrl`; **`uploadDocument`** → top-right inline delete (red trash icon→red **Delete?** pill, `deleteDocument`, Framer + `nav-motion` springs); staff see neither upload nor delete controls.
 
 ## DO NOT
 

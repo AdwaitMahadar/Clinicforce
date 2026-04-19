@@ -113,7 +113,7 @@ Each document renders as a card showing:
 
 Clicking the main area of a card opens a **presigned GET URL** in a new browser tab. The browser handles rendering (PDF viewer, image display) and the user can download from there.
 
-**Delete (admin/doctor only):** When the session has the **`uploadDocument`** permission (same gate as upload), `DocumentCard` shows a top-right control: a circular **X** that expands in place into a red pill (**Delete**) using Framer Motion (`AnimatePresence` + `motion`, width spring + label opacity aligned with `components/layout/nav-motion.ts`). **Delete** calls **`deleteDocument`**; success removes the card from the list (local unmount) and shows Sonner feedback. Escape or clicking the main card area while the pill is expanded collapses the control without deleting. While the server action runs, the pill shows a spinner and is non-interactive.
+**Delete (admin/doctor only):** When the session has the **`uploadDocument`** permission (same gate as upload), `DocumentCard` shows a top-right control: a circular **trash** icon (red, `var(--color-red)`) that expands in place into a red pill labelled **Delete?** using Framer Motion (`AnimatePresence` + `motion`, width spring + label opacity aligned with `components/layout/nav-motion.ts`). Confirm calls **`deleteDocument`**; success removes the card from the list (local unmount) and shows Sonner feedback. Escape or clicking the main card area while the pill is expanded collapses the control without deleting. While the server action runs, the pill shows a spinner and is non-interactive.
 
 ### Generating the view URL
 - On card click, call server action `getViewPresignedUrl(documentId)`
