@@ -14,6 +14,20 @@ export const topNavLabelOpacity: Transition = {
   delay: 0,
 };
 
+/** DocumentCard delete control: circle→pill width — tween, no spring overshoot */
+export const documentDeletePillWidth: Transition = {
+  type: "tween",
+  ease: "easeOut",
+  duration: 0.22,
+};
+
+/** DocumentCard delete label / X crossfade */
+export const documentDeleteLabelOpacity: Transition = {
+  type: "tween",
+  ease: "easeOut",
+  duration: 0.12,
+};
+
 /** Collapsed sidebar logo ↔ expand control swap */
 export const sidebarLogoSwapSpring: Transition = {
   type: "spring",
