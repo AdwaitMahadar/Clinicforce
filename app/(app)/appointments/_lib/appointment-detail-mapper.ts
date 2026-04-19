@@ -8,9 +8,10 @@
  * intercepting modal (`@modal/(.)appointments/view/[id]/AppointmentViewModalContent.tsx`).
  */
 
-import { format } from "date-fns";
+import { differenceInYears, format, isValid, parseISO } from "date-fns";
 import type { getAppointmentDetail } from "@/lib/actions/appointments";
 import type { AppointmentDetail } from "@/types/appointment";
+import type { PatientGender } from "@/types/patient";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
 import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
@@ -25,6 +26,38 @@ function fmtHm(v: Date | string | null | undefined): string {
     return format(new Date(v as string), "HH:mm");
   } catch {
     return "";
+  }
+}
+
+function trimToNull(s: string | null | undefined): string | null {
+  if (s == null) return null;
+  const t = String(s).trim();
+  return t === "" ? null : t;
+}
+
+/** Maps DB enum string to display label; returns `null` when missing or unknown (no default). */
+function mapDbGenderToDisplay(g: string | null | undefined): PatientGender | null {
+  const t = trimToNull(g);
+  if (t === null) return null;
+  const lower = t.toLowerCase();
+  if (lower === "male") return "Male";
+  if (lower === "female") return "Female";
+  if (lower === "other") return "Other";
+  return null;
+}
+
+function ageFromPatientDob(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  try {
+    const iso =
+      typeof raw === "string"
+        ? raw.slice(0, 10)
+        : format(raw as Date, "yyyy-MM-dd");
+    const d = parseISO(iso);
+    if (!isValid(d)) return null;
+    return differenceInYears(new Date(), d);
+  } catch {
+    return null;
   }
 }
 
@@ -78,5 +111,15 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
       time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
       status: a.status as AppointmentDetail["patientAppointments"][number]["status"],
     })),
+    patientSummary: {
+      fullName: trimToNull(r.patientName) ?? "—",
+      ageYears: ageFromPatientDob(r.patientDateOfBirth),
+      gender: mapDbGenderToDisplay(r.patientGender),
+      bloodGroup: trimToNull(
+        r.patientBloodGroup != null ? String(r.patientBloodGroup) : null
+      ),
+      allergies: trimToNull(r.patientAllergies),
+      pastHistoryNotes: trimToNull(r.patientPastHistoryNotes),
+    },
   };
 }

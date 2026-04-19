@@ -55,6 +55,14 @@ function DetailFormAndSidebarSkeleton() {
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         style={borderRight}
       >
+        <div
+          className="flex shrink-0 gap-6 px-6 pt-3 pb-3"
+          style={{ ...borderBottom, ...headerBg }}
+        >
+          <Skeleton className="h-4 w-16 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+          <Skeleton className="h-4 w-28 rounded" />
+        </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overflow-x-hidden px-6 py-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="space-y-2">
@@ -64,10 +72,12 @@ function DetailFormAndSidebarSkeleton() {
           ))}
         </div>
       </div>
-      <div className="min-h-0 w-[40%] max-w-[40%] shrink-0 space-y-4 overflow-hidden p-4">
-        <Skeleton className="h-9 w-full rounded-lg" />
-        <Skeleton className="h-36 w-full rounded-xl" />
-        <Skeleton className="h-24 w-full rounded-xl" />
+      <div className="flex min-h-0 w-[min(26.25rem,36vw)] max-w-[390px] shrink-0 flex-col gap-3 overflow-hidden px-3 pb-4 pt-4">
+        <Skeleton className="h-32 w-full shrink-0 rounded-xl" />
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Skeleton className="h-3 w-24 shrink-0" />
+          <Skeleton className="min-h-0 flex-1 w-full rounded-lg" />
+        </div>
       </div>
     </div>
   );

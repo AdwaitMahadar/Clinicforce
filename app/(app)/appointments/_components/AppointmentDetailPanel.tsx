@@ -3,7 +3,7 @@
 /**
  * app/(app)/appointments/_components/AppointmentDetailPanel.tsx
  *
- * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents tab + activity log).
+ * DetailPanel + DetailForm (Details tab) + Documents / Appointments tabs + sidebar (patient summary + activity log).
  * Post-mutation exit: useDetailExit (modal onClose from AppointmentViewModalClient / NewAppointmentModalClient).
  */
 
@@ -12,7 +12,7 @@ import { useFormContext, useWatch, type DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { toast } from "sonner";
-import { Calendar, CalendarDays, FileText, X } from "lucide-react";
+import { Calendar, ClipboardList, X } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,7 @@ import {
 import { useAppSession, usePermission } from "@/lib/auth/session-context";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import { AppointmentPatientCombobox } from "./AppointmentPatientCombobox";
+import { AppointmentPatientSummaryCard } from "./AppointmentPatientSummaryCard";
 
 /** True when the fee input represents a positive amount (triggers auto-complete in edit). */
 function feeInputHasPositiveAmount(raw: unknown): boolean {
@@ -587,39 +588,35 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
         header={header}
         formRef={formRef}
         form={form}
+        detailsTabIcon={ClipboardList}
+        documentsTab={
+          !isCreate ? (
+            <DocumentsTab
+              documents={appointment!.patientDocuments}
+              patientId={appointment!.patientId}
+              appointmentId={appointment!.id}
+              emptyMessage="No documents for this patient yet."
+            />
+          ) : undefined
+        }
+        appointmentsTab={
+          !isCreate ? (
+            <AppointmentListTab
+              appointments={appointment!.patientAppointments}
+              currentAppointmentId={appointment!.id}
+              emptyMessage="No other appointments for this patient."
+            />
+          ) : undefined
+        }
+        sidebarTop={
+          !isCreate ? (
+            <AppointmentPatientSummaryCard summary={appointment!.patientSummary} />
+          ) : undefined
+        }
         events={!isCreate ? appointment!.activityLog : []}
         hasMoreEvents={!isCreate ? appointment!.activityLogHasMore : false}
         entityType="appointment"
         entityId={!isCreate ? appointment!.id : ""}
-        sidebarTabs={
-          !isCreate
-            ? [
-                {
-                  label: "Documents",
-                  icon: FileText,
-                  content: (
-                    <DocumentsTab
-                      documents={appointment!.patientDocuments}
-                      patientId={appointment!.patientId}
-                      appointmentId={appointment!.id}
-                      emptyMessage="No documents for this patient yet."
-                    />
-                  ),
-                },
-                {
-                  label: "Appointments",
-                  icon: CalendarDays,
-                  content: (
-                    <AppointmentListTab
-                      appointments={appointment!.patientAppointments}
-                      currentAppointmentId={appointment!.id}
-                      emptyMessage="No other appointments for this patient."
-                    />
-                  ),
-                },
-              ]
-            : undefined
-        }
         isCreate={isCreate}
         onCancel={onClose ?? (() => router.back())}
         onDelete={!isCreate ? handleOpenDeleteDialog : undefined}

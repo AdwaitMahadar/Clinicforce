@@ -13,7 +13,7 @@ import type {
   AppointmentVisitType,
   AppointmentStatus,
 } from "@/lib/constants/appointment";
-import type { PatientAppointment, PatientDocument } from "@/types/patient";
+import type { PatientAppointment, PatientDocument, PatientGender } from "@/types/patient";
 import type { ActivityLogEntry } from "@/types/activity-log";
 
 export type { AppointmentStatus, AppointmentCategory, AppointmentVisitType };
@@ -53,6 +53,17 @@ export interface AppointmentCreateInitialValues {
 }
 
 
+/** Patient snapshot for appointment-detail sidebar (from `getAppointmentDetail`). */
+export interface AppointmentDetailPatientSummary {
+  fullName: string;
+  ageYears: number | null;
+  /** `null` when gender is unknown / unset — do not substitute a default label. */
+  gender: PatientGender | null;
+  bloodGroup: string | null;
+  allergies: string | null;
+  pastHistoryNotes: string | null;
+}
+
 export interface AppointmentDetail {
   id:                 string;
   patientId:           string;
@@ -81,8 +92,10 @@ export interface AppointmentDetail {
   activityLog:        ActivityLogEntry[];
   /** Whether the server has more activity log pages beyond the initial SSR batch. */
   activityLogHasMore: boolean;
-  /** All documents assigned to this patient (sidebar Documents tab). */
+  /** All documents assigned to this patient (Documents tab). */
   patientDocuments:   PatientDocument[];
-  /** Active appointments for this patient (sidebar Appointments tab). */
+  /** Active appointments for this patient (Appointments tab). */
   patientAppointments: PatientAppointment[];
+  /** Demographics + notes for the sidebar patient card (appointment detail only). */
+  patientSummary:     AppointmentDetailPatientSummary;
 }

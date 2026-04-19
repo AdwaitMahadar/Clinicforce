@@ -3,7 +3,7 @@
 /**
  * app/(app)/patients/_components/PatientDetailPanel.tsx
  *
- * DetailPanel + DetailForm (flat fields) + DetailSidebar (documents / appointments tabs + activity log).
+ * DetailPanel + DetailForm (Details tab) + Documents / Appointments tabs + activity sidebar.
  *
  *   mode="view"   — editable form + sidebar
  *   mode="create" — new patient form; no sidebar
@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
 import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { differenceInYears, isValid, parseISO } from "date-fns";
-import { FileText, CalendarDays } from "lucide-react";
+import { UserRound } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -364,33 +364,24 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         header={header}
         formRef={formRef}
         form={form}
+        detailsTabIcon={UserRound}
+        documentsTab={
+          <DocumentsTab
+            documents={patient.documents}
+            patientId={patient.id}
+            emptyMessage="No documents uploaded yet."
+          />
+        }
+        appointmentsTab={
+          <AppointmentListTab
+            appointments={patient.appointments}
+            emptyMessage="No appointments recorded."
+          />
+        }
         events={patient.activityLog}
         hasMoreEvents={patient.activityLogHasMore}
         entityType="patient"
         entityId={patient.id}
-        sidebarTabs={[
-          {
-            label: "Documents",
-            icon: FileText,
-            content: (
-              <DocumentsTab
-                documents={patient.documents}
-                patientId={patient.id}
-                emptyMessage="No documents uploaded yet."
-              />
-            ),
-          },
-          {
-            label: "Appointments",
-            icon: CalendarDays,
-            content: (
-              <AppointmentListTab
-                appointments={patient.appointments}
-                emptyMessage="No appointments recorded."
-              />
-            ),
-          },
-        ]}
         isCreate={false}
         onCancel={onClose ?? (() => router.back())}
         onDelete={

@@ -1,16 +1,18 @@
 "use client";
 
 /**
- * Shared shell for entity detail views: header, form column, optional sidebar, footer actions.
+ * Shared shell for entity detail views: header, tabbed content column, optional
+ * activity sidebar, footer actions.
  * Colours via CSS variables only — see globals.css.
  */
 
 import type { ReactNode, RefObject } from "react";
-import { Trash2 } from "lucide-react";
+import { CalendarDays, FileText, Trash2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import { DetailSidebar } from "@/components/common/DetailSidebar";
-import type { DetailSidebarTab } from "@/components/common/DetailSidebar";
+import { DetailPanelTabs, type DetailPanelTabItem } from "@/components/common/DetailPanelTabs";
 import type { ActivityLogEntry } from "@/types/activity-log";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/lib/auth/session-context";
@@ -18,7 +20,19 @@ import { usePermission } from "@/lib/auth/session-context";
 export interface DetailPanelProps {
   header: ReactNode;
   formRef: RefObject<DetailFormHandle | null>;
-  form: React.ReactNode;
+  /** Primary "Details" tab body (usually `<DetailForm />`). */
+  form: ReactNode;
+  /** Optional icon for the Details tab when multiple tabs are shown. */
+  detailsTabIcon?: LucideIcon;
+  /**
+   * Documents tab — only rendered when the user has `viewDetailSidebar`
+   * (admin/doctor); same visibility rules as the former sidebar Documents tab.
+   */
+  documentsTab?: React.ReactNode;
+  /**
+   * Appointments tab — same RBAC gate as `documentsTab` (via `viewDetailSidebar`).
+   */
+  appointmentsTab?: ReactNode;
   events?: ActivityLogEntry[];
   /** Whether the server returned more activity log entries beyond the initial page. */
   hasMoreEvents?: boolean;
@@ -29,9 +43,9 @@ export interface DetailPanelProps {
   entityType?: "patient" | "appointment" | "medicine" | "document" | "user";
   /** Entity ID for activity log pagination — forwarded to DetailSidebar. */
   entityId?: string;
-  /** Passed to DetailSidebar; omitted or empty hides the tabbed top zone. */
-  sidebarTabs?: DetailSidebarTab[];
-  /** When true, sidebar column is hidden and the form column is full width. */
+  /** Optional stack above the activity log in the right column (appointment patient summary). */
+  sidebarTop?: ReactNode;
+  /** When true, sidebar column is hidden and the content column is full width. */
   isCreate?: boolean;
   /**
    * Save button: if provided, called on Save click; otherwise `formRef.current?.submit()` is used.
@@ -49,11 +63,14 @@ export function DetailPanel({
   header,
   formRef,
   form,
+  detailsTabIcon,
+  documentsTab,
+  appointmentsTab,
   events = [],
   hasMoreEvents = false,
   entityType,
   entityId,
-  sidebarTabs,
+  sidebarTop,
   isCreate = false,
   onSave,
   onCancel,
@@ -64,8 +81,38 @@ export function DetailPanel({
   className,
 }: DetailPanelProps) {
   const canViewSidebar = usePermission("viewDetailSidebar");
-  // Hide sidebar when in create mode OR when the user's role lacks sidebar access (staff).
   const noSidebar = isCreate || !canViewSidebar;
+
+  const showDocumentsTab = Boolean(canViewSidebar && documentsTab);
+  const showAppointmentsTab = Boolean(canViewSidebar && appointmentsTab);
+
+  const tabItems: DetailPanelTabItem[] = [
+    {
+      key: "details",
+      label: "Details",
+      icon: detailsTabIcon,
+      content: form,
+    },
+  ];
+  if (showDocumentsTab) {
+    tabItems.push({
+      key: "documents",
+      label: "Documents",
+      icon: FileText,
+      content: <div className="px-6 py-4">{documentsTab}</div>,
+    });
+  }
+  if (showAppointmentsTab) {
+    tabItems.push({
+      key: "appointments",
+      label: "Appointments",
+      icon: CalendarDays,
+      content: <div className="px-6 py-4">{appointmentsTab}</div>,
+    });
+  }
+
+  const layoutGroupId = `detail-tabs-${entityType ?? "entity"}-${entityId ?? "new"}`;
+  const tabResetKey = `${isCreate ? "create" : "view"}-${entityId ?? ""}`;
 
   const handleSave = () => {
     if (onSave) {
@@ -101,18 +148,21 @@ export function DetailPanel({
               : undefined
           }
         >
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-            {form}
-          </div>
+          <DetailPanelTabs
+            tabs={tabItems}
+            resetKey={tabResetKey}
+            layoutGroupId={layoutGroupId}
+            className="h-full min-h-0"
+          />
         </div>
 
         {!noSidebar && (
           <div
-            className="min-h-0 w-[40%] max-w-[40%] shrink-0"
+            className="min-h-0 w-[min(26.25rem,36vw)] max-w-[390px] shrink-0"
             style={{ minWidth: 0 }}
           >
             <DetailSidebar
-              tabs={sidebarTabs}
+              topSlot={sidebarTop}
               entries={events}
               initialHasMore={hasMoreEvents}
               entityType={entityType ?? "patient"}

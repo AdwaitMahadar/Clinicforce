@@ -10,8 +10,8 @@
  *
  * Pass `fields`: a single scrollable 2-column grid (col-span via `colSpan` on each
  * descriptor; optional `constrainControlToHalfRow` with `colSpan: 2` for a full-width
- * row whose control is only as wide as one column). Entity side columns (e.g. documents)
- * are composed by the parent next to this component (e.g. via `DetailPanel`).
+ * row whose control is only as wide as one column). Companion tabs (e.g. Documents)
+ * are composed by the parent in `DetailPanel`'s tabbed main column.
  *
  * ─── Imperative API ────────────────────────────────────────────────────────────
  *

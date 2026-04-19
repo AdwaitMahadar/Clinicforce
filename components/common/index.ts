@@ -34,7 +34,10 @@ export type {
 } from "./DetailForm";
 
 export { DetailSidebar } from "./DetailSidebar";
-export type { DetailSidebarProps, DetailSidebarTab } from "./DetailSidebar";
+export type { DetailSidebarProps } from "./DetailSidebar";
+
+export { DetailPanelTabs } from "./DetailPanelTabs";
+export type { DetailPanelTabsProps, DetailPanelTabItem } from "./DetailPanelTabs";
 
 export { DetailPanel } from "./DetailPanel";
 export type { DetailPanelProps } from "./DetailPanel";

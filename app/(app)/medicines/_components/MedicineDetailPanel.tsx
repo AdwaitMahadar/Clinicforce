@@ -3,7 +3,7 @@
 /**
  * app/(app)/medicines/_components/MedicineDetailPanel.tsx
  *
- * DetailPanel + DetailForm (flat fields) + DetailSidebar (activity log only in edit).
+ * DetailPanel + DetailForm (Details tab; tab bar hidden when solo) + activity sidebar in edit.
  *
  *   mode="edit"   — sidebar column with activity log; Delete in footer
  *   mode="create" — full-width form; no sidebar; no Delete

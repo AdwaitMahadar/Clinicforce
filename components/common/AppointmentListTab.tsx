@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Detail sidebar "Appointments" tab — patient visit cards with navigation to `/appointments/view/[id]`.
+ * Detail panel "Appointments" tab — patient visit cards with navigation to `/appointments/view/[id]`.
  * Optional `currentAppointmentId` shows a **Current** badge (+ blue border) on that row (appointment detail context only).
  */
 

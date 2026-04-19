@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Detail sidebar "Documents" tab — 2-column DocumentCard grid + Upload (shared by patient and appointment detail panels).
+ * Detail panel "Documents" tab — 2-column DocumentCard grid + Upload (patient and appointment detail).
+ * Lists all documents for the patient; optional `appointmentId` only links new uploads to the visit.
  */
 
 import { useState } from "react";
@@ -13,7 +14,7 @@ import type { PatientDocument } from "@/types/patient";
 export interface DocumentsTabProps {
   documents: PatientDocument[];
   patientId: string;
-  /** When set, new uploads are linked to this appointment as well as the patient. */
+  /** When set, new uploads are also linked to this appointment (metadata); the list is not filtered by appointment. */
   appointmentId?: string;
   /** Empty-state copy when there are no documents. */
   emptyMessage: string;

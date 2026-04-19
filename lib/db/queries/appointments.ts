@@ -72,6 +72,12 @@ export interface AppointmentDetailRecord {
   patientDocuments: DocumentSummary[];
   /** Active appointments for this patient, newest `scheduled_at` first. */
   patientAppointments: PatientAppointmentSummary[];
+  /** Joined patient row — used for appointment-detail sidebar summary. */
+  patientDateOfBirth: Date | string | null;
+  patientGender: string | null;
+  patientBloodGroup: string | null;
+  patientAllergies: string | null;
+  patientPastHistoryNotes: string | null;
 }
 
 // ─── getAppointments ──────────────────────────────────────────────────────────
@@ -173,6 +179,11 @@ export async function getAppointmentById(
       createdAt: appointments.createdAt,
       updatedAt: appointments.updatedAt,
       createdBy: appointments.createdBy,
+      patientDateOfBirth: patients.dateOfBirth,
+      patientGender: patients.gender,
+      patientBloodGroup: patients.bloodGroup,
+      patientAllergies: patients.allergies,
+      patientPastHistoryNotes: patients.pastHistoryNotes,
     })
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
@@ -213,6 +224,11 @@ export async function getAppointmentById(
     createdBy: appt.createdBy,
     patientDocuments,
     patientAppointments,
+    patientDateOfBirth: appt.patientDateOfBirth,
+    patientGender: appt.patientGender,
+    patientBloodGroup: appt.patientBloodGroup,
+    patientAllergies: appt.patientAllergies,
+    patientPastHistoryNotes: appt.patientPastHistoryNotes,
   };
 }
 

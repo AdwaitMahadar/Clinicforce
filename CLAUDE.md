@@ -70,7 +70,7 @@ app/
     home/dashboard/         ← Clinic overview
     home/reports/           ← Clinic reports
     appointments/dashboard/     ← Appointments calendar (Month/Week/Day views)
-    appointments/_components/   ← Appointment-specific components
+    appointments/_components/   ← e.g. AppointmentDetailPanel, AppointmentPatientSummaryCard, AppointmentCalendarClient, combobox
     appointments/_lib/          ← Server helpers (picker options, detail mapper, calendar-range.ts)
     patients/_lib/              ← Server helpers (patient detail mapper)
     medicines/_lib/             ← Server helpers (medicine detail mapper)
@@ -129,13 +129,14 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); optional **`insideForm`** slot (same `<Form>` context — `useFormContext` for cross-field logic); Radix `<Select>` is controlled (`value` + remount `key`); optional **`TextField.prefix`** (e.g. fee `₹`) and **`TextField.readOnly`** (normal appearance, not editable — staff fee). No footer — parent uses `DetailPanel` or composes actions.
-- `DetailPanel.tsx` — Shell for detail modals/pages: header, scrollable form slot, optional `DetailSidebar` (tabbed zone + activity log), footer (Save / Cancel / optional delete via `formRef.submit()`). Sidebar hidden when `isCreate=true` OR when user lacks `viewDetailSidebar` permission — computed internally via `usePermission`, no extra prop needed from entity panels.
-- `DetailSidebar.tsx` — Right column: optional `sidebarTabs` + `events` (activity log) in a fixed bottom zone.
+- `DetailPanel.tsx` — Shell for detail modals/pages: header; main-column **`DetailPanelTabs`** (Details + optional Documents/Appointments, Framer sliding tab underline; optional **`detailsTabIcon`**); fixed-width right **`DetailSidebar`** (`min(26.25rem, 36vw)` max **390px**, width taken from the `flex-1` main column, not from **`modal-shell-sizes`**); optional **`sidebarTop`** → sidebar **`topSlot`** (appointment **`AppointmentPatientSummaryCard`**); activity log via **`events`** / pagination props; footer (Save / Cancel / optional delete via **`formRef.submit()`**). Entity panels pass **`documentsTab`** / **`appointmentsTab`** node props when applicable. Right column hidden when `isCreate=true` OR when user lacks **`viewDetailSidebar`** — computed internally via **`usePermission`**.
+- `DetailPanelTabs.tsx` — Tab strip + active panel body used inside **`DetailPanel`**; hides when a single tab; **`resetKey`** resets to **Details**; Framer **`layoutId`** underline.
+- `DetailSidebar.tsx` — Right column: optional **`topSlot`** + activity log; with **`topSlot`**, vertical **40% / 60%** split (`grid` **2fr / 3fr**), top region scrolls on overflow; without **`topSlot`**, log fills height. Same **`getEntityActivity`** pagination pattern as before.
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab; admin/doctor (`uploadDocument`) get top-right inline delete (circle → red pill, `deleteDocument`, Framer Motion + `nav-motion` springs)
-- `DocumentsTab.tsx` — Sidebar Documents tab: 2-column `DocumentCard` grid, ink **Upload** + `UploadDocumentDialog` (`patientId`, optional `appointmentId`); used by patient and appointment detail panels
-- `AppointmentListTab.tsx` — Sidebar appointments list: `PatientAppointment` cards on `var(--color-surface)`, navigate to `/appointments/view/[id]`; optional `currentAppointmentId` → **Current** badge + blue border (appointment detail only)
+- `DocumentsTab.tsx` — Detail panel Documents tab: 2-column `DocumentCard` grid, ink **Upload** + `UploadDocumentDialog` (`patientId`, optional `appointmentId` for upload metadata); used by patient and appointment detail panels
+- `AppointmentListTab.tsx` — Detail panel appointments list: `PatientAppointment` cards on `var(--color-surface)`, navigate to `/appointments/view/[id]`; optional `currentAppointmentId` → **Current** badge + blue border (appointment detail only)
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results; Medicines group `usePermission("viewMedicines")`; Documents group + presigned open `usePermission("viewDocuments")`; other entities use `router.push` (wired from `TopNav`, ⌘/Ctrl+K)
 - `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
@@ -143,7 +144,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `ModalCloseButton.tsx` — Shared dialog/modal close control where a distinct control from `PanelCloseButton` is needed
 - `ReportsComingSoon.tsx` — Placeholder used by all four Reports pages; accepts `title` + `subtitle` props
 - `RoleGate.tsx` — Declarative permission gate: `<RoleGate permission="...">` renders children when the current user holds the permission, `fallback` (default `null`) otherwise; uses `usePermission` from `lib/auth/session-context`
-- `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, …, `DetailPageSkeleton`); **`ModalDetailPanelBodySkeleton`** for intercept modal inner **`Suspense`** fallbacks; **`ModalDetailSkeleton`** for rare full-modal + backdrop loading (`size` / `variant`)
+- `skeletons/` — Route `loading.tsx` building blocks (`PageHeaderSkeleton`, `TableDashboardSkeleton`, …, `DetailPageSkeleton`); **`ModalDetailPanelBodySkeleton`** for intercept modal inner **`Suspense`** fallbacks (tab-strip + form + right column widths mirror **`DetailPanel`** when **`viewDetailSidebar`**); **`ModalDetailSkeleton`** for rare full-modal + backdrop loading (`size` / `variant`)
 
 ---
 
@@ -184,19 +185,19 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - **Medicines — staff excluded:** nav tab hidden (`usePermission("viewMedicines")`); all medicines **`page.tsx`** routes use **`requirePermission("viewMedicines")`** (including **reports**); server actions use `requireRole(session, ["admin", "doctor"])`; **`searchGlobal`** skips medicines query for staff (`medicines: []`); **`UniversalSearch`** hides Medicines group via `viewMedicines`
 - **Clinical notes / patient past history — staff excluded:** `AppointmentDetailPanel` filters appointment `notes`; `PatientDetailPanel` filters `pastHistoryNotes` when `usePermission("viewClinicalNotes")` is false. Patient/appointment server actions also redact or ignore these fields for staff (see `docs/05-Authentication.md`).
 - **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff; read actions (**`getAppointmentDetail`**, **`getAppointments`**, **`getPatientDetail`** nested appointments, **`searchGlobal`**, **`getRecentAppointments`**) return **`title: null`** for staff without changing the DB (see `docs/05-Authentication.md`).
-- **Detail sidebar — staff excluded:** `DetailPanel` auto-hides via `usePermission("viewDetailSidebar")`; view modals use `size="lg"` for staff (narrower, form-only)
+- **Detail right column + main-column Documents/Appointments tabs — staff excluded:** `DetailPanel` hides the right sidebar and suppresses Documents/Appointments tab props via `usePermission("viewDetailSidebar")` (staff see Details-only, tab bar hidden). View modals use `size="lg"` for staff (narrower, form-only)
 - **Documents — staff excluded:** `viewDocuments` / `uploadDocument` are admin/doctor only. **`getUploadPresignedUrl`**, **`confirmDocumentUpload`**, **`getViewPresignedUrl`** use `requireRole(session, ["admin", "doctor"])`. **`getPatientDetail`** / **`getAppointmentDetail`** return empty document lists for staff; **`searchGlobal`** skips the documents query for staff. **`UniversalSearch`** hides the Documents group via `usePermission("viewDocuments")` (see `docs/05-Authentication.md`).
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Category enum: `general | orthopedic | physiotherapy`; visit type enum: `general | first-visit | follow-up-visit` (DB `visit_type`; form/API key `visitType`)
 - Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), `duration` (minutes), and optional nullable **`fee`** (`numeric(10,2)` — UI displays with ₹ via `formatAppointmentFeeInr`). **Staff:** fee hidden on create; on edit, fee field + header fee only when **`status === completed`**, field **`DetailForm` `readOnly`** (not disabled styling). **Edit mode:** entering a positive fee from empty/zero auto-sets status to **completed** + Sonner toast (not on create; staff only see the fee field when already completed, so they do not trigger this path).
-- **`AppointmentDetailPanel` sidebar (edit):** **Documents** lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`.
+- **`AppointmentDetailPanel` (edit):** **Documents** tab lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`. **Sidebar** shows **`AppointmentPatientSummaryCard`** (patient snapshot from **`getAppointmentDetail`**) above the activity log.
 
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment
 - Stored via S3 presigned URLs — metadata in DB, file in object storage
-- **Staff** cannot upload, open, or search documents (server + `PERMISSIONS`); sidebar document UI is already absent for staff via `viewDetailSidebar`
+- **Staff** cannot upload, open, or search documents (server + `PERMISSIONS`); Documents/Appointments tabs and the document/activity right column are absent for staff via `viewDetailSidebar`
 
 ---
 

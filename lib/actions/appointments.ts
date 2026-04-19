@@ -193,6 +193,7 @@ export async function getAppointmentDetail(id: unknown) {
           ...a,
           title: canTitle ? a.title : null,
         })),
+        patientPastHistoryNotes: canNotes ? appointment.patientPastHistoryNotes : null,
         activityLog: activityLogEntries,
         activityLogHasMore,
       },
