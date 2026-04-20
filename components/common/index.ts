@@ -60,4 +60,8 @@ export { DocumentsTab } from "./DocumentsTab";
 export type { DocumentsTabProps } from "./DocumentsTab";
 export { AppointmentListTab } from "./AppointmentListTab";
 export type { AppointmentListTabProps } from "./AppointmentListTab";
+export { PrescriptionsTab } from "./PrescriptionsTab";
+export type { PrescriptionsTabProps } from "./PrescriptionsTab";
+export { PatientPrescriptionsTab } from "./PatientPrescriptionsTab";
+export type { PatientPrescriptionsTabProps } from "./PatientPrescriptionsTab";
 

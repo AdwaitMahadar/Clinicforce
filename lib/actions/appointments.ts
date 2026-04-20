@@ -8,7 +8,7 @@
  * Always return { success: true, data } or { success: false, error }.
  * Never throw.
  *
- * RBAC (docs/08-Business-Rules.md §4, §8):
+ * RBAC (docs/08-Business-Rules.md §4, §9):
  *   Create / Edit / Deactivate : all roles
  */
 
@@ -19,7 +19,7 @@ import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
-import { appointments, patients, users } from "@/lib/db/schema";
+import { appointments, patients, prescriptionItems, prescriptions, users } from "@/lib/db/schema";
 import {
   getAppointments as queryGetAppointments,
   getAppointmentById,
@@ -32,6 +32,8 @@ import {
 import { idSchema, n } from "@/lib/validators/common";
 import { appendActivityLog } from "@/lib/activity-log";
 import { getEntityActivity } from "@/lib/actions/activity-log";
+import type { PrescriptionForAppointmentTab } from "@/types/prescription";
+import { toAppointmentTabPrescription } from "@/types/prescription";
 
 // ─── Input schemas ─────────────────────────────────────────────────────────────
 
@@ -182,6 +184,16 @@ export async function getAppointmentDetail(id: unknown) {
       }
     }
 
+    const canPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
+    let prescription: PrescriptionForAppointmentTab | null = null;
+    if (canPrescriptions) {
+      const { getPrescriptionByAppointment } = await import("@/lib/actions/prescriptions");
+      const rxRes = await getPrescriptionByAppointment({ appointmentId: parsed.data });
+      if (rxRes.success && rxRes.data) {
+        prescription = toAppointmentTabPrescription(rxRes.data);
+      }
+    }
+
     return {
       success: true as const,
       data: {
@@ -196,6 +208,7 @@ export async function getAppointmentDetail(id: unknown) {
         patientPastHistoryNotes: canNotes ? appointment.patientPastHistoryNotes : null,
         activityLog: activityLogEntries,
         activityLogHasMore,
+        prescription,
       },
     };
   } catch (err) {
@@ -502,15 +515,42 @@ export async function deleteAppointment(id: unknown) {
       return { success: false as const, error: "Appointment not found." };
     }
 
-    await db
-      .update(appointments)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(
-        and(
-          eq(appointments.clinicId, clinicId),
-          eq(appointments.id, parsed.data)
+    const cancelledAt = new Date();
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(appointments)
+        .set({ isActive: false, updatedAt: cancelledAt })
+        .where(
+          and(
+            eq(appointments.clinicId, clinicId),
+            eq(appointments.id, parsed.data)
+          )
+        );
+
+      const [rx] = await tx
+        .select({ id: prescriptions.id })
+        .from(prescriptions)
+        .where(
+          and(
+            eq(prescriptions.clinicId, clinicId),
+            eq(prescriptions.appointmentId, parsed.data)
+          )
         )
-      );
+        .limit(1);
+
+      if (rx) {
+        await tx
+          .update(prescriptions)
+          .set({ isActive: false, updatedAt: cancelledAt })
+          .where(eq(prescriptions.id, rx.id));
+
+        await tx
+          .update(prescriptionItems)
+          .set({ isActive: false, updatedAt: cancelledAt })
+          .where(eq(prescriptionItems.prescriptionId, rx.id));
+      }
+    });
 
     const descriptor = formatApptDescriptor(existing.category, existing.visitType);
     await appendActivityLog({

@@ -11,9 +11,9 @@ The **baseline product** is shipped: core clinic workflows (patients, appointmen
 The following **scope constraints** still apply (until explicitly changed):
 
 *   **Internal access only**: The application is for clinic staff (Admin, Doctors, Staff). There is no patient-facing portal or self-service scheduling.
-*   **Document management**: The system does not generate prescriptions or reports. It provides a centralized repository for uploading and viewing externally generated digital files.
+*   **Document management**: The system does **not** generate **PDFs** or printable reports server-side. It provides a centralized repository for **uploading and viewing** externally generated digital files. **Structured prescriptions** (medicine lines per visit, draft → publish) are recorded **in-app** and are separate from uploaded “prescription” **document** files.
 *   **Manual scheduling**: Appointments are managed manually by staff; there is no automated booking logic or patient notifications yet.
-*   **Medicine library**: The Medicines module is a reference directory (future hook for in-app prescribing or automation).
+*   **Medicine library**: Reference directory used by the structured prescription picker; `lastPrescribedDate` is updated when a prescription is **published** (and may still be edited manually in the catalog). See `docs/08-Business-Rules.md` §6–7.
 
 ---
 
@@ -52,9 +52,10 @@ RBAC is enforced in **server actions** (`requireRole` in `lib/auth/rbac.ts`) and
 | **Detail right column + main-column Documents/Appointments tabs** (activity log / patient summary; Documents & Appointments in main column — `viewDetailSidebar`) | — | Yes | Yes |
 | **Documents** — view / upload | — | Yes | Yes |
 | **Documents** — edit metadata / delete | — | Yes | Yes |
+| **Prescriptions** (structured Rx) — view / create-edit | — | Yes | Yes |
 | **Medicines** — any access | — | Yes | Yes |
 
-*Staff (receptionist) has **no** Medicines top-nav or routes: `viewMedicines` and related permissions are **admin + doctor** only. Staff also has **no** document view or upload: `viewDocuments` / `uploadDocument` and presigned document server actions are **admin + doctor** only.*
+*Staff (receptionist) has **no** Medicines top-nav or routes: `viewMedicines` and related permissions are **admin + doctor** only. Staff also has **no** document view or upload: `viewDocuments` / `uploadDocument` and presigned document server actions are **admin + doctor** only. Staff has **no** structured prescriptions: `viewPrescriptions` / `createPrescription` and prescription server actions are **admin + doctor** only.*
 
 ---
 
@@ -88,13 +89,18 @@ Digital file repository associated with clinical activities.
 ### 5.5 Medicines
 A reference directory for pharmacological data.
 *   **Details**: Name, Description, Brand, Form.
-*   **Usage Tracking**: `lastPrescribedDate` (manually updated at present).
-*   **Purpose**: To facilitate one-click prescription generation in future iterations.
+*   **Usage Tracking**: `lastPrescribedDate` — updated when a structured prescription is **published** (per medicine on that Rx); catalog rows may still be adjusted manually.
+*   **Purpose**: Drives the structured prescription picker; **PDF/print output** from structured data remains roadmap (see **Future Roadmap**).
+
+### 5.6 Structured prescriptions (in-app)
+*   **Tied to** a single **appointment** (at most one prescription row per visit; lazy-created when the first line is added).
+*   **Roles**: Admin and Doctor only (`viewPrescriptions` / `createPrescription`) — same access pattern as clinical documents.
+*   **UI**: Appointment detail **Prescriptions** tab (draft/edit/publish); patient detail **Prescriptions** tab (published history only). Full rules: `docs/08-Business-Rules.md` §6.
 
 ---
 
 ## 6. Future Roadmap
-*   **In-App Prescription Generation**: Using the Medicine library to generate digital PDFs.
+*   **Prescription PDF / share**: Export structured prescription data to a printable or shareable document (the Medicine library and publish flow are designed to support this later).
 *   **Patient Portal**: Limited access for patients to view their own uploaded records.
 *   **Automated Notifications**: SMS/Email reminders for upcoming appointments.
 *   **Advanced Analytics**: Clinic performance reports and patient demographic trends.

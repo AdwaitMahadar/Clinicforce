@@ -81,6 +81,18 @@ export const updateMedicineSchema = z.object({
   isActive: z.literal(true).optional(),
 });
 
+// ─── Picker / combobox (prescription line items, etc.) ───────────────────────
+
+/** Debounced async combobox input — `searchMedicinesForPicker` in `lib/actions/medicines.ts`. */
+export const searchMedicinesForPickerInputSchema = z.object({
+  query: z.string().max(200).optional().default(""),
+  excludeIds: z.array(z.string().uuid()).optional().default([]),
+});
+
+export type SearchMedicinesForPickerInput = z.infer<
+  typeof searchMedicinesForPickerInputSchema
+>;
+
 // ─── Inferred TypeScript Types ────────────────────────────────────────────────
 
 /** Import this type for the create medicine form values. */

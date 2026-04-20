@@ -11,3 +11,5 @@ export * from "./patients";
 export * from "./appointments";
 export * from "./documents";
 export * from "./medicines";
+export * from "./prescriptions";
+export * from "./prescription-items";

@@ -8,6 +8,8 @@ This document defines the PostgreSQL schema used by Clinicforce. We use **Drizzl
 
 `pgEnum` values for **activity_log** (`activity_entity_type`, `activity_action`) are defined directly in `lib/db/schema/activity-log.ts` since they have no external constant counterpart.
 
+`pgEnum` **`meal_timing`** (`before_food`, `after_food`) is built from **`MEAL_TIMINGS`** in `lib/constants/prescription.ts` (same list as Zod `z.enum()`), declared in `lib/db/schema/prescriptions.ts` for prescription line-item dosage timing columns (shared with **`prescription_items`**).
+
 ## 1. SaaS & Multi-tenancy
 We use a **Column-based isolation** strategy. Almost every table includes a `clinic_id` to ensure data remains isolated between different clinics in a SaaS environment.
 
@@ -161,6 +163,45 @@ Better-Auth email/token verification records.
 - `created_at`: `timestamp`
 - `updated_at`: `timestamp`
 
+### `prescriptions`
+Structured prescription header: **at most one row per appointment** (lazy-created when the first line item is added). Tied to the appointment’s patient and prescribing doctor; **`chart_id`** is the clinic-scoped human-readable Rx number (e.g. 1042, displayed in UI as `#RX-…`). **`published_at`** is the draft vs published indicator: **`null`** means draft; a non-null timestamp means published. It has **no default** and is set **only** by the dedicated publish action (not on insert or ordinary edits). Behavioural rules (RBAC, soft-delete, **`deleteAppointment`** cascade): `docs/08-Business-Rules.md` §6.
+
+- `id`: `uuid` (Primary Key)
+- `clinic_id`: `uuid` **notNull** (References `clinics.id`)
+- `appointment_id`: `uuid` **notNull** (References `appointments.id`, **cascade** on appointment delete)
+- `patient_id`: `uuid` **notNull** (References `patients.id`)
+- `doctor_id`: `text` **notNull** (References `users.id`)
+- `chart_id`: `integer` **notNull** — unique per clinic (same uniqueness pattern as patient chart IDs)
+- `notes`: `text` (nullable — overall prescription remarks)
+- `published_at`: `timestamp` (nullable — no default; draft when null, published when set by publish action only)
+- `is_active`: `boolean` (Default: `true`)
+- `created_by`: `text` **notNull** (References `users.id`)
+- `created_at`: `timestamp` **notNull**
+- `updated_at`: `timestamp` **notNull**
+
+### `prescription_items`
+Line items for a prescription. **No `clinic_id`** — tenant scope is always via the parent **`prescriptions`** row. **`medicine_name`** is **nullable**: **`null`** while the parent prescription is still a **draft** (`prescriptions.published_at` is null); at **publish** time it is populated by denormalizing from **`medicines.name`** so historical labels stay stable if the medicine row is later renamed.
+
+- `id`: `uuid` (Primary Key)
+- `prescription_id`: `uuid` **notNull** (References `prescriptions.id`, **cascade** on prescription delete)
+- `medicine_id`: `uuid` **notNull** (References `medicines.id`)
+- `medicine_name`: `varchar(255)` (nullable — null in draft; set at publish from `medicines`)
+- `morning_enabled`: `boolean` (Default: `false`)
+- `morning_quantity`: `integer` (Default: `1`)
+- `morning_timing`: `enum` (`before_food`, `after_food`) (Default: `before_food`)
+- `afternoon_enabled`: `boolean` (Default: `false`)
+- `afternoon_quantity`: `integer` (Default: `1`)
+- `afternoon_timing`: `enum` (`before_food`, `after_food`) (Default: `before_food`)
+- `night_enabled`: `boolean` (Default: `false`)
+- `night_quantity`: `integer` (Default: `1`)
+- `night_timing`: `enum` (`before_food`, `after_food`) (Default: `before_food`)
+- `duration`: `varchar(255)` (nullable)
+- `remarks`: `text` (nullable)
+- `is_active`: `boolean` (Default: `true`) **notNull**
+- `sort_order`: `integer` (Default: `0`)
+- `created_at`: `timestamp` **notNull**
+- `updated_at`: `timestamp` **notNull**
+
 ### `activity_log`
 Immutable audit trail of all meaningful state changes (create, update, deactivate, reactivate, delete) across all main entities.
 
@@ -185,12 +226,17 @@ Immutable audit trail of all meaningful state changes (create, update, deactivat
 - `users`: `(clinic_id, chart_id)` - Chart IDs are unique per clinic.
 - `patients`: `(clinic_id, chart_id)` - Chart IDs are unique per clinic.
 - `clinics`: `(subdomain)` - Subdomains must be unique globally.
+- `prescriptions`: `(appointment_id)` — one prescription per appointment.
+- `prescriptions`: `(clinic_id, chart_id)` — Rx numbers unique per clinic.
+- `prescription_items`: `(prescription_id, medicine_id)` — a medicine cannot appear twice on the same prescription.
 
 ### Performance Indexes
 - `idx_patient_name`: B-Tree on `(clinic_id, last_name, first_name)`
 - `idx_appointment_scheduled_at`: B-Tree on `(clinic_id, scheduled_at)`
 - `idx_document_assignment`: B-Tree on `(assigned_to_id, assigned_to_type)`
 - `idx_appointment_status`: B-Tree on `(clinic_id, status)`
+- `idx_prescription_clinic_patient`: B-Tree on `(clinic_id, patient_id)` — list prescriptions by patient within a clinic
+- `idx_prescription_items_sort`: B-Tree on `(prescription_id, sort_order)` — ordered line items
 - `idx_activity_log_subscribers`: GIN on `subscribers` — enables jsonb containment (`@>`) queries for cross-entity fan-out
 - `idx_activity_log_clinic_time`: B-Tree on `(clinic_id, created_at)` — home dashboard feed
 - `idx_activity_log_entity`: B-Tree on `(clinic_id, entity_type, entity_id)` — detail page queries

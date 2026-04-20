@@ -8,7 +8,7 @@
  * Always return { success: true, data } or { success: false, error }.
  * Never throw.
  *
- * RBAC (docs/08-Business-Rules.md §3, §8):
+ * RBAC (docs/08-Business-Rules.md §3, §9):
  *   View / Create / Edit / Deactivate / Reactivate (updatePatient + isActive): all roles
  */
 
@@ -33,6 +33,7 @@ import { idSchema, n } from "@/lib/validators/common";
 import { hasPermission } from "@/lib/permissions";
 import { appendActivityLog } from "@/lib/activity-log";
 import { getEntityActivity } from "@/lib/actions/activity-log";
+import { getPrescriptionsByPatient } from "@/lib/actions/prescriptions";
 
 /** Resolve persisted DOB: trim input, or Jan 1 from age when DOB empty. */
 function resolveSaveDateOfBirth(
@@ -167,7 +168,17 @@ export async function getPatientDetail(id: unknown) {
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
     const canDocuments = hasPermission(session.user.type, "viewDocuments");
+    const canPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
     const isStaff = session.user.type === "staff";
+
+    let prescriptionsPayload: import("@/lib/actions/prescriptions").PatientPrescriptionSummary[] =
+      [];
+    if (canPrescriptions) {
+      const rxResult = await getPrescriptionsByPatient({ patientId: parsed.data });
+      if (rxResult.success) {
+        prescriptionsPayload = rxResult.data;
+      }
+    }
 
     // Staff never see the activity sidebar — skip the query entirely
     let activityLogEntries: import("@/types/activity-log").ActivityLogEntry[] = [];
@@ -193,6 +204,7 @@ export async function getPatientDetail(id: unknown) {
           ...a,
           title: canTitle ? a.title : null,
         })),
+        prescriptions: prescriptionsPayload,
         activityLog: activityLogEntries,
         activityLogHasMore,
       },

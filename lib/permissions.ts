@@ -52,6 +52,12 @@ export const PERMISSIONS = {
   editDocument: ["admin", "doctor"],
   deleteDocument: ["admin", "doctor"],
 
+  // ── Prescriptions ─────────────────────────────────────────────────────────
+  /** View prescriptions tab / patient Rx list (staff: no access — mirrors `viewDocuments`). */
+  viewPrescriptions: ["admin", "doctor"],
+  /** Mutate prescription items and notes (staff: no access — mirrors `uploadDocument`). */
+  createPrescription: ["admin", "doctor"],
+
   // ── Medicines ────────────────────────────────────────────────────────────
   viewMedicines: ["admin", "doctor"],
   createMedicine: ["admin", "doctor"],

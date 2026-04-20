@@ -121,5 +121,6 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
       allergies: trimToNull(r.patientAllergies),
       pastHistoryNotes: trimToNull(r.patientPastHistoryNotes),
     },
+    prescription: r.prescription ?? null,
   };
 }

@@ -48,6 +48,11 @@ export interface AsyncSearchComboboxProps<T> {
    * Must be set whenever `disabled` is true and a value exists.
    */
   disabledDisplayLabel?: string;
+  /**
+   * When `value` is set but the selected row is not in the current `items` list (e.g. after
+   * a parent refresh or before the popover has been opened), show this label on the closed trigger.
+   */
+  selectedDisplayLabel?: string | null;
   debounceMs?: number;
   /** Tailwind max-height for the scrollable results region (~6–8 rows). */
   listMaxHeightClassName?: string;
@@ -72,6 +77,7 @@ export function AsyncSearchCombobox<T>({
   getOptionLabel,
   renderOption,
   disabledDisplayLabel,
+  selectedDisplayLabel,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   listMaxHeightClassName = "max-h-[min(18rem,var(--radix-popover-content-available-height))]",
   align = "start",
@@ -121,11 +127,19 @@ export function AsyncSearchCombobox<T>({
     }
     const match = items.find((it) => getOptionValue(it) === value);
     if (match) setSelectedItem(match);
+    else setSelectedItem(null);
   }, [value, items, getOptionValue]);
 
   const triggerLabel = disabled
     ? (disabledDisplayLabel ?? placeholder)
     : placeholder;
+
+  const closedSelectionLabel =
+    !disabled && value
+      ? selectedItem
+        ? getOptionLabel(selectedItem)
+        : (selectedDisplayLabel?.trim() ? selectedDisplayLabel.trim() : null)
+      : null;
 
   const showCheck = (item: T) => value === getOptionValue(item);
 
@@ -172,12 +186,12 @@ export function AsyncSearchCombobox<T>({
           }}
         >
           <span
-            className={cn(
-              "truncate text-left",
-              !(value && selectedItem) && "text-muted-foreground"
-            )}
+            className="truncate text-left"
+            style={{
+              color: closedSelectionLabel ? "var(--color-text-primary)" : "var(--color-text-muted)",
+            }}
           >
-            {value && selectedItem ? getOptionLabel(selectedItem) : placeholder}
+            {closedSelectionLabel ?? placeholder}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>

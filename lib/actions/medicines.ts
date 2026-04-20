@@ -8,7 +8,7 @@
  * Always return { success: true, data } or { success: false, error }.
  * Never throw.
  *
- * RBAC (docs/08-Business-Rules.md §6):
+ * RBAC (docs/08-Business-Rules.md §7):
  *   All medicines actions: admin + doctor only (staff has no access)
  */
 
@@ -22,10 +22,12 @@ import { medicines } from "@/lib/db/schema";
 import {
   getMedicines as queryGetMedicines,
   getMedicineById,
+  searchActiveMedicinesForPicker as querySearchActiveMedicinesForPicker,
 } from "@/lib/db/queries/medicines";
 import {
   createMedicineSchema,
   updateMedicineSchema,
+  searchMedicinesForPickerInputSchema,
 } from "@/lib/validators/medicine";
 import { idSchema, n } from "@/lib/validators/common";
 import { appendActivityLog } from "@/lib/activity-log";
@@ -65,6 +67,37 @@ export async function getMedicines(input: unknown) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getMedicines]", err);
     return { success: false as const, error: "Failed to fetch medicines." };
+  }
+}
+
+// ─── searchMedicinesForPicker ─────────────────────────────────────────────────
+
+/**
+ * Debounced combobox search for prescription (and future) medicine pickers.
+ * Returns a minimal shape — not `getMedicineDetail` / dashboard aggregates.
+ */
+export async function searchMedicinesForPicker(input: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor"]);
+
+    const parsed = searchMedicinesForPickerInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid search." };
+    }
+
+    const { clinicId } = session.user;
+    const { query, excludeIds } = parsed.data;
+    const data = await querySearchActiveMedicinesForPicker(
+      clinicId,
+      query ?? "",
+      excludeIds ?? []
+    );
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[searchMedicinesForPicker]", err);
+    return { success: false as const, error: "Failed to search medicines." };
   }
 }
 

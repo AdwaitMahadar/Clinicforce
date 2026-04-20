@@ -14,8 +14,8 @@
 **Scope constraints (current):**
 - No patient self-service or external-facing portal
 - No automated booking or patient notifications
-- No prescription/report generation (documents are uploaded, not generated)
-- Medicines module remains a reference library (future automation hook)
+- **Documents:** no server-side **PDF/report generation** — files are uploaded, not generated. **Structured in-app prescriptions** (draft/publish, line items tied to visits) **are** part of the product; printable/PDF export is not.
+- **Medicines** module is a reference library; prescribing uses it for picker rows and denormalized names at publish (`docs/08-Business-Rules.md` §6–7).
 
 ---
 
@@ -48,7 +48,7 @@ Read the relevant doc before working on any area. These are the authoritative so
 | Auth | Better-Auth (Drizzle adapter, database sessions) |
 | Validation | Zod 4 — schemas in `lib/validators/`, shared client ↔ server |
 | UI Base | Shadcn/UI (Radix) + **Tailwind CSS 4** + Lucide icons |
-| Motion / cmdk | Framer Motion (select flows); cmdk (command palette) |
+| Motion / cmdk / DnD | Framer Motion (select flows); cmdk (command palette); **@dnd-kit** (sortable lists — e.g. prescription lines) |
 | Tables | TanStack Table v8 — always server-side mode |
 | Calendar | Shadcn `<Calendar />` / react-day-picker for date pickers; FullCalendar for time-grid views |
 | Forms | React Hook Form + Zod |
@@ -129,16 +129,18 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `StatCard.tsx` — Metric summary card
 - `EventLog.tsx` — Activity/audit log list component
 - `DetailForm.tsx` — RHF + Zod field-driven form: required `fields` array (single scrollable 2-column grid); `forwardRef` + `DetailFormHandle` (`submit` / `reset`); optional **`insideForm`** slot (same `<Form>` context — `useFormContext` for cross-field logic); Radix `<Select>` is controlled (`value` + remount `key`); optional **`TextField.prefix`** (e.g. fee `₹`) and **`TextField.readOnly`** (normal appearance, not editable — staff fee). No footer — parent uses `DetailPanel` or composes actions.
-- `DetailPanel.tsx` — Shell for detail modals/pages: header; main-column **`DetailPanelTabs`** (Details + optional Documents/Appointments, Framer sliding tab underline; optional **`detailsTabIcon`**); fixed-width right **`DetailSidebar`** (`min(26.25rem, 36vw)` max **390px**, width taken from the `flex-1` main column, not from **`modal-shell-sizes`**); optional **`sidebarTop`** → sidebar **`topSlot`** (appointment **`AppointmentPatientSummaryCard`**); activity log via **`events`** / pagination props; footer (Save / Cancel / optional delete via **`formRef.submit()`**). Entity panels pass **`documentsTab`** / **`appointmentsTab`** node props when applicable. Right column hidden when `isCreate=true` OR when user lacks **`viewDetailSidebar`** — computed internally via **`usePermission`**.
+- `DetailPanel.tsx` — Shell for detail modals/pages: header; main-column **`DetailPanelTabs`** (Details + optional Documents/Appointments/Prescriptions, Framer sliding tab underline; optional **`detailsTabIcon`**); fixed-width right **`DetailSidebar`** (`min(26.25rem, 36vw)` max **390px**, width taken from the `flex-1` main column, not from **`modal-shell-sizes`**); optional **`sidebarTop`** → sidebar **`topSlot`** (appointment **`AppointmentPatientSummaryCard`**); activity log via **`events`** / pagination props; footer (Save / Cancel / optional delete via **`formRef.submit()`**). Entity panels pass **`documentsTab`** / **`appointmentsTab`** / optional **`prescriptionsTab`** when applicable. Right column hidden when `isCreate=true` OR when user lacks **`viewDetailSidebar`** — computed internally via **`usePermission`** (Prescriptions tab uses **`viewPrescriptions`** separately).
 - `DetailPanelTabs.tsx` — Tab strip + active panel body used inside **`DetailPanel`**; hides when a single tab; **`resetKey`** resets to **Details**; Framer **`layoutId`** underline.
 - `DetailSidebar.tsx` — Right column: optional **`topSlot`** + activity log; with **`topSlot`**, vertical **40% / 60%** split (`grid` **2fr / 3fr**), top region scrolls on overflow; without **`topSlot`**, log fills height. Same **`getEntityActivity`** pagination pattern as before.
 - `ModalShell.tsx` — Intercepting modal wrapper on shadcn `Dialog` / Radix (`modal-shell-sizes.ts` — shared width/height presets with modal skeletons; focus trap + scroll lock via Radix)
 - `DocumentMimeTypeIcon.tsx` — PDF / image / generic file icon from MIME (shared with `DocumentCard`, `UniversalSearch`)
 - `DocumentCard.tsx` — Document row; opens presigned GET in a new tab; admin/doctor (`uploadDocument`) get top-right inline delete (circle → red pill, `deleteDocument`, Framer Motion + `nav-motion` springs)
 - `DocumentsTab.tsx` — Detail panel Documents tab: 2-column `DocumentCard` grid, ink **Upload** + `UploadDocumentDialog` (`patientId`, optional `appointmentId` for upload metadata); used by patient and appointment detail panels
+- `PrescriptionsTab.tsx` — Appointment detail only (`viewPrescriptions`): draft/published prescription with medicine combobox (`searchMedicinesForPicker`), slot auto-save, `@dnd-kit` reorder, notes, clear + publish
+- `PatientPrescriptionsTab.tsx` — Patient detail only (`viewPrescriptions`): read-only list of **published** prescriptions (`getPatientDetail.prescriptions` / `getPrescriptionsByPatient` — drafts excluded); rows navigate to `/appointments/view/[id]`
 - `AppointmentListTab.tsx` — Detail panel appointments list: `PatientAppointment` cards on `var(--color-surface)`, navigate to `/appointments/view/[id]`; optional `currentAppointmentId` → **Current** badge + blue border (appointment detail only)
 - `UniversalSearch.tsx` — Dialog + cmdk command palette; debounced `searchGlobal`, grouped results; Medicines group `usePermission("viewMedicines")`; Documents group + presigned open `usePermission("viewDocuments")`; other entities use `router.push` (wired from `TopNav`, ⌘/Ctrl+K)
-- `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`
+- `AsyncSearchCombobox.tsx` — Popover + cmdk `Command` with `shouldFilter={false}`; debounced async `fetchItems(query)`; scroll-capped list; `modal={false}` for nested dialogs; first use: appointment patient field via `AppointmentPatientCombobox` + `searchPatientsForPicker`; prescription medicine picker uses `searchMedicinesForPicker` (optional `excludeIds`)
 - `UploadDocumentDialog.tsx` — Presigned PUT upload + `confirmDocumentUpload` metadata
 - `PanelCloseButton.tsx` — Shared X close button for all detail panels (Lucide X, CSS hover); replaces per-panel inline `CloseButton` implementations
 - `ModalCloseButton.tsx` — Shared dialog/modal close control where a distinct control from `PanelCloseButton` is needed
@@ -187,12 +189,14 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - **Appointment title — staff excluded:** `usePermission("viewAppointmentTitle")` gates the Title field in `AppointmentDetailPanel`. **`createAppointment`** / **`updateAppointment`** ignore `title` for staff; read actions (**`getAppointmentDetail`**, **`getAppointments`**, **`getPatientDetail`** nested appointments, **`searchGlobal`**, **`getRecentAppointments`**) return **`title: null`** for staff without changing the DB (see `docs/05-Authentication.md`).
 - **Detail right column + main-column Documents/Appointments tabs — staff excluded:** `DetailPanel` hides the right sidebar and suppresses Documents/Appointments tab props via `usePermission("viewDetailSidebar")` (staff see Details-only, tab bar hidden). View modals use `size="lg"` for staff (narrower, form-only)
 - **Documents — staff excluded:** `viewDocuments` / `uploadDocument` are admin/doctor only. **`getUploadPresignedUrl`**, **`confirmDocumentUpload`**, **`getViewPresignedUrl`** use `requireRole(session, ["admin", "doctor"])`. **`getPatientDetail`** / **`getAppointmentDetail`** return empty document lists for staff; **`searchGlobal`** skips the documents query for staff. **`UniversalSearch`** hides the Documents group via `usePermission("viewDocuments")` (see `docs/05-Authentication.md`).
+- **Prescriptions — staff excluded:** `viewPrescriptions` / `createPrescription` are admin/doctor only (same pattern as documents). Prescription server actions must call `requireRole(session, ["admin", "doctor"])`; UI gates the Prescriptions tab and patient Rx list with `usePermission("viewPrescriptions")` and mutations with `usePermission("createPrescription")` (see `docs/05-Authentication.md`).
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
 - Category enum: `general | orthopedic | physiotherapy`; visit type enum: `general | first-visit | follow-up-visit` (DB `visit_type`; form/API key `visitType`)
 - Tracks scheduled start as `scheduled_at` (single timestamp), optional actual visit time (`actual_check_in` — UI time-only, server uses server calendar day), `duration` (minutes), and optional nullable **`fee`** (`numeric(10,2)` — UI displays with ₹ via `formatAppointmentFeeInr`). **Staff:** fee hidden on create; on edit, fee field + header fee only when **`status === completed`**, field **`DetailForm` `readOnly`** (not disabled styling). **Edit mode:** entering a positive fee from empty/zero auto-sets status to **completed** + Sonner toast (not on create; staff only see the fee field when already completed, so they do not trigger this path).
-- **`AppointmentDetailPanel` (edit):** **Documents** tab lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`. **Sidebar** shows **`AppointmentPatientSummaryCard`** (patient snapshot from **`getAppointmentDetail`**) above the activity log.
+- **`AppointmentDetailPanel` (edit):** **Documents** tab lists all patient-assigned documents (`getDocumentsByAssignment`); upload still passes `appointmentId`. **Appointments** tab lists the patient’s active visits (`getPatientAppointmentSummaries`); current row is highlighted; rows navigate to `/appointments/view/[id]`. **Prescriptions** tab (admin/doctor — `viewPrescriptions`) is **`PrescriptionsTab`** with `appointmentId` + `prescription` from **`getAppointmentDetail`**. **Sidebar** shows **`AppointmentPatientSummaryCard`** (patient snapshot from **`getAppointmentDetail`**) above the activity log.
+- **`PatientDetailPanel` (view):** Tab order Details → Documents → Appointments → **Prescriptions** (admin/doctor — `viewPrescriptions`). **Prescriptions** is **`PatientPrescriptionsTab`** with **`getPatientDetail.prescriptions`** — **published only** (`getPrescriptionsByPatient` excludes drafts); rows navigate to `/appointments/view/[id]`.
 
 ### Documents
 - Can attach to a patient or a user, optionally linked to an appointment
@@ -260,6 +264,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - Login (`app/(auth)/login/page.tsx` + `login-page-client.tsx`) — server-resolved tenant name + logo URL from host subdomain (`extractSubdomainFromHost`, `getActiveClinicBySubdomain`, `buildClinicLogoPublicUrl`); split 50/50 layout, `ClinicBrandMark` on the right when resolved; `public/clinicforce-mark.png` in Clinicforce rows; testimonial carousel (dots + auto-advance); password visibility toggle; dynamic footer year; React Hook Form + Zod in client; Sonner toasts; `returnUrl` redirect; client submit **`await`s `signIn.email`** and handles **`{ data, error }`** (not `fetchOptions.onError` alone) so failed sign-in still surfaces toasts when the API returns 200 without a `user`
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
 - Document upload: presigned URLs (`lib/actions/documents.ts` — admin/doctor only), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail (sidebar; staff use neither)
+- **Structured prescriptions:** `lib/actions/prescriptions.ts` (draft/publish, line items, notes, reorder); appointment **`PrescriptionsTab`** + patient **`PatientPrescriptionsTab`** (published history only); validators `lib/validators/prescription.ts`; schema `prescriptions` / `prescription_items` / `meal_timing` (`docs/03-Database-Schema.md`, `docs/08-Business-Rules.md` §6)
 
 **Not yet built (planned):**
 - All **Reports** views (placeholder UI only; no analytics backend yet)

@@ -59,6 +59,23 @@ export interface PatientAppointment {
   status:    AppointmentStatus;
 }
 
+/**
+ * Published-prescription row for patient detail (`getPatientDetail` → `PatientPrescriptionsTab`).
+ * Server excludes drafts — only `published_at IS NOT NULL` rows appear.
+ */
+export interface PatientPrescriptionSummary {
+  id: string;
+  /** Raw integer; display with `formatPrescriptionChartId`. */
+  chartId: number;
+  appointmentId: string;
+  /** ISO timestamp — linked visit `scheduled_at`. */
+  scheduledAt: string;
+  doctorName: string;
+  activeItemCount: number;
+  /** ISO timestamp — always set for rows in this list. */
+  publishedAt: string;
+}
+
 /** Document list item for patient / appointment detail (matches DB + `DocumentCard`). */
 export interface PatientDocument {
   id: string;
@@ -96,6 +113,8 @@ export interface PatientDetail {
   isActive:             boolean;
   status:               PatientStatus;
   appointments:         PatientAppointment[];
+  /** Published prescriptions only; drafts are omitted (see `getPrescriptionsByPatient`). */
+  prescriptions:        PatientPrescriptionSummary[];
   documents:            PatientDocument[];
   activityLog:          ActivityLogEntry[];
   /** Whether the server has more activity log pages beyond the initial SSR batch. */

@@ -78,6 +78,27 @@
       "when": 1776208670188,
       "tag": "0010_colorful_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776645394709,
+      "tag": "0011_elite_monster_badoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776656094272,
+      "tag": "0012_burly_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776660163061,
+      "tag": "0013_tranquil_microbe",
+      "breakpoints": true
     }
   ]
 }

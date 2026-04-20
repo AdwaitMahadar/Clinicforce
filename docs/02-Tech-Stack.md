@@ -28,6 +28,7 @@ This document outlines the enterprise-grade technical foundation for the Clinicf
 *   **Icons:** [Lucide React](https://lucide.dev/)
 *   **Command palette:** [cmdk](https://cmdk.paco.me/) (global search dialog)
 *   **Motion:** [Framer Motion](https://www.framer.com/motion/) (select transitions)
+*   **Drag-and-drop:** [`@dnd-kit/core`](https://dndkit.com/) + [`@dnd-kit/sortable`](https://dndkit.com/) — sortable lists (e.g. prescription line items on the appointment **Prescriptions** tab)
 *   **Calendar:** [FullCalendar React](https://fullcalendar.io/docs/react); date pickers via **react-day-picker** / Shadcn Calendar
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) + Zod integration.
 *   **URL state:** [nuqs](https://nuqs.47ng.com/)

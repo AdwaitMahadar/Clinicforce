@@ -20,7 +20,7 @@
  *   - Server MUST delete S3 object first; only then deletes DB row.
  *   - If S3 fails, DB row is not deleted.
  *
- * RBAC (docs/08-Business-Rules §5, §8):
+ * RBAC (docs/08-Business-Rules §5, §9):
  *   View / Upload : admin, doctor
  *   Delete        : admin, doctor
  *

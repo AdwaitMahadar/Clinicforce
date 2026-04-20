@@ -37,7 +37,7 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 - **`sessions`**, **`accounts`**, **`verifications`**: Standard Better-auth tables.
 
 ### Business Tables 
-*(Every business table has `id` (uuid) and `clinic_id` (uuid))*
+*(Tenant tables have `id` (uuid) and `clinic_id` (uuid) except **`prescription_items`**, which inherits clinic scope via **`prescriptions`**.)*
 
 - **`patients`**:
   - Key fields: `first_name`, `last_name`, `chart_id` (integer), `date_of_birth`, `past_history_notes` (was `notes`; migration `0006_patient_past_history_notes`)
@@ -54,6 +54,8 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 - **`medicines`**:
   - Key fields: `name`, `category`, `brand`, `form`
   - Notes: Reference library only.
+- **`prescriptions`** / **`prescription_items`**:
+  - One prescription per `appointment_id` (unique); `chart_id` unique per `clinic_id` (Rx #). **`published_at`**: null = draft, timestamp = published (set only by publish action). Items have no `clinic_id` — scope via parent; **`medicine_name`** nullable until publish (then denormalized from `medicines`); line items include **`is_active`** (default true). Enum `meal_timing`: `before_food` | `after_food` on item slot timing columns.
 - **`activity_log`**:
   - Immutable audit trail — rows are never updated or deleted.
   - Key fields: `entity_type` (enum: patient/appointment/medicine/document/user), `entity_id` (text), `action` (enum: created/updated/deactivated/reactivated/deleted), `actor_id`, `actor_name` (denormalised), `actor_role` (denormalised), `metadata` (jsonb: `{ entityDescriptor, changedFields? }`), `subscribers` (jsonb array: `[{ entityType, entityId }]` for cross-entity fan-out)
@@ -64,7 +66,7 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 
 ## Shared enums (`lib/constants/`)
 
-PostgreSQL `pgEnum` definitions in `lib/db/schema/` pull value arrays from `lib/constants/` (same lists as Zod `z.enum()`). **Do not** redefine the same enum literals in schema, validators, and `types/` separately.
+PostgreSQL `pgEnum` definitions in `lib/db/schema/` pull value arrays from `lib/constants/` where applicable (same lists as Zod `z.enum()`), including **`meal_timing`** via **`MEAL_TIMINGS`** in `lib/constants/prescription.ts`. **Do not** redefine the same enum literals in schema, validators, and `types/` separately.
 
 ## DB Query Return Types
 
@@ -73,6 +75,7 @@ Types exported from `lib/db/queries/` that represent raw DB row shapes are prefi
 - `DbPatientRow` (`lib/db/queries/patients.ts`) — chartId is `number`, dates are `Date | null`. Distinct from `PatientRow` in `types/patient.ts` (chartId formatted string, display strings).
 - `searchActivePatientsForPicker` — active patients only, same text match as list `getPatients`, **`LIMIT 8`** (`PATIENT_PICKER_SEARCH_LIMIT`).
 - `DbMedicineRow` (`lib/db/queries/medicines.ts`) — lastPrescribedDate is `Date | null`, isActive is `boolean`. Distinct from `MedicineRow` in `types/medicine.ts` (lastUsed string, status string).
+- `searchActiveMedicinesForPicker` — active medicines only, **`MEDICINE_PICKER_SEARCH_LIMIT` (8)**; name/brand/category `ilike`; optional **`excludeIds`**; ordered by name. Consumed by **`searchMedicinesForPicker`** (`lib/actions/medicines.ts`).
 - Never import DB query types (`Db*`) in client components or UI code — they are server-only.
 
 ## Zod Validation

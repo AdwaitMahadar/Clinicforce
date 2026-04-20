@@ -17,6 +17,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Appointment category:** `general`, `orthopedic`, `physiotherapy`. **Visit type:** `general`, `first-visit`, `follow-up-visit`. **`FOLLOW_UP_WINDOW_DAYS`** (`60` in `lib/constants/appointment.ts`) — calendar-day window for follow-up-style **appointment create prefill** (and similar); import, don’t duplicate. **`title`** optional in DB; only admin/doctor see the form field — staff create stores null, staff update cannot mutate `title`, staff reads get `title: null` from detail/list/patient nested/search/home actions (DB unchanged). **`fee`** optional `numeric(10,2)`; admin/doctor always edit in UI; **staff** — no fee on create, edit shows fee only when status is **completed** (`DetailForm` **`readOnly`**, normal contrast) + same for header fee line. Edit: positive fee from empty/zero → auto **completed** + toast (not create). UI ₹ (`formatAppointmentFeeInr`). Heading: `formatAppointmentHeading`.
 - **Document Mime Types:** Accepted types are limited to `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
 - **Document RBAC:** Only **admin/doctor** may upload or open files (presign actions). **Staff** get empty document lists on patient/appointment detail and no document global-search query (`docs/08-Business-Rules.md` §5).
+- **Structured prescriptions:** Admin/doctor only — draft/publish, line items from **medicines** only, lazy-create header, soft-deleted lines, **`deleteAppointment`** cascades to deactivate prescription + items; patient list = **published** only (`docs/08-Business-Rules.md` §6). No PDF generation in scope.
 - **Document clinic-boundary:** `confirmDocumentUpload` must verify `assignedToId` belongs to the session `clinicId` before inserting. Query `patients` for `assignedToType: "patient"`, `users` for `"user"`.
 
 ## 📏 Field-Level Constraints
@@ -31,6 +32,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 ### ChartId Generation
 - **Users (staff)**: Random 3-digit number (100–999). Display prefix: `#STF-`
 - **Patients**: Random 5-digit number (10000–99999). Display prefix: `#PT-`
+- **Prescriptions (Rx #)**: Same 5-digit pattern as patients; display `#RX-` via `formatPrescriptionChartId`.
 - **Rules**: Must be generated randomly (not sequentially). Must be unique *per clinic*. Are never reused, even if the user/patient is deactivated. Used purely for display—the true primary key for relations is always the UUID.
 
 ## ⚠️ Edge Cases & Special Rules (Commonly Overlooked!)
@@ -39,6 +41,7 @@ This skill provides the core behavioral logic and constraints for Clinicforce. I
 - **Appointment Doctor Assignment:** The `doctorId` on an appointment MUST reference an *active* user whose role is exactly `'doctor'`. You cannot assign an inactive doctor or a non-doctor user.
 - **Soft vs. Hard Deletes:**
   - Users, Patients, Appointments, and Medicines are **never** hard-deleted (`is_active = false`).
+  - **Prescription** headers follow appointments (deactivated with soft-deleted appointment); **prescription line items** are soft-deleted (`is_active = false`) — never hard-deleted by user actions.
   - **Documents** are the exception: They are hard-deleted. If deleting the S3 object fails remotely, the database record must NOT be deleted. (Treat S3 and DB deletion as a unified transaction).
 - **Actual time:** UI sends time-only; server stores full `actual_check_in` using the server calendar day (`new Date()` — no per-clinic TZ yet). Optional; end-of-visit implied by `duration` (no check-out column).
 - **Uniqueness Limits:** Medicine names are **not uniquely constrained**. The exact same drug can exist multiple times. (This is intentional — clinics may stock multiple brands or formulations of the same drug.)

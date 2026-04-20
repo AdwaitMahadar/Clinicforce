@@ -20,6 +20,7 @@ import { format, parseISO } from "date-fns";
 import {
   DocumentsTab,
   AppointmentListTab,
+  PrescriptionsTab,
   DetailPanel,
   DetailForm,
   PanelCloseButton,
@@ -312,6 +313,7 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
   const isStaff = user.type === "staff";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
   const canViewAppointmentTitle = usePermission("viewAppointmentTitle");
+  const canViewPrescriptions = usePermission("viewPrescriptions");
 
   const showAppointmentFeeField = isCreate
     ? !isStaff
@@ -605,6 +607,14 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
               appointments={appointment!.patientAppointments}
               currentAppointmentId={appointment!.id}
               emptyMessage="No other appointments for this patient."
+            />
+          ) : undefined
+        }
+        prescriptionsTab={
+          !isCreate && canViewPrescriptions ? (
+            <PrescriptionsTab
+              appointmentId={appointment!.id}
+              initialPrescription={appointment!.prescription}
             />
           ) : undefined
         }

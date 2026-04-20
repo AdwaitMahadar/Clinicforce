@@ -15,6 +15,7 @@ import type {
 } from "@/lib/constants/appointment";
 import type { PatientAppointment, PatientDocument, PatientGender } from "@/types/patient";
 import type { ActivityLogEntry } from "@/types/activity-log";
+import type { PrescriptionForAppointmentTab } from "@/types/prescription";
 
 export type { AppointmentStatus, AppointmentCategory, AppointmentVisitType };
 
@@ -98,4 +99,6 @@ export interface AppointmentDetail {
   patientAppointments: PatientAppointment[];
   /** Demographics + notes for the sidebar patient card (appointment detail only). */
   patientSummary:     AppointmentDetailPatientSummary;
+  /** Admin/doctor only — `null` when absent or staff. */
+  prescription:       PrescriptionForAppointmentTab | null;
 }

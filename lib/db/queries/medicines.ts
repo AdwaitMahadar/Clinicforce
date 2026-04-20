@@ -8,7 +8,7 @@
  * Used by server actions only — never import from client components.
  */
 
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, notInArray, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { medicines } from "@/lib/db/schema";
 
@@ -174,4 +174,55 @@ export async function getMedicineById(
     .limit(1);
 
   return rows[0] ?? null;
+}
+
+/** Max rows returned by `searchActiveMedicinesForPicker` (combobox list + scroll). */
+export const MEDICINE_PICKER_SEARCH_LIMIT = 8;
+
+/**
+ * Active medicines for async combobox pickers (e.g. prescription draft line items).
+ * Search matches **name**, **brand**, or **category** (case-insensitive).
+ * Empty `search` returns the first `MEDICINE_PICKER_SEARCH_LIMIT` rows ordered by **name**.
+ * Optional `excludeIds` omits medicines already on the prescription from results.
+ */
+export async function searchActiveMedicinesForPicker(
+  clinicId: string,
+  search: string,
+  excludeIds: string[] = []
+): Promise<
+  Pick<
+    DbMedicineRow,
+    "id" | "name" | "category" | "brand" | "form" | "lastPrescribedDate"
+  >[]
+> {
+  const q = search.trim();
+  const conditions = [eq(medicines.clinicId, clinicId), eq(medicines.isActive, true)];
+
+  if (excludeIds.length > 0) {
+    conditions.push(notInArray(medicines.id, excludeIds));
+  }
+
+  if (q.length > 0) {
+    conditions.push(
+      or(
+        ilike(medicines.name, `%${q}%`),
+        ilike(medicines.brand, `%${q}%`),
+        ilike(medicines.category, `%${q}%`)
+      )!
+    );
+  }
+
+  return db
+    .select({
+      id: medicines.id,
+      name: medicines.name,
+      category: medicines.category,
+      brand: medicines.brand,
+      form: medicines.form,
+      lastPrescribedDate: medicines.lastPrescribedDate,
+    })
+    .from(medicines)
+    .where(and(...conditions))
+    .orderBy(asc(medicines.name))
+    .limit(MEDICINE_PICKER_SEARCH_LIMIT);
 }

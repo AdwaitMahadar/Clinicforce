@@ -13,6 +13,7 @@ ChartIds are the human-facing identifiers shown in the UI. They are never sequen
 |---|---|---|---|
 | Users (staff) | 100 – 999 | 3 | `#STF-` prefix e.g. `#STF-472` |
 | Patients | 10000 – 99999 | 5 | `#PT-` prefix e.g. `#PT-38291` |
+| Prescriptions (Rx #) | 10000 – 99999 | 5 | `#RX-` prefix e.g. `#RX-1042` — same random-generation pattern as patients; unique per clinic |
 
 ### Generation Algorithm
 1. Generate a random integer within the entity's range.
@@ -105,6 +106,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - Appointments are never hard-deleted. Set `isActive = false`.
 - All roles can deactivate an appointment.
 - Inactive appointments are hidden from all default views and calendar displays.
+- **`deleteAppointment`** runs in one transaction: deactivating the appointment **also** deactivates the linked **`prescriptions`** row (if any) and **all** of its **`prescription_items`** (`is_active = false`). There is no hard-delete path for appointments in app code.
 - Documents linked to an inactive appointment via `appointmentId` remain accessible through the patient's document list.
 
 ### Actual time
@@ -135,7 +137,34 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ---
 
-## 6. Medicine Rules
+## 6. Prescription Rules (structured in-app Rx)
+
+Structured prescriptions are **not** uploaded files — they are rows in **`prescriptions`** and **`prescription_items`**, edited on the appointment detail **Prescriptions** tab and listed (published only) on the patient detail **Prescriptions** tab. **PDF or printable output is out of scope** (future); publish persists data only.
+
+### Access
+- Only **Admin** and **Doctor** may read or mutate prescriptions (`requireRole(session, ["admin", "doctor"])` in `lib/actions/prescriptions.ts`). **Staff** receive no prescription data on reads that would otherwise include it (`getPatientDetail.prescriptions: []`) and have no UI entry points (`viewPrescriptions` / `createPrescription`).
+
+### Scope and creation
+- **At most one prescription per appointment** (`prescriptions.appointment_id` unique). The row is **lazy-created** when the first line item is added — there are no empty prescription rows in the database.
+- Line items reference **`medicines`** only — no free-text medicine names. The picker searches the clinic’s active medicine catalog (`searchMedicinesForPicker`).
+- **`doctor_id`** and **`patient_id`** on the prescription come from the appointment at creation time — not from unvalidated client overrides.
+
+### Draft vs published
+- **`published_at`** on **`prescriptions`**: **`null`** = draft (line items, notes, reorder, and medicine changes allowed); **non-null** = published — **all mutating actions reject** (publish is one-way; there is no unpublish).
+- **`medicine_name`** on **`prescription_items`** is **`null`** while draft; **`publishPrescription`** copies the current catalog name into **`medicine_name`** for every active line so labels stay stable if the medicine is renamed later.
+- **`medicines.last_prescribed_date`** is updated **only** when a prescription is **published** (per distinct `medicine_id` on that publish), not when items are added in draft.
+
+### Soft deletes (no hard delete)
+- Removing a line or clearing all medicines sets **`prescription_items.is_active = false`** — the UI behaves like delete; inactive lines are never returned to the client.
+- A **prescription header row is never hard-deleted** by users; it remains for the lifetime of the appointment (or is deactivated with the appointment — see Appointment **Deletion (Soft)**).
+- Server reads that power the UI filter **`is_active = true`** for prescriptions and items unless documented otherwise.
+
+### Patient history list
+- **`getPrescriptionsByPatient`** returns **published** prescriptions only (`published_at IS NOT NULL`, active prescription row). **Drafts** exist only on the appointment until published — they do **not** appear on the patient list.
+
+---
+
+## 7. Medicine Rules
 
 ### Access
 - **Admin** and **Doctor** can list, create, edit, and deactivate medicines (`requireRole(session, ["admin", "doctor"])` in `lib/actions/medicines.ts`; UI: `viewMedicines` et al. in `lib/permissions.ts`).
@@ -146,9 +175,9 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 - The medicine's `id` (UUID) is unique within the clinic. The `name` field has no uniqueness constraint.
 
 ### `lastPrescribedDate`
-- This field is **manually updated** — there is no automatic trigger from prescribing workflows yet.
-- It is editable by **admin** and **doctor** when maintaining the catalog.
-- It is nullable — a medicine with no `lastPrescribedDate` has simply never been recorded as prescribed.
+- **Publish path:** When a structured prescription is **published**, `publishPrescription` sets **`last_prescribed_date`** to the current time for each **distinct** `medicine_id` on that prescription’s active lines (see **Prescription Rules**).
+- **Catalog edits:** **Admin** and **doctor** may still adjust this field manually when maintaining the medicine row.
+- Nullable — a medicine with no date has not been published against (and may never have been manually set).
 
 ### Deactivation
 - Medicines are soft-deleted via `isActive = false`.
@@ -157,7 +186,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ---
 
-## 7. Multi-Tenancy Rules
+## 8. Multi-Tenancy Rules
 
 These rules apply to every single database operation in the system without exception.
 
@@ -168,7 +197,7 @@ These rules apply to every single database operation in the system without excep
 
 ---
 
-## 8. RBAC Enforcement Rules
+## 9. RBAC Enforcement Rules
 
 The following matrix defines what each role can do at the server layer. UI hiding mirrors this but is not a substitute for it.
 
@@ -184,9 +213,10 @@ The following matrix defines what each role can do at the server layer. UI hidin
 | Create appointment | ✓ | ✓ | ✓ |
 | Edit appointment | ✓ | ✓ | ✓ |
 | Deactivate appointment | ✓ | ✓ | ✓ |
-| View documents | ✓ | ✓ | ✓ |
-| Upload document | ✓ | ✓ | ✓ |
+| View documents | ✗ | ✓ | ✓ |
+| Upload document | ✗ | ✓ | ✓ |
 | Delete document | ✗ | ✓ | ✓ |
+| View / create structured prescriptions | ✗ | ✓ | ✓ |
 | View medicines | ✗ | ✓ | ✓ |
 | Add medicine | ✗ | ✓ | ✓ |
 | Edit medicine | ✗ | ✓ | ✓ |
@@ -196,7 +226,7 @@ The following matrix defines what each role can do at the server layer. UI hidin
 
 ---
 
-## 9. General Data Rules
+## 10. General Data Rules
 
 - **No hard deletes** for Users, Patients, Appointments, and Medicines. Always use `isActive = false`.
 - **Documents are the exception** — they are hard-deleted (both DB record and S3 object).

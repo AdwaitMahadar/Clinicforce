@@ -7,7 +7,7 @@
  */
 
 import type { ReactNode, RefObject } from "react";
-import { CalendarDays, FileText, Trash2 } from "lucide-react";
+import { CalendarDays, FileText, Pill, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
@@ -33,6 +33,10 @@ export interface DetailPanelProps {
    * Appointments tab — same RBAC gate as `documentsTab` (via `viewDetailSidebar`).
    */
   appointmentsTab?: ReactNode;
+  /**
+   * Prescriptions tab — admin/doctor only (`viewPrescriptions`); not passed for staff.
+   */
+  prescriptionsTab?: ReactNode;
   events?: ActivityLogEntry[];
   /** Whether the server returned more activity log entries beyond the initial page. */
   hasMoreEvents?: boolean;
@@ -66,6 +70,7 @@ export function DetailPanel({
   detailsTabIcon,
   documentsTab,
   appointmentsTab,
+  prescriptionsTab,
   events = [],
   hasMoreEvents = false,
   entityType,
@@ -81,10 +86,12 @@ export function DetailPanel({
   className,
 }: DetailPanelProps) {
   const canViewSidebar = usePermission("viewDetailSidebar");
+  const canViewPrescriptions = usePermission("viewPrescriptions");
   const noSidebar = isCreate || !canViewSidebar;
 
   const showDocumentsTab = Boolean(canViewSidebar && documentsTab);
   const showAppointmentsTab = Boolean(canViewSidebar && appointmentsTab);
+  const showPrescriptionsTab = Boolean(canViewPrescriptions && prescriptionsTab);
 
   const tabItems: DetailPanelTabItem[] = [
     {
@@ -108,6 +115,14 @@ export function DetailPanel({
       label: "Appointments",
       icon: CalendarDays,
       content: <div className="px-6 py-4">{appointmentsTab}</div>,
+    });
+  }
+  if (showPrescriptionsTab) {
+    tabItems.push({
+      key: "prescriptions",
+      label: "Prescriptions",
+      icon: Pill,
+      content: <div className="px-6 py-4">{prescriptionsTab}</div>,
     });
   }
 

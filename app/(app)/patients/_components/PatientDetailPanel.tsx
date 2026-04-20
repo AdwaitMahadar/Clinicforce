@@ -23,6 +23,7 @@ import {
   StatusBadge,
   DocumentsTab,
   AppointmentListTab,
+  PatientPrescriptionsTab,
   DetailPanel,
   DetailForm,
   PanelCloseButton,
@@ -202,6 +203,7 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
 
   const isCreate = mode === "create";
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
+  const canViewPrescriptions = usePermission("viewPrescriptions");
   const visibleFields = canViewClinicalNotes
     ? PATIENT_FIELDS
     : PATIENT_FIELDS.filter((f) => f.name !== "pastHistoryNotes");
@@ -377,6 +379,14 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
             appointments={patient.appointments}
             emptyMessage="No appointments recorded."
           />
+        }
+        prescriptionsTab={
+          canViewPrescriptions ? (
+            <PatientPrescriptionsTab
+              patientId={patient.id}
+              initialPrescriptions={patient.prescriptions}
+            />
+          ) : undefined
         }
         events={patient.activityLog}
         hasMoreEvents={patient.activityLogHasMore}

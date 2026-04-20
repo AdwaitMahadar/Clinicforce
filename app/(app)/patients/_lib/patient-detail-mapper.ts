@@ -69,6 +69,23 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
       time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
       status: a.status as PatientDetail["appointments"][number]["status"],
     })),
+    prescriptions: (r.prescriptions ?? []).map((p) => ({
+      id: p.id,
+      chartId: p.chartId,
+      appointmentId: p.appointmentId,
+      scheduledAt:
+        p.scheduledAt instanceof Date
+          ? p.scheduledAt.toISOString()
+          : String(p.scheduledAt),
+      doctorName: p.doctorName,
+      activeItemCount: p.activeItemCount,
+      publishedAt:
+        p.publishedAt == null
+          ? ""
+          : p.publishedAt instanceof Date
+            ? p.publishedAt.toISOString()
+            : String(p.publishedAt),
+    })),
     documents: r.documents.map((d) => ({
       id:         d.id,
       title:      d.title,

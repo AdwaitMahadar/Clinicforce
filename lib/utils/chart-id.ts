@@ -4,10 +4,11 @@
  */
 
 const PREFIXES = {
-  patient:  "#PT-",
-  staff:    "#STF-",
-  medicine: "#MED-",
-  user:     "#USR-",
+  patient:      "#PT-",
+  staff:        "#STF-",
+  medicine:     "#MED-",
+  user:         "#USR-",
+  prescription: "#RX-",
 } as const;
 
 export type ChartIdEntityType = keyof typeof PREFIXES;
@@ -42,4 +43,9 @@ export function formatPatientChartId(value: number | string | null | undefined):
 /** Staff / users: e.g. `#STF-99`. Missing values → em dash. */
 export function formatStaffChartId(value: number | string | null | undefined): string {
   return formatChartId(value, "staff");
+}
+
+/** Prescriptions: e.g. `#RX-1042`. Missing values → em dash. */
+export function formatPrescriptionChartId(value: number | string | null | undefined): string {
+  return formatChartId(value, "prescription");
 }
