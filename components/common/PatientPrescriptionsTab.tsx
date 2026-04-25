@@ -7,177 +7,10 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, ChevronDown, Moon, Pill, Stethoscope, Sun, Sunrise } from "lucide-react";
+import { CalendarDays, ChevronDown, Pill, Stethoscope } from "lucide-react";
 import { formatPrescriptionChartId } from "@/lib/utils/chart-id";
 import type { PatientPrescriptionSummary } from "@/types/patient";
-import type { PrescriptionItemForAppointmentTab } from "@/types/prescription";
-
-/* ─────────────────────────────────────────────────────────────
-   Slot config (duplicated from PrescriptionsTab for isolation)
-───────────────────────────────────────────────────────────── */
-
-const SLOTS = [
-  {
-    key:     "morning"   as const,
-    enabled: "morningEnabled"   as const,
-    qty:     "morningQuantity"  as const,
-    timing:  "morningTiming"    as const,
-    label:   "Morning",
-    Icon:    Sunrise,
-    color: {
-      active: "var(--color-amber-bg)",
-      border: "var(--color-amber-border)",
-      text:   "var(--color-amber)",
-    },
-  },
-  {
-    key:     "afternoon" as const,
-    enabled: "afternoonEnabled"   as const,
-    qty:     "afternoonQuantity"  as const,
-    timing:  "afternoonTiming"    as const,
-    label:   "Afternoon",
-    Icon:    Sun,
-    color: {
-      active: "var(--color-blue-bg)",
-      border: "var(--color-blue-border)",
-      text:   "var(--color-blue)",
-    },
-  },
-  {
-    key:     "night" as const,
-    enabled: "nightEnabled"   as const,
-    qty:     "nightQuantity"  as const,
-    timing:  "nightTiming"    as const,
-    label:   "Night",
-    Icon:    Moon,
-    color: {
-      active: "var(--color-purple-bg)",
-      border: "var(--color-purple-border)",
-      text:   "var(--color-purple)",
-    },
-  },
-] as const;
-
-/* ─────────────────────────────────────────────────────────────
-   RxDocument — inline prescription document (read-only)
-───────────────────────────────────────────────────────────── */
-
-function RxDocument({
-  items,
-  notes,
-}: {
-  items: PrescriptionItemForAppointmentTab[];
-  notes?: string | null;
-}) {
-  return (
-    <div
-      className="border-t px-5 py-4"
-      style={{ borderColor: "var(--color-glass-border)", background: "var(--color-surface)" }}
-    >
-      {/* ℞ divider */}
-      <div className="mb-4 flex items-center gap-3">
-        <span
-          className="text-2xl font-light leading-none select-none"
-          style={{ color: "var(--color-text-muted)", fontFamily: "serif" }}
-          aria-hidden
-        >
-          ℞
-        </span>
-        <div className="flex-1 border-t" style={{ borderColor: "var(--color-border)" }} />
-      </div>
-
-      {/* Medicine lines — two-column: name+remarks left, doses+duration right */}
-      {items.length > 0 ? (
-        <div className="flex flex-col divide-y" style={{ borderColor: "var(--color-border)" }}>
-          {items.map((item, idx) => {
-            const activeSlots = SLOTS.filter(s => item[s.enabled]);
-            return (
-              <div key={item.id} className="grid grid-cols-[1fr_auto] items-start gap-4 py-3">
-                {/* LEFT: index + medicine name + remarks */}
-                <div className="min-w-0 flex items-start gap-2">
-                  <span
-                    className="mt-0.5 shrink-0 text-xs font-bold tabular-nums"
-                    style={{ color: "var(--color-text-muted)", minWidth: "1rem" }}
-                  >
-                    {idx + 1}.
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "var(--color-text-primary)" }}>
-                      {item.displayMedicineName}
-                    </p>
-                    {item.remarks?.trim() && (
-                      <p className="mt-0.5 text-xs italic" style={{ color: "var(--color-text-secondary)" }}>
-                        {item.remarks}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* RIGHT: dose pills + duration */}
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  {activeSlots.length > 0 ? (
-                    <div className="flex flex-wrap justify-end gap-1">
-                      {activeSlots.map(s => {
-                        const qty  = item[s.qty];
-                        const meal = item[s.timing] === "after_food" ? "After" : "Before";
-                        return (
-                          <span
-                            key={s.key}
-                            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap"
-                            style={{
-                              background: s.color.active,
-                              border: `1px solid ${s.color.border}`,
-                              color: s.color.text,
-                            }}
-                          >
-                            <s.Icon className="size-2.5 shrink-0" aria-hidden />
-                            ×{qty}
-                            <span style={{ opacity: 0.75 }}>{meal}</span>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <span className="text-[11px] italic" style={{ color: "var(--color-text-muted)" }}>No doses</span>
-                  )}
-                  {item.duration?.trim() && (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
-                      style={{ background: "var(--color-surface-alt)", border: "1px solid var(--color-border)", color: "var(--color-text-muted)" }}
-                    >
-                      <span className="font-semibold" style={{ color: "var(--color-text-secondary)" }}>for</span>
-                      {item.duration} days
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>No medicines on this prescription.</p>
-      )}
-
-      {/* Notes */}
-      {(notes !== undefined) && (
-        <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
-          <p
-            className="mb-1 text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            Notes
-          </p>
-          <p
-            className="text-sm whitespace-pre-wrap"
-            style={{ color: notes?.trim() ? "var(--color-text-primary)" : "var(--color-text-muted)" }}
-          >
-            {notes?.trim() || "—"}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+import { RxClinicalDocument } from "@/components/common/prescriptions/rx-clinical-document";
 
 /* ─────────────────────────────────────────────────────────────
    RxAccordionItem — one prescription accordion card
@@ -260,7 +93,7 @@ function RxAccordionItem({ rx }: { rx: PatientPrescriptionSummary }) {
         }}
       >
         <div style={{ overflow: "hidden" }}>
-          <RxDocument items={rx.items} />
+          <RxClinicalDocument items={rx.items} layout="plain" />
         </div>
       </div>
     </div>
