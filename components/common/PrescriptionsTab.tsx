@@ -184,29 +184,52 @@ function DoseSlotRow({
   onToggle: () => void;
   queueDebouncedPatch: (id: string, patch: Record<string, unknown>) => void;
 }) {
-  const [draftQty, setDraftQty] = useState<number | null>(null);
-  const display = draftQty ?? quantity;
+  // ── Optimistic draft state ─────────────────────────────────────────────
+  const [draftEnabled, setDraftEnabled] = useState<boolean | null>(null);
+  const [draftQty,     setDraftQty]     = useState<number | null>(null);
+  const [draftMeal,    setDraftMeal]    = useState<"before_food" | "after_food" | null>(null);
 
-  useEffect(() => { setDraftQty(null); }, [quantity, itemUpdatedAt]);
+  const pendingEnabledRef = useRef<boolean | null>(null);
+  const pendingQtyRef     = useRef<number | null>(null);
+  const pendingMealRef    = useRef<"before_food" | "after_food" | null>(null);
+
+  const displayEnabled = draftEnabled ?? enabled;
+  const display        = draftQty     ?? quantity;
+  const isBefore       = (draftMeal ?? meal) === "before_food";
+
+  // Reset each optimistic value only once the server-confirmed prop has caught
+  // up to the last value we queued.  Guarding on the pending ref prevents a
+  // mid-flight response from an earlier click stomping a newer optimistic value.
+  useEffect(() => {
+    if (pendingEnabledRef.current === null || enabled === pendingEnabledRef.current) {
+      pendingEnabledRef.current = null;
+      setDraftEnabled(null);
+    }
+    if (pendingQtyRef.current === null || quantity === pendingQtyRef.current) {
+      pendingQtyRef.current = null;
+      setDraftQty(null);
+    }
+    if (pendingMealRef.current === null || meal === pendingMealRef.current) {
+      pendingMealRef.current = null;
+      setDraftMeal(null);
+    }
+  }, [enabled, quantity, meal, itemUpdatedAt]);
 
   const pushQty = (n: number) => {
-    if (!enabled) return;
+    if (!displayEnabled) return;
     const c = Math.min(10, Math.max(1, Math.round(n)));
+    pendingQtyRef.current = c;
     setDraftQty(c);
     queueDebouncedPatch(itemId, { [slot.qty]: c });
   };
-
-  const isBefore = meal === "before_food";
-  /** Unique layoutId scoped per slot+item so pills don't cross-animate */
-  const pillId = `meal-pill-${itemId}-${slot.key}`;
 
   return (
     <div
       className="flex flex-col gap-2 rounded-lg px-2.5 py-2.5 transition-all duration-150"
       style={{
-        border: `1px solid ${enabled ? slot.color.border : "var(--color-border)"}`,
+        border: `1px solid ${displayEnabled ? slot.color.border : "var(--color-border)"}`,
         background: "var(--color-surface-alt)",
-        opacity: enabled ? 1 : 0.55,
+        opacity: displayEnabled ? 1 : 0.55,
       }}
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -220,8 +243,13 @@ function DoseSlotRow({
           <input
             type="checkbox"
             className="size-3.5 cursor-pointer shrink-0"
-            checked={enabled}
-            onChange={onToggle}
+            checked={displayEnabled}
+            onChange={() => {
+              const next = !displayEnabled;
+              setDraftEnabled(next);
+              pendingEnabledRef.current = next;
+              onToggle();
+            }}
             aria-label={`Enable ${slot.label} dose`}
           />
         </div>
@@ -230,12 +258,12 @@ function DoseSlotRow({
         <div className="flex items-center justify-center gap-1.5">
           <slot.Icon
             className="size-3.5 shrink-0"
-            style={{ color: enabled ? slot.color.text : "var(--color-text-muted)" }}
+            style={{ color: displayEnabled ? slot.color.text : "var(--color-text-muted)" }}
             aria-hidden
           />
           <span
             className="text-xs font-semibold truncate"
-            style={{ color: enabled ? slot.color.text : "var(--color-text-muted)" }}
+            style={{ color: displayEnabled ? slot.color.text : "var(--color-text-muted)" }}
           >
             {slot.label}
           </span>
@@ -250,7 +278,7 @@ function DoseSlotRow({
           <button
             type="button"
             aria-label="Decrease"
-            disabled={!enabled}
+            disabled={!displayEnabled}
             className="flex size-5 items-center justify-center rounded text-xs transition-colors"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
             onClick={() => pushQty(display - 1)}
@@ -259,14 +287,14 @@ function DoseSlotRow({
           </button>
           <span
             className="w-4 text-center text-xs font-bold tabular-nums"
-            style={{ color: enabled ? slot.color.text : "var(--color-text-muted)" }}
+            style={{ color: displayEnabled ? slot.color.text : "var(--color-text-muted)" }}
           >
             {display}
           </span>
           <button
             type="button"
             aria-label="Increase"
-            disabled={!enabled}
+            disabled={!displayEnabled}
             className="flex size-5 items-center justify-center rounded text-xs transition-colors"
             style={{ background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-text-secondary)" }}
             onClick={() => pushQty(display + 1)}
@@ -286,49 +314,63 @@ function DoseSlotRow({
           className="relative flex items-center rounded-full p-0.5"
           style={{
             background: "var(--color-surface)",
-            border: `1px solid ${enabled ? slot.color.border : "var(--color-border)"}`,
+            border: `1px solid ${displayEnabled ? slot.color.border : "var(--color-border)"}`,
           }}
           role="group"
           aria-label="Meal timing"
         >
+          {/*
+            Always-mounted sliding pill.
+            Animating a single continuously-mounted element avoids Framer
+            Motion queueing stale animation moves that happen when the pill
+            was conditionally mounted/unmounted on rapid clicks.
+            x "0%" = left half (Before food), x "100%" = right half (After food).
+          */}
+          <motion.span
+            className="absolute top-0.5 bottom-0.5 rounded-full pointer-events-none"
+            style={{
+              background: slot.color.text,
+              width: "calc(50% - 2px)",
+              left: "2px",
+            }}
+            initial={false}
+            animate={{ x: isBefore ? "0%" : "100%" }}
+            transition={mealSliderSpring}
+            aria-hidden
+          />
+
           {/* Before food */}
           <button
             type="button"
-            disabled={!enabled}
-            className="relative flex-1 rounded-full py-0.5 text-center text-[10px] font-bold transition-colors duration-150"
+            disabled={!displayEnabled}
+            className="relative z-10 flex-1 rounded-full py-0.5 text-center text-[10px] font-bold transition-colors duration-150"
             style={{ color: isBefore ? "#fff" : "var(--color-text-muted)" }}
-            onClick={() => { if (enabled && !isBefore) queueDebouncedPatch(itemId, { [slot.timing]: "before_food" }); }}
+            onClick={() => {
+              if (displayEnabled && !isBefore) {
+                setDraftMeal("before_food");
+                pendingMealRef.current = "before_food";
+                queueDebouncedPatch(itemId, { [slot.timing]: "before_food" });
+              }
+            }}
           >
-            {isBefore && (
-              <motion.span
-                layoutId={pillId}
-                className="absolute inset-0 rounded-full"
-                style={{ background: slot.color.text }}
-                transition={mealSliderSpring}
-                aria-hidden
-              />
-            )}
-            <span className="relative z-10">Before food</span>
+            Before food
           </button>
 
           {/* After food */}
           <button
             type="button"
-            disabled={!enabled}
-            className="relative flex-1 rounded-full py-0.5 text-center text-[10px] font-bold transition-colors duration-150"
+            disabled={!displayEnabled}
+            className="relative z-10 flex-1 rounded-full py-0.5 text-center text-[10px] font-bold transition-colors duration-150"
             style={{ color: !isBefore ? "#fff" : "var(--color-text-muted)" }}
-            onClick={() => { if (enabled && isBefore) queueDebouncedPatch(itemId, { [slot.timing]: "after_food" }); }}
+            onClick={() => {
+              if (displayEnabled && isBefore) {
+                setDraftMeal("after_food");
+                pendingMealRef.current = "after_food";
+                queueDebouncedPatch(itemId, { [slot.timing]: "after_food" });
+              }
+            }}
           >
-            {!isBefore && (
-              <motion.span
-                layoutId={pillId}
-                className="absolute inset-0 rounded-full"
-                style={{ background: slot.color.text }}
-                transition={mealSliderSpring}
-                aria-hidden
-              />
-            )}
-            <span className="relative z-10">After food</span>
+            After food
           </button>
         </div>
       </div>
@@ -368,10 +410,20 @@ function DraftMedicineCard({
   }, [excludeMedicineIds]);
 
   const [draftDuration, setDraftDuration] = useState<string>(item.duration ?? "");
-  const [draftRemarks, setDraftRemarks] = useState<string>(item.remarks ?? "");
+  const [draftRemarks,  setDraftRemarks]  = useState<string>(item.remarks  ?? "");
 
-  useEffect(() => { setDraftDuration(item.duration ?? ""); }, [item.duration, item.updatedAt]);
-  useEffect(() => { setDraftRemarks(item.remarks ?? ""); }, [item.remarks, item.updatedAt]);
+  // Refs that track whether the field is currently focused.  When focused, we
+  // skip the server-sync reset so a save of any *other* field on this item
+  // (e.g., a BF/AF toggle debounce) cannot wipe in-progress typing.
+  const durationFocusedRef = useRef(false);
+  const remarksFocusedRef  = useRef(false);
+
+  useEffect(() => {
+    if (!durationFocusedRef.current) setDraftDuration(item.duration ?? "");
+  }, [item.duration, item.updatedAt]);
+  useEffect(() => {
+    if (!remarksFocusedRef.current) setDraftRemarks(item.remarks ?? "");
+  }, [item.remarks, item.updatedAt]);
 
   return (
     <div
@@ -469,7 +521,9 @@ function DraftMedicineCard({
           placeholder="Days"
           value={draftDuration}
           onChange={(e) => setDraftDuration(e.target.value)}
+          onFocus={() => { durationFocusedRef.current = true; }}
           onBlur={() => {
+            durationFocusedRef.current = false;
             const next = draftDuration.trim() || null;
             if (next !== (item.duration ?? null)) void onPatch({ id: item.id, duration: next });
           }}
@@ -511,7 +565,9 @@ function DraftMedicineCard({
           placeholder="Remarks (optional)…"
           value={draftRemarks}
           onChange={(e) => setDraftRemarks(e.target.value)}
+          onFocus={() => { remarksFocusedRef.current = true; }}
           onBlur={() => {
+            remarksFocusedRef.current = false;
             const next = draftRemarks.trim() || null;
             if (next !== (item.remarks ?? null)) void onPatch({ id: item.id, remarks: next });
           }}
@@ -774,6 +830,7 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
 
   const pendingPatches = useRef<Record<string, Record<string, unknown>>>({});
   const debounceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const inFlight = useRef<Set<string>>(new Set());
 
   useEffect(() => { setRx(initialPrescription); }, [initialPrescription]);
 
@@ -789,12 +846,20 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
 
   /* ── Auto-save machinery ── */
   const flushDebounced = useCallback(async (itemId: string) => {
+    // If a call is already running for this item, bail — the next debounce
+    // cycle (queued by queueDebouncedPatch) will pick up any pending patches.
+    if (inFlight.current.has(itemId)) return;
     const patch = pendingPatches.current[itemId];
     delete pendingPatches.current[itemId];
     if (!patch || Object.keys(patch).length === 0) return;
-    const res = await updatePrescriptionItem({ id: itemId, ...patch } as Parameters<typeof updatePrescriptionItem>[0]);
-    if (!(await failToast(res))) return;
-    applyPayload(setRx, res.data);
+    inFlight.current.add(itemId);
+    try {
+      const res = await updatePrescriptionItem({ id: itemId, ...patch } as Parameters<typeof updatePrescriptionItem>[0]);
+      if (!(await failToast(res))) return;
+      applyPayload(setRx, res.data);
+    } finally {
+      inFlight.current.delete(itemId);
+    }
   }, []);
 
   const queueDebouncedPatch = useCallback((itemId: string, patch: Record<string, unknown>) => {
@@ -823,14 +888,22 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
     if (!rx || published) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const items = [...rx.items];
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
+    const prevItems = [...rx.items];
+    const oldIndex  = prevItems.findIndex((i) => i.id === active.id);
+    const newIndex  = prevItems.findIndex((i) => i.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    const newOrder = arrayMove(items, oldIndex, newIndex);
+    const newOrder = arrayMove(prevItems, oldIndex, newIndex);
+    // Optimistically apply the new order immediately so cards don't snap back
+    // to their original positions during the server round-trip.
+    setRx((prev) =>
+      prev ? { ...prev, items: newOrder.map((it, idx) => ({ ...it, sortOrder: idx })) } : prev
+    );
     const payload = newOrder.map((it, idx) => ({ id: it.id, sortOrder: idx }));
     const res = await reorderPrescriptionItems({ prescriptionId: rx.id, items: payload });
-    if (!(await failToast(res))) return;
+    if (!(await failToast(res))) {
+      setRx((prev) => prev ? { ...prev, items: prevItems } : prev); // roll back
+      return;
+    }
     applyPayload(setRx, res.data);
   }, [rx, published]);
 
