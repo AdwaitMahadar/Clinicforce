@@ -6,6 +6,7 @@
 
 import type { ActivityLogEntry } from "@/types/activity-log";
 import type { AppointmentStatus } from "@/types/appointment";
+import type { PrescriptionItemForAppointmentTab } from "@/types/prescription";
 
 // ─── Appointment combobox (`searchPatientsForPicker`) ─────────────────────────
 
@@ -74,6 +75,8 @@ export interface PatientPrescriptionSummary {
   activeItemCount: number;
   /** ISO timestamp — always set for rows in this list. */
   publishedAt: string;
+  /** Full active prescription items — for inline accordion document view. */
+  items: PrescriptionItemForAppointmentTab[];
 }
 
 /** Document list item for patient / appointment detail (matches DB + `DocumentCard`). */

@@ -32,6 +32,7 @@ import {
 import type {
   PrescriptionItemPayload,
   PrescriptionWithItemsPayload,
+  PrescriptionItemForAppointmentTab,
 } from "@/types/prescription";
 
 const appointmentIdParamSchema = z.object({
@@ -926,6 +927,8 @@ export type PatientPrescriptionSummary = {
   doctorName: string;
   activeItemCount: number;
   publishedAt: Date | null;
+  /** Full active items in JSON-safe shape for the inline accordion view. */
+  items: PrescriptionItemForAppointmentTab[];
 };
 
 export async function getPrescriptionsByPatient(input: unknown) {
@@ -985,6 +988,31 @@ export async function getPrescriptionsByPatient(input: unknown) {
 
     const countMap = new Map(countRows.map((c) => [c.prescriptionId, Number(c.n)]));
 
+    // Fetch full items for the inline document view (patient accordion)
+    const itemRows = await db
+      .select({ item: prescriptionItems, catalogName: medicines.name })
+      .from(prescriptionItems)
+      .innerJoin(medicines, eq(prescriptionItems.medicineId, medicines.id))
+      .where(
+        and(
+          inArray(prescriptionItems.prescriptionId, ids),
+          eq(prescriptionItems.isActive, true)
+        )
+      )
+      .orderBy(asc(prescriptionItems.sortOrder));
+
+    const itemsMap = new Map<string, PrescriptionItemForAppointmentTab[]>();
+    for (const r of itemRows) {
+      const pid = r.item.prescriptionId;
+      if (!itemsMap.has(pid)) itemsMap.set(pid, []);
+      const raw = mapItemRow(r.item, r.catalogName);
+      itemsMap.get(pid)!.push({
+        ...raw,
+        createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : String(raw.createdAt),
+        updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : String(raw.updatedAt),
+      });
+    }
+
     const data: PatientPrescriptionSummary[] = list.map((r) => ({
       id: r.rx.id,
       chartId: r.rx.chartId,
@@ -993,6 +1021,7 @@ export async function getPrescriptionsByPatient(input: unknown) {
       doctorName: doctorDisplayName(r.docFirst, r.docLast),
       activeItemCount: countMap.get(r.rx.id) ?? 0,
       publishedAt: r.rx.publishedAt,
+      items: itemsMap.get(r.rx.id) ?? [],
     }));
 
     return { success: true as const, data };

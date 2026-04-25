@@ -85,6 +85,7 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
           : p.publishedAt instanceof Date
             ? p.publishedAt.toISOString()
             : String(p.publishedAt),
+      items: p.items ?? [],
     })),
     documents: r.documents.map((d) => ({
       id:         d.id,
