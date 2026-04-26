@@ -4,6 +4,7 @@ export { HomeDashboardSkeleton } from "./HomeDashboardSkeleton";
 export { CalendarDashboardSkeleton } from "./CalendarDashboardSkeleton";
 export { ReportsPlaceholderSkeleton } from "./ReportsPlaceholderSkeleton";
 export { DetailPageSkeleton } from "./DetailPageSkeleton";
+export { DetailPanelTabSkeleton } from "./DetailPanelTabSkeleton";
 export {
   ModalDetailSkeleton,
   ModalDetailPanelBodySkeleton,

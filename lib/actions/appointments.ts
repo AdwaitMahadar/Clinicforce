@@ -22,9 +22,13 @@ import { db } from "@/lib/db";
 import { appointments, patients, prescriptionItems, prescriptions, users } from "@/lib/db/schema";
 import {
   getAppointments as queryGetAppointments,
-  getAppointmentById,
+  getAppointmentByIdCore,
+  getAppointmentPatientIdForClinic,
   getActiveDoctors as queryGetActiveDoctors,
 } from "@/lib/db/queries/appointments";
+import type { DocumentSummary } from "@/lib/db/queries/documents";
+import { getDocumentsByAssignment } from "@/lib/db/queries/documents";
+import { getPatientAppointmentSummaries } from "@/lib/db/queries/patients";
 import {
   createAppointmentSchema,
   updateAppointmentSchema,
@@ -32,8 +36,19 @@ import {
 import { idSchema, n } from "@/lib/validators/common";
 import { appendActivityLog } from "@/lib/activity-log";
 import { getEntityActivity } from "@/lib/actions/activity-log";
+import {
+  getPrescriptionByAppointment,
+  getPrescriptionsByPatient,
+  type PatientPrescriptionSummary,
+} from "@/lib/actions/prescriptions";
 import type { PrescriptionForAppointmentTab } from "@/types/prescription";
 import { toAppointmentTabPrescription } from "@/types/prescription";
+
+/** Payload for appointment detail Prescriptions tab (streaming / prefetch). */
+export type AppointmentDetailPrescriptionsTabData = {
+  prescription: PrescriptionForAppointmentTab | null;
+  prescriptionHistory: PatientPrescriptionSummary[];
+};
 
 // ─── Input schemas ─────────────────────────────────────────────────────────────
 
@@ -146,9 +161,10 @@ export async function getAppointments(input: unknown) {
   }
 }
 
-// ─── getAppointmentDetail ──────────────────────────────────────────────────────
+// ─── getAppointmentDetailCore ───────────────────────────────────────────────────
+// Core row + activity only — for streaming shells that load tab slices separately.
 
-export async function getAppointmentDetail(id: unknown) {
+export async function getAppointmentDetailCore(id: unknown) {
   try {
     const session = await getSession();
     requireRole(session, ["admin", "doctor", "staff"]);
@@ -159,7 +175,7 @@ export async function getAppointmentDetail(id: unknown) {
     }
 
     const { clinicId } = session.user;
-    const appointment = await getAppointmentById(clinicId, parsed.data);
+    const appointment = await getAppointmentByIdCore(clinicId, parsed.data);
 
     if (!appointment) {
       return { success: false as const, error: "Appointment not found." };
@@ -167,10 +183,8 @@ export async function getAppointmentDetail(id: unknown) {
 
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
     const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
-    const canDocuments = hasPermission(session.user.type, "viewDocuments");
     const isStaff = session.user.type === "staff";
 
-    // Staff never see the activity sidebar — skip the query entirely
     let activityLogEntries: import("@/types/activity-log").ActivityLogEntry[] = [];
     let activityLogHasMore = false;
     if (!isStaff) {
@@ -184,39 +198,62 @@ export async function getAppointmentDetail(id: unknown) {
       }
     }
 
-    const canPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
-    let prescription: PrescriptionForAppointmentTab | null = null;
-    let prescriptionHistory: import("@/lib/actions/prescriptions").PatientPrescriptionSummary[] =
-      [];
-    if (canPrescriptions) {
-      const { getPrescriptionByAppointment, getPrescriptionsByPatient } =
-        await import("@/lib/actions/prescriptions");
-      const [rxRes, histRes] = await Promise.all([
-        getPrescriptionByAppointment({ appointmentId: parsed.data }),
-        getPrescriptionsByPatient({ patientId: appointment.patientId }),
-      ]);
-      if (rxRes.success && rxRes.data) {
-        prescription = toAppointmentTabPrescription(rxRes.data);
-      }
-      if (histRes.success) {
-        prescriptionHistory = histRes.data;
-      }
-    }
-
     return {
       success: true as const,
       data: {
         ...appointment,
         notes: canNotes ? appointment.notes : null,
         title: canTitle ? appointment.title : null,
-        patientDocuments: canDocuments ? appointment.patientDocuments : [],
-        patientAppointments: appointment.patientAppointments.map((a) => ({
-          ...a,
-          title: canTitle ? a.title : null,
-        })),
         patientPastHistoryNotes: canNotes ? appointment.patientPastHistoryNotes : null,
         activityLog: activityLogEntries,
         activityLogHasMore,
+      },
+    };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getAppointmentDetailCore]", err);
+    return { success: false as const, error: "Failed to fetch appointment." };
+  }
+}
+
+export type AppointmentDetailCoreSuccessData = Extract<
+  Awaited<ReturnType<typeof getAppointmentDetailCore>>,
+  { success: true }
+>["data"];
+
+// ─── getAppointmentDetail ──────────────────────────────────────────────────────
+
+export async function getAppointmentDetail(id: unknown) {
+  try {
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid appointment ID." };
+    }
+
+    const coreRes = await getAppointmentDetailCore(parsed.data);
+    if (!coreRes.success) return coreRes;
+
+    const session = await getSession();
+    const canDocuments = hasPermission(session.user.type, "viewDocuments");
+
+    const [docRes, apptRes, rxRes] = await Promise.all([
+      getAppointmentDetailDocumentsTab(parsed.data),
+      getAppointmentDetailAppointmentsTab(parsed.data),
+      getAppointmentDetailPrescriptionsTab(parsed.data),
+    ]);
+
+    const patientDocuments =
+      docRes.success && canDocuments ? docRes.data : ([] as import("@/lib/db/queries/documents").DocumentSummary[]);
+    const patientAppointments = apptRes.success ? apptRes.data : [];
+    const prescription = rxRes.success ? rxRes.data.prescription : null;
+    const prescriptionHistory = rxRes.success ? rxRes.data.prescriptionHistory : [];
+
+    return {
+      success: true as const,
+      data: {
+        ...coreRes.data,
+        patientDocuments,
+        patientAppointments,
         prescription,
         prescriptionHistory,
       },
@@ -225,6 +262,119 @@ export async function getAppointmentDetail(id: unknown) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getAppointmentDetail]", err);
     return { success: false as const, error: "Failed to fetch appointment." };
+  }
+}
+
+// ─── Appointment detail tab slices (streaming / prefetch) ─────────────────────
+// Each mirrors RBAC + shapes of `getAppointmentDetail` tab fields. Used by
+// `lib/detail-tab-fetch-cache.ts` (React.cache) and future prefetch RSCs.
+
+export async function getAppointmentDetailDocumentsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid appointment ID." };
+    }
+
+    if (!hasPermission(session.user.type, "viewDocuments")) {
+      return { success: true as const, data: [] as DocumentSummary[] };
+    }
+
+    const { clinicId } = session.user;
+    const patientId = await getAppointmentPatientIdForClinic(clinicId, parsed.data);
+    if (!patientId) {
+      return { success: false as const, error: "Appointment not found." };
+    }
+
+    const data = await getDocumentsByAssignment(clinicId, patientId, "patient");
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getAppointmentDetailDocumentsTab]", err);
+    return { success: false as const, error: "Failed to fetch documents." };
+  }
+}
+
+export async function getAppointmentDetailAppointmentsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid appointment ID." };
+    }
+
+    const { clinicId } = session.user;
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
+    const patientId = await getAppointmentPatientIdForClinic(clinicId, parsed.data);
+    if (!patientId) {
+      return { success: false as const, error: "Appointment not found." };
+    }
+
+    const rows = await getPatientAppointmentSummaries(clinicId, patientId);
+    const data = rows.map((a) => ({
+      ...a,
+      title: canTitle ? a.title : null,
+    }));
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getAppointmentDetailAppointmentsTab]", err);
+    return { success: false as const, error: "Failed to fetch appointments." };
+  }
+}
+
+export async function getAppointmentDetailPrescriptionsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid appointment ID." };
+    }
+
+    if (!hasPermission(session.user.type, "viewPrescriptions")) {
+      const empty: AppointmentDetailPrescriptionsTabData = {
+        prescription: null,
+        prescriptionHistory: [],
+      };
+      return { success: true as const, data: empty };
+    }
+
+    const { clinicId } = session.user;
+    const patientId = await getAppointmentPatientIdForClinic(clinicId, parsed.data);
+    if (!patientId) {
+      return { success: false as const, error: "Appointment not found." };
+    }
+
+    const [rxRes, histRes] = await Promise.all([
+      getPrescriptionByAppointment({ appointmentId: parsed.data }),
+      getPrescriptionsByPatient({ patientId }),
+    ]);
+
+    let prescription: PrescriptionForAppointmentTab | null = null;
+    let prescriptionHistory: PatientPrescriptionSummary[] = [];
+    if (rxRes.success && rxRes.data) {
+      prescription = toAppointmentTabPrescription(rxRes.data);
+    }
+    if (histRes.success) {
+      prescriptionHistory = histRes.data;
+    }
+
+    const data: AppointmentDetailPrescriptionsTabData = {
+      prescription,
+      prescriptionHistory,
+    };
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getAppointmentDetailPrescriptionsTab]", err);
+    return { success: false as const, error: "Failed to fetch prescriptions." };
   }
 }
 
@@ -352,8 +502,8 @@ export async function updateAppointment(input: unknown) {
     }
     const serverNow = new Date();
 
-    // Verify ownership — reuse this fetch for old-value diffing (no extra query)
-    const existing = await getAppointmentById(clinicId, id);
+    // Verify ownership — reuse core fetch for old-value diffing (no tab aggregates)
+    const existing = await getAppointmentByIdCore(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Appointment not found." };
     }
@@ -520,7 +670,7 @@ export async function deleteAppointment(id: unknown) {
 
     const { clinicId } = session.user;
 
-    const existing = await getAppointmentById(clinicId, parsed.data);
+    const existing = await getAppointmentByIdCore(clinicId, parsed.data);
     if (!existing) {
       return { success: false as const, error: "Appointment not found." };
     }

@@ -2,7 +2,7 @@
 
 /**
  * Sidebar-only patient snapshot on appointment detail (admin/doctor).
- * Data comes from `AppointmentDetail.patientSummary` (getAppointmentDetail + mapper).
+ * Data comes from `AppointmentDetail.patientSummary` (`getAppointmentDetailCore` + `buildAppointmentDetailCore`).
  * Any missing / empty optional value renders as "—".
  */
 

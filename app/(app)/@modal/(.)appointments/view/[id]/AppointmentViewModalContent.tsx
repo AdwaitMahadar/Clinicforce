@@ -1,22 +1,39 @@
 import { notFound } from "next/navigation";
-import { getAppointmentDetail, getActiveDoctors } from "@/lib/actions/appointments";
-import { mapDoctorPickerResults } from "@/app/(app)/appointments/_lib/appointment-picker-options";
-import { buildAppointmentDetail } from "@/app/(app)/appointments/_lib/appointment-detail-mapper";
+import { hasPermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
+import { loadAppointmentDetailViewData } from "@/app/(app)/appointments/_lib/appointment-detail-view-data";
 import { AppointmentViewModalClient } from "./AppointmentViewModalClient";
+import { AppointmentDetailPrefetchGroup } from "@/app/(app)/appointments/_components/detail-tabs/appointment-detail-prefetch-group";
+import {
+  AppointmentAppointmentsTabLoader,
+  AppointmentDocumentsTabLoader,
+  AppointmentPrescriptionsTabLoader,
+} from "@/app/(app)/appointments/_components/detail-tabs/appointment-detail-tab-loaders";
 
 export async function AppointmentViewModalContent({ id }: { id: string }) {
-  const [result, doctorsRes] = await Promise.all([
-    getAppointmentDetail(id),
-    getActiveDoctors(),
-  ]);
-  const { doctorOptions } = mapDoctorPickerResults(doctorsRes);
+  const [session, payload] = await Promise.all([getSession(), loadAppointmentDetailViewData(id)]);
 
-  if (!result.success) notFound();
+  if (!payload) notFound();
+
+  const { appointment, doctorOptions } = payload;
+  const showPrescriptionsTab = hasPermission(session.user.type, "viewPrescriptions");
 
   return (
-    <AppointmentViewModalClient
-      appointment={buildAppointmentDetail(result.data)}
-      doctorOptions={doctorOptions}
-    />
+    <>
+      <AppointmentDetailPrefetchGroup appointmentId={id} />
+      <AppointmentViewModalClient
+        appointment={appointment}
+        doctorOptions={doctorOptions}
+        documentsTab={
+          <AppointmentDocumentsTabLoader appointmentId={id} patientId={appointment.patientId} />
+        }
+        appointmentsTab={<AppointmentAppointmentsTabLoader appointmentId={id} />}
+        prescriptionsTab={
+          showPrescriptionsTab ? (
+            <AppointmentPrescriptionsTabLoader appointmentId={id} />
+          ) : undefined
+        }
+      />
+    </>
   );
 }

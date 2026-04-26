@@ -5,16 +5,35 @@
  * can dismiss the modal (same pattern as `NewPatientModalClient`).
  */
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { PatientDetail } from "@/types/patient";
+import type { PatientDetailCore } from "@/types/patient";
 import { PatientDetailPanel } from "@/app/(app)/patients/_components/PatientDetailPanel";
 
-export function PatientViewModalClient({ patient }: { patient: PatientDetail }) {
+type Props = {
+  patient: PatientDetailCore;
+  documentsTab: ReactNode;
+  appointmentsTab: ReactNode;
+  prescriptionsTab?: ReactNode;
+};
+
+export function PatientViewModalClient({
+  patient,
+  documentsTab,
+  appointmentsTab,
+  prescriptionsTab,
+}: Props) {
   const router = useRouter();
   const handleClose = useCallback(() => router.back(), [router]);
 
   return (
-    <PatientDetailPanel mode="view" patient={patient} onClose={handleClose} />
+    <PatientDetailPanel
+      mode="view"
+      patient={patient}
+      documentsTab={documentsTab}
+      appointmentsTab={appointmentsTab}
+      prescriptionsTab={prescriptionsTab}
+      onClose={handleClose}
+    />
   );
 }

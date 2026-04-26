@@ -3,16 +3,18 @@
 /**
  * Shared shell for entity detail views: header, tabbed content column, optional
  * activity sidebar, footer actions.
+ * Non-Details tab bodies are wrapped in `Suspense` so async RSC tab loaders can stream.
  * Colours via CSS variables only — see globals.css.
  */
 
-import type { ReactNode, RefObject } from "react";
+import { Suspense, type ReactNode, type RefObject } from "react";
 import { CalendarDays, FileText, Pill, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import { DetailSidebar } from "@/components/common/DetailSidebar";
 import { DetailPanelTabs, type DetailPanelTabItem } from "@/components/common/DetailPanelTabs";
+import { DetailPanelTabSkeleton } from "@/components/common/skeletons";
 import type { ActivityLogEntry } from "@/types/activity-log";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/lib/auth/session-context";
@@ -106,7 +108,11 @@ export function DetailPanel({
       key: "documents",
       label: "Documents",
       icon: FileText,
-      content: <div className="px-6 py-4">{documentsTab}</div>,
+      content: (
+        <Suspense fallback={<DetailPanelTabSkeleton />}>
+          <div className="px-6 py-4">{documentsTab}</div>
+        </Suspense>
+      ),
     });
   }
   if (showAppointmentsTab) {
@@ -114,7 +120,11 @@ export function DetailPanel({
       key: "appointments",
       label: "Appointments",
       icon: CalendarDays,
-      content: <div className="px-6 py-4">{appointmentsTab}</div>,
+      content: (
+        <Suspense fallback={<DetailPanelTabSkeleton />}>
+          <div className="px-6 py-4">{appointmentsTab}</div>
+        </Suspense>
+      ),
     });
   }
   if (showPrescriptionsTab) {
@@ -122,7 +132,11 @@ export function DetailPanel({
       key: "prescriptions",
       label: "Prescriptions",
       icon: Pill,
-      content: <div className="px-6 py-4">{prescriptionsTab}</div>,
+      content: (
+        <Suspense fallback={<DetailPanelTabSkeleton />}>
+          <div className="px-6 py-4">{prescriptionsTab}</div>
+        </Suspense>
+      ),
     });
   }
 

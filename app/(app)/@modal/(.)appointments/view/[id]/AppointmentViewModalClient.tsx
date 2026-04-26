@@ -5,20 +5,29 @@
  * Save / cancel appointment dismiss the modal (same pattern as `PatientViewModalClient`).
  */
 
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AppointmentDetailPanel } from "@/app/(app)/appointments/_components/AppointmentDetailPanel";
 import type {
-  AppointmentDetail,
+  AppointmentDetailCore,
   AppointmentSelectOption,
 } from "@/types/appointment";
 
 type Props = {
-  appointment: AppointmentDetail;
+  appointment: AppointmentDetailCore;
   doctorOptions: AppointmentSelectOption[];
+  documentsTab: ReactNode;
+  appointmentsTab: ReactNode;
+  prescriptionsTab?: ReactNode;
 };
 
-export function AppointmentViewModalClient({ appointment, doctorOptions }: Props) {
+export function AppointmentViewModalClient({
+  appointment,
+  doctorOptions,
+  documentsTab,
+  appointmentsTab,
+  prescriptionsTab,
+}: Props) {
   const router = useRouter();
   const handleClose = useCallback(() => router.back(), [router]);
 
@@ -27,6 +36,9 @@ export function AppointmentViewModalClient({ appointment, doctorOptions }: Props
       mode="edit"
       appointment={appointment}
       doctorOptions={doctorOptions}
+      documentsTab={documentsTab}
+      appointmentsTab={appointmentsTab}
+      prescriptionsTab={prescriptionsTab}
       onClose={handleClose}
     />
   );

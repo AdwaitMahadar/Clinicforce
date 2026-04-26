@@ -113,3 +113,9 @@ export interface AppointmentDetail {
    */
   prescriptionHistory: PatientPrescriptionSummary[];
 }
+
+/** Appointment detail UI without tab columns — Details + sidebar snapshot + activity. */
+export type AppointmentDetailCore = Omit<
+  AppointmentDetail,
+  "patientDocuments" | "patientAppointments" | "prescription" | "prescriptionHistory"
+>;

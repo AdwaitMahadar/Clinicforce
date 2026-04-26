@@ -1,21 +1,30 @@
 /**
  * app/(app)/patients/_lib/patient-detail-mapper.ts
  *
- * Maps the `getPatientDetail` server action result (DB shape) to the UI
- * `PatientDetail` type consumed by `PatientDetailPanel`.
+ * Maps the `getPatientDetail` / `getPatientDetailCore` server action results to the UI
+ * `PatientDetail` / `PatientDetailCore` types consumed by `PatientDetailPanel`.
  *
  * Used by both the full-page route (`patients/view/[id]/page.tsx`) and the
  * intercepting modal (`@modal/(.)patients/view/[id]/PatientViewModalContent.tsx`).
  */
 
 import { format, parseISO, differenceInYears } from "date-fns";
+import {
+  mapAppointmentSummaryRowsToPatientAppointments,
+  mapDocumentSummariesToPatientDocuments,
+  mapServerPrescriptionSummariesToPatientUi,
+} from "@/lib/detail-tab-ui-mappers";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
-import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
-import type { getPatientDetail } from "@/lib/actions/patients";
-import type { PatientDetail } from "@/types/patient";
+import type { getPatientDetail, getPatientDetailCore } from "@/lib/actions/patients";
+import type { PatientDetail, PatientDetailCore } from "@/types/patient";
 
 type PatientDetailData = Extract<
   Awaited<ReturnType<typeof getPatientDetail>>,
+  { success: true }
+>["data"];
+
+type PatientDetailCoreData = Extract<
+  Awaited<ReturnType<typeof getPatientDetailCore>>,
   { success: true }
 >["data"];
 
@@ -30,7 +39,8 @@ function formatDob(raw: string | null | undefined): string {
   }
 }
 
-export function buildPatientDetail(r: PatientDetailData): PatientDetail {
+/** Maps core patient detail (no tab lists) for the Details column + activity. */
+export function buildPatientDetailCore(r: PatientDetailCoreData): PatientDetailCore {
   return {
     id:                    r.id,
     chartId:               formatPatientChartId(r.chartId),
@@ -44,7 +54,7 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
         ? r.dateOfBirth.slice(0, 10)
         : ""
       : "",
-    gender:                (r.gender as PatientDetail["gender"]) ?? "Other",
+    gender:                (r.gender as PatientDetailCore["gender"]) ?? "Other",
     address:               r.address ?? "",
     bloodGroup:            r.bloodGroup ?? "",
     allergies:             r.allergies ?? null,
@@ -54,52 +64,29 @@ export function buildPatientDetail(r: PatientDetailData): PatientDetail {
     assignedDoctor:        "",
     isActive:              r.isActive,
     status:                r.isActive ? "active" : "inactive",
-    appointments: (r.appointments ?? []).map((a) => ({
-      id:        a.id,
-      title:     a.title,
-      category:  a.category,
-      visitType: a.visitType,
-      heading:   formatAppointmentHeading({
-        category:  a.category,
-        visitType: a.visitType,
-        title:     a.title,
-      }),
-      doctor: a.doctor ?? "",
-      date:   a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
-      time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
-      status: a.status as PatientDetail["appointments"][number]["status"],
-    })),
-    prescriptions: (r.prescriptions ?? []).map((p) => ({
-      id: p.id,
-      chartId: p.chartId,
-      appointmentId: p.appointmentId,
-      scheduledAt:
-        p.scheduledAt instanceof Date
-          ? p.scheduledAt.toISOString()
-          : String(p.scheduledAt),
-      doctorName: p.doctorName,
-      activeItemCount: p.activeItemCount,
-      publishedAt:
-        p.publishedAt == null
-          ? ""
-          : p.publishedAt instanceof Date
-            ? p.publishedAt.toISOString()
-            : String(p.publishedAt),
-      items: p.items ?? [],
-    })),
-    documents: r.documents.map((d) => ({
-      id:         d.id,
-      title:      d.title,
-      fileName:   d.fileName,
-      mimeType:   d.mimeType,
-      fileSize:   d.fileSize,
-      type:       d.type,
-      uploadedAt:
-        d.uploadedAt instanceof Date
-          ? d.uploadedAt.toISOString()
-          : String(d.uploadedAt),
-    })),
-    activityLog: r.activityLog,
-    activityLogHasMore: r.activityLogHasMore,
+    activityLog:           r.activityLog,
+    activityLogHasMore:    r.activityLogHasMore,
+  };
+}
+
+function mapPatientTabFields(r: PatientDetailData): Pick<
+  PatientDetail,
+  "appointments" | "prescriptions" | "documents"
+> {
+  return {
+    appointments: mapAppointmentSummaryRowsToPatientAppointments(r.appointments ?? []),
+    prescriptions: mapServerPrescriptionSummariesToPatientUi(r.prescriptions ?? []),
+    documents: mapDocumentSummariesToPatientDocuments(r.documents),
+  };
+}
+
+export function buildPatientDetail(r: PatientDetailData): PatientDetail {
+  const { appointments, prescriptions, documents, ...corePayload } = r;
+  void appointments;
+  void prescriptions;
+  void documents;
+  return {
+    ...buildPatientDetailCore(corePayload as PatientDetailCoreData),
+    ...mapPatientTabFields(r),
   };
 }

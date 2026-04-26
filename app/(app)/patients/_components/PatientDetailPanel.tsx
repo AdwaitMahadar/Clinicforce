@@ -9,7 +9,7 @@
  *   mode="create" — new patient form; no sidebar
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { differenceInYears, isValid, parseISO } from "date-fns";
@@ -18,19 +18,10 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  InitialsBadge,
-  StatusBadge,
-  DocumentsTab,
-  AppointmentListTab,
-  PatientPrescriptionsTab,
-  DetailPanel,
-  DetailForm,
-  PanelCloseButton,
-} from "@/components/common";
+import { InitialsBadge, StatusBadge, DetailPanel, DetailForm, PanelCloseButton } from "@/components/common";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
-import type { PatientDetail } from "@/types/patient";
+import type { PatientDetailCore } from "@/types/patient";
 import {
   createPatientSchema,
   updatePatientSchema,
@@ -50,11 +41,16 @@ import { PatientDobAgeSync } from "./PatientDobAgeSync";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-interface PatientDetailPanelProps {
-  mode: "view" | "create";
-  patient?: PatientDetail;
-  onClose?: () => void;
-}
+type PatientDetailPanelProps =
+  | { mode: "create"; onClose?: () => void }
+  | {
+      mode: "view";
+      patient: PatientDetailCore;
+      documentsTab: ReactNode;
+      appointmentsTab: ReactNode;
+      prescriptionsTab?: ReactNode;
+      onClose?: () => void;
+    };
 
 // ─── Gender / blood options for DetailForm selects ─────────────────────────────
 
@@ -74,7 +70,7 @@ const BLOOD_GROUP_OPTIONS = PATIENT_BLOOD_GROUPS.map((b) => ({
   value: b,
 }));
 
-function patientGenderToForm(g: PatientDetail["gender"]): "male" | "female" | "other" {
+function patientGenderToForm(g: PatientDetailCore["gender"]): "male" | "female" | "other" {
   if (g === "Male") return "male";
   if (g === "Female") return "female";
   if (g === "Other") return "other";
@@ -190,7 +186,8 @@ const EMPTY_CREATE: DefaultValues<CreatePatientInput> = {
 
 const PATIENT_LIST_HREF = "/patients/dashboard";
 
-export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPanelProps) {
+export function PatientDetailPanel(props: PatientDetailPanelProps) {
+  const { onClose } = props;
   const router = useRouter();
   const { exitAfterMutation } = useDetailExit({
     listHref: PATIENT_LIST_HREF,
@@ -201,7 +198,11 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
   const [pendingReactivateValues, setPendingReactivateValues] =
     useState<UpdatePatientInput | null>(null);
 
-  const isCreate = mode === "create";
+  const isCreate = props.mode === "create";
+  const patient = props.mode === "view" ? props.patient : undefined;
+  const documentsTabSlot = props.mode === "view" ? props.documentsTab : undefined;
+  const appointmentsTabSlot = props.mode === "view" ? props.appointmentsTab : undefined;
+  const prescriptionsTabSlot = props.mode === "view" ? props.prescriptionsTab : undefined;
   const canViewClinicalNotes = usePermission("viewClinicalNotes");
   const canViewPrescriptions = usePermission("viewPrescriptions");
   const visibleFields = canViewClinicalNotes
@@ -367,26 +368,10 @@ export function PatientDetailPanel({ mode, patient, onClose }: PatientDetailPane
         formRef={formRef}
         form={form}
         detailsTabIcon={UserRound}
-        documentsTab={
-          <DocumentsTab
-            documents={patient.documents}
-            patientId={patient.id}
-            emptyMessage="No documents uploaded yet."
-          />
-        }
-        appointmentsTab={
-          <AppointmentListTab
-            appointments={patient.appointments}
-            emptyMessage="No appointments recorded."
-          />
-        }
+        documentsTab={documentsTabSlot}
+        appointmentsTab={appointmentsTabSlot}
         prescriptionsTab={
-          canViewPrescriptions ? (
-            <PatientPrescriptionsTab
-              patientId={patient.id}
-              initialPrescriptions={patient.prescriptions}
-            />
-          ) : undefined
+          canViewPrescriptions ? prescriptionsTabSlot : undefined
         }
         events={patient.activityLog}
         hasMoreEvents={patient.activityLogHasMore}

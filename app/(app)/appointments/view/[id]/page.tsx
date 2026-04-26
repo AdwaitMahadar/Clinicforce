@@ -7,11 +7,17 @@
  */
 
 import { notFound } from "next/navigation";
-import { getAppointmentDetail, getActiveDoctors } from "@/lib/actions/appointments";
-import { mapDoctorPickerResults } from "../../_lib/appointment-picker-options";
-import { buildAppointmentDetail } from "../../_lib/appointment-detail-mapper";
+import { hasPermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
+import { loadAppointmentDetailViewData } from "../../_lib/appointment-detail-view-data";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { AppointmentDetailPanel } from "../../_components/AppointmentDetailPanel";
+import { AppointmentDetailPrefetchGroup } from "../../_components/detail-tabs/appointment-detail-prefetch-group";
+import {
+  AppointmentAppointmentsTabLoader,
+  AppointmentDocumentsTabLoader,
+  AppointmentPrescriptionsTabLoader,
+} from "../../_components/detail-tabs/appointment-detail-tab-loaders";
 import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 interface AppointmentDetailPageProps {
@@ -20,15 +26,13 @@ interface AppointmentDetailPageProps {
 
 export default async function AppointmentDetailPage({ params }: AppointmentDetailPageProps) {
   const { id } = await params;
-  const [result, doctorsRes] = await Promise.all([
-    getAppointmentDetail(id),
-    getActiveDoctors(),
-  ]);
-  const { doctorOptions } = mapDoctorPickerResults(doctorsRes);
+  const [session, payload] = await Promise.all([getSession(), loadAppointmentDetailViewData(id)]);
 
-  if (!result.success) notFound();
+  if (!payload) notFound();
 
-  const appointment = buildAppointmentDetail(result.data);
+  const { appointment, doctorOptions } = payload;
+  const showPrescriptionsTab = hasPermission(session.user.type, "viewPrescriptions");
+
   const t = appointment.title?.trim();
   const breadcrumbLabel = t
     ? t
@@ -40,11 +44,23 @@ export default async function AppointmentDetailPage({ params }: AppointmentDetai
 
   return (
     <DetailPageShell breadcrumb={`Appointments › ${breadcrumbLabel}`}>
-      <AppointmentDetailPanel
-        mode="edit"
-        appointment={appointment}
-        doctorOptions={doctorOptions}
-      />
+      <>
+        <AppointmentDetailPrefetchGroup appointmentId={id} />
+        <AppointmentDetailPanel
+          mode="edit"
+          appointment={appointment}
+          doctorOptions={doctorOptions}
+          documentsTab={
+            <AppointmentDocumentsTabLoader appointmentId={id} patientId={appointment.patientId} />
+          }
+          appointmentsTab={<AppointmentAppointmentsTabLoader appointmentId={id} />}
+          prescriptionsTab={
+            showPrescriptionsTab ? (
+              <AppointmentPrescriptionsTabLoader appointmentId={id} />
+            ) : undefined
+          }
+        />
+      </>
     </DetailPageShell>
   );
 }

@@ -80,6 +80,12 @@ export interface AppointmentDetailRecord {
   patientPastHistoryNotes: string | null;
 }
 
+/** Appointment row + patient join only — no document or appointment-list aggregates. */
+export type AppointmentDetailCoreRecord = Omit<
+  AppointmentDetailRecord,
+  "patientDocuments" | "patientAppointments"
+>;
+
 // ─── getAppointments ──────────────────────────────────────────────────────────
 
 /**
@@ -149,10 +155,10 @@ export async function getAppointments(
  *
  * Returns null if the appointment doesn't exist or belongs to a different clinic.
  */
-export async function getAppointmentById(
+export async function getAppointmentByIdCore(
   clinicId: string,
   id: string
-): Promise<AppointmentDetailRecord | null> {
+): Promise<AppointmentDetailCoreRecord | null> {
   const rows = await db
     .select({
       id: appointments.id,
@@ -188,18 +194,11 @@ export async function getAppointmentById(
     .from(appointments)
     .innerJoin(patients, eq(appointments.patientId, patients.id))
     .leftJoin(users, eq(appointments.doctorId, users.id))
-    .where(
-      and(eq(appointments.clinicId, clinicId), eq(appointments.id, id))
-    )
+    .where(and(eq(appointments.clinicId, clinicId), eq(appointments.id, id)))
     .limit(1);
 
   const appt = rows[0];
   if (!appt) return null;
-
-  const [patientDocuments, patientAppointments] = await Promise.all([
-    getDocumentsByAssignment(clinicId, appt.patientId, "patient"),
-    getPatientAppointmentSummaries(clinicId, appt.patientId),
-  ]);
 
   return {
     id: appt.id,
@@ -222,14 +221,43 @@ export async function getAppointmentById(
     createdAt: appt.createdAt,
     updatedAt: appt.updatedAt,
     createdBy: appt.createdBy,
-    patientDocuments,
-    patientAppointments,
     patientDateOfBirth: appt.patientDateOfBirth,
     patientGender: appt.patientGender,
     patientBloodGroup: appt.patientBloodGroup,
     patientAllergies: appt.patientAllergies,
     patientPastHistoryNotes: appt.patientPastHistoryNotes,
   };
+}
+
+export async function getAppointmentById(
+  clinicId: string,
+  id: string
+): Promise<AppointmentDetailRecord | null> {
+  const core = await getAppointmentByIdCore(clinicId, id);
+  if (!core) return null;
+
+  const [patientDocuments, patientAppointments] = await Promise.all([
+    getDocumentsByAssignment(clinicId, core.patientId, "patient"),
+    getPatientAppointmentSummaries(clinicId, core.patientId),
+  ]);
+
+  return { ...core, patientDocuments, patientAppointments };
+}
+
+/**
+ * Resolves `patient_id` for an appointment scoped to a clinic.
+ * Used by appointment detail tab slices without loading documents/appointments aggregates.
+ */
+export async function getAppointmentPatientIdForClinic(
+  clinicId: string,
+  appointmentId: string
+): Promise<string | null> {
+  const [row] = await db
+    .select({ patientId: appointments.patientId })
+    .from(appointments)
+    .where(and(eq(appointments.clinicId, clinicId), eq(appointments.id, appointmentId)))
+    .limit(1);
+  return row?.patientId ?? null;
 }
 
 // ─── getActiveDoctors ─────────────────────────────────────────────────────────

@@ -123,3 +123,6 @@ export interface PatientDetail {
   /** Whether the server has more activity log pages beyond the initial SSR batch. */
   activityLogHasMore:   boolean;
 }
+
+/** Patient detail UI without Documents / Appointments / Prescriptions tab payloads. */
+export type PatientDetailCore = Omit<PatientDetail, "appointments" | "prescriptions" | "documents">;

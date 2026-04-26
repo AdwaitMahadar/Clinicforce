@@ -72,6 +72,9 @@ export interface PatientDetail {
   documents: DocumentSummary[];
 }
 
+/** Patient row only — no appointment summaries or document list. */
+export type PatientDetailCoreRecord = Omit<PatientDetail, "appointments" | "documents">;
+
 // ─── Query Params ─────────────────────────────────────────────────────────────
 
 export interface GetPatientsParams {
@@ -311,10 +314,10 @@ export async function getPatientAppointmentSummaries(
  * Includes joined appointments (most recent first) and documents.
  * Returns null if the patient doesn't exist or belongs to a different clinic.
  */
-export async function getPatientById(
+export async function getPatientByIdCore(
   clinicId: string,
   id: string
-): Promise<PatientDetail | null> {
+): Promise<PatientDetailCoreRecord | null> {
   const patientRows = await db
     .select({
       id: patients.id,
@@ -340,7 +343,14 @@ export async function getPatientById(
     .where(and(eq(patients.clinicId, clinicId), eq(patients.id, id)))
     .limit(1);
 
-  const patient = patientRows[0];
+  return patientRows[0] ?? null;
+}
+
+export async function getPatientById(
+  clinicId: string,
+  id: string
+): Promise<PatientDetail | null> {
+  const patient = await getPatientByIdCore(clinicId, id);
   if (!patient) return null;
 
   const [apptSummaries, docs] = await Promise.all([
@@ -353,6 +363,16 @@ export async function getPatientById(
     appointments: apptSummaries,
     documents: docs,
   };
+}
+
+/** True when a patient row exists for this clinic (lightweight existence check). */
+export async function isPatientInClinic(clinicId: string, patientId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: patients.id })
+    .from(patients)
+    .where(and(eq(patients.clinicId, clinicId), eq(patients.id, patientId)))
+    .limit(1);
+  return row != null;
 }
 
 // ─── getActivePatients ────────────────────────────────────────────────────────

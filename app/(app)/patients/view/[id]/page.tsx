@@ -7,10 +7,17 @@
  */
 
 import { notFound } from "next/navigation";
-import { getPatientDetail } from "@/lib/actions/patients";
-import { buildPatientDetail } from "../../_lib/patient-detail-mapper";
+import { hasPermission } from "@/lib/permissions";
+import { getSession } from "@/lib/auth/session";
+import { loadPatientDetailViewData } from "../../_lib/patient-detail-view-data";
 import { DetailPageShell } from "@/components/layout/DetailPageShell";
 import { PatientDetailPanel } from "../../_components/PatientDetailPanel";
+import { PatientDetailPrefetchGroup } from "../../_components/detail-tabs/patient-detail-prefetch-group";
+import {
+  PatientAppointmentsTabLoader,
+  PatientDocumentsTabLoader,
+  PatientPrescriptionsTabLoader,
+} from "../../_components/detail-tabs/patient-detail-tab-loaders";
 
 interface PatientDetailPageProps {
   params: Promise<{ id: string }>;
@@ -18,15 +25,27 @@ interface PatientDetailPageProps {
 
 export default async function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = await params;
-  const result = await getPatientDetail(id);
+  const [session, payload] = await Promise.all([getSession(), loadPatientDetailViewData(id)]);
 
-  if (!result.success) notFound();
+  if (!payload) notFound();
 
-  const patient = buildPatientDetail(result.data);
+  const { patient } = payload;
+  const showPrescriptionsTab = hasPermission(session.user.type, "viewPrescriptions");
 
   return (
     <DetailPageShell breadcrumb={`Patients › ${patient.firstName} ${patient.lastName}`}>
-      <PatientDetailPanel mode="view" patient={patient} />
+      <>
+        <PatientDetailPrefetchGroup patientId={id} />
+        <PatientDetailPanel
+          mode="view"
+          patient={patient}
+          documentsTab={<PatientDocumentsTabLoader patientId={id} />}
+          appointmentsTab={<PatientAppointmentsTabLoader patientId={id} />}
+          prescriptionsTab={
+            showPrescriptionsTab ? <PatientPrescriptionsTabLoader patientId={id} /> : undefined
+          }
+        />
+      </>
     </DetailPageShell>
   );
 }

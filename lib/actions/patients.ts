@@ -19,11 +19,15 @@ import { getSession } from "@/lib/auth/session";
 import { requireRole, ForbiddenError } from "@/lib/auth/rbac";
 import { db } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
+import type { DocumentSummary } from "@/lib/db/queries/documents";
+import { getDocumentsByAssignment } from "@/lib/db/queries/documents";
 import {
   getPatients as queryGetPatients,
-  getPatientById,
+  getPatientByIdCore,
+  getPatientAppointmentSummaries,
   getActivePatients as queryGetActivePatients,
   searchActivePatientsForPicker as querySearchActivePatientsForPicker,
+  isPatientInClinic,
 } from "@/lib/db/queries/patients";
 import {
   createPatientSchema,
@@ -33,7 +37,10 @@ import { idSchema, n } from "@/lib/validators/common";
 import { hasPermission } from "@/lib/permissions";
 import { appendActivityLog } from "@/lib/activity-log";
 import { getEntityActivity } from "@/lib/actions/activity-log";
-import { getPrescriptionsByPatient } from "@/lib/actions/prescriptions";
+import {
+  getPrescriptionsByPatient,
+  type PatientPrescriptionSummary,
+} from "@/lib/actions/prescriptions";
 
 /** Resolve persisted DOB: trim input, or Jan 1 from age when DOB empty. */
 function resolveSaveDateOfBirth(
@@ -146,9 +153,9 @@ export async function getPatients(input: unknown) {
   }
 }
 
-// ─── getPatientDetail ─────────────────────────────────────────────────────────
+// ─── getPatientDetailCore ───────────────────────────────────────────────────────
 
-export async function getPatientDetail(id: unknown) {
+export async function getPatientDetailCore(id: unknown) {
   try {
     const session = await getSession();
     requireRole(session, ["admin", "doctor", "staff"]);
@@ -159,28 +166,15 @@ export async function getPatientDetail(id: unknown) {
     }
 
     const { clinicId } = session.user;
-    const patient = await getPatientById(clinicId, parsed.data);
+    const patient = await getPatientByIdCore(clinicId, parsed.data);
 
     if (!patient) {
       return { success: false as const, error: "Patient not found." };
     }
 
     const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
-    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
-    const canDocuments = hasPermission(session.user.type, "viewDocuments");
-    const canPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
     const isStaff = session.user.type === "staff";
 
-    let prescriptionsPayload: import("@/lib/actions/prescriptions").PatientPrescriptionSummary[] =
-      [];
-    if (canPrescriptions) {
-      const rxResult = await getPrescriptionsByPatient({ patientId: parsed.data });
-      if (rxResult.success) {
-        prescriptionsPayload = rxResult.data;
-      }
-    }
-
-    // Staff never see the activity sidebar — skip the query entirely
     let activityLogEntries: import("@/types/activity-log").ActivityLogEntry[] = [];
     let activityLogHasMore = false;
     if (!isStaff) {
@@ -199,20 +193,156 @@ export async function getPatientDetail(id: unknown) {
       data: {
         ...patient,
         pastHistoryNotes: canNotes ? patient.pastHistoryNotes : null,
-        documents: canDocuments ? patient.documents : [],
-        appointments: patient.appointments.map((a) => ({
-          ...a,
-          title: canTitle ? a.title : null,
-        })),
-        prescriptions: prescriptionsPayload,
         activityLog: activityLogEntries,
         activityLogHasMore,
       },
     };
   } catch (err) {
     if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getPatientDetailCore]", err);
+    return { success: false as const, error: "Failed to fetch patient." };
+  }
+}
+
+export type PatientDetailCoreSuccessData = Extract<
+  Awaited<ReturnType<typeof getPatientDetailCore>>,
+  { success: true }
+>["data"];
+
+// ─── getPatientDetail ─────────────────────────────────────────────────────────
+
+export async function getPatientDetail(id: unknown) {
+  try {
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    const coreRes = await getPatientDetailCore(parsed.data);
+    if (!coreRes.success) return coreRes;
+
+    const session = await getSession();
+    const canDocuments = hasPermission(session.user.type, "viewDocuments");
+
+    const [docRes, apptRes, rxRes] = await Promise.all([
+      getPatientDetailDocumentsTab(parsed.data),
+      getPatientDetailAppointmentsTab(parsed.data),
+      getPatientDetailPrescriptionsTab(parsed.data),
+    ]);
+
+    const documents =
+      docRes.success && canDocuments ? docRes.data : ([] as import("@/lib/db/queries/documents").DocumentSummary[]);
+    const appointments = apptRes.success ? apptRes.data : [];
+    const prescriptions = rxRes.success ? rxRes.data : [];
+
+    return {
+      success: true as const,
+      data: {
+        ...coreRes.data,
+        documents,
+        appointments,
+        prescriptions,
+      },
+    };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
     console.error("[getPatientDetail]", err);
     return { success: false as const, error: "Failed to fetch patient." };
+  }
+}
+
+// ─── Patient detail tab slices (streaming / prefetch) ─────────────────────────
+// Each mirrors RBAC + shapes of `getPatientDetail` tab fields. Used by
+// `lib/detail-tab-fetch-cache.ts` (React.cache) and future prefetch RSCs.
+
+export async function getPatientDetailDocumentsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    if (!hasPermission(session.user.type, "viewDocuments")) {
+      return { success: true as const, data: [] as DocumentSummary[] };
+    }
+
+    const { clinicId } = session.user;
+    const exists = await isPatientInClinic(clinicId, parsed.data);
+    if (!exists) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    const data = await getDocumentsByAssignment(clinicId, parsed.data, "patient");
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getPatientDetailDocumentsTab]", err);
+    return { success: false as const, error: "Failed to fetch documents." };
+  }
+}
+
+export async function getPatientDetailAppointmentsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    const { clinicId } = session.user;
+    const canTitle = hasPermission(session.user.type, "viewAppointmentTitle");
+    const exists = await isPatientInClinic(clinicId, parsed.data);
+    if (!exists) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    const rows = await getPatientAppointmentSummaries(clinicId, parsed.data);
+    const data = rows.map((a) => ({
+      ...a,
+      title: canTitle ? a.title : null,
+    }));
+    return { success: true as const, data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getPatientDetailAppointmentsTab]", err);
+    return { success: false as const, error: "Failed to fetch appointments." };
+  }
+}
+
+export async function getPatientDetailPrescriptionsTab(id: unknown) {
+  try {
+    const session = await getSession();
+    requireRole(session, ["admin", "doctor", "staff"]);
+
+    const parsed = idSchema.safeParse(id);
+    if (!parsed.success) {
+      return { success: false as const, error: "Invalid patient ID." };
+    }
+
+    if (!hasPermission(session.user.type, "viewPrescriptions")) {
+      return { success: true as const, data: [] as PatientPrescriptionSummary[] };
+    }
+
+    const { clinicId } = session.user;
+    const exists = await isPatientInClinic(clinicId, parsed.data);
+    if (!exists) {
+      return { success: false as const, error: "Patient not found." };
+    }
+
+    const rxResult = await getPrescriptionsByPatient({ patientId: parsed.data });
+    if (!rxResult.success) {
+      return { success: false as const, error: rxResult.error };
+    }
+    return { success: true as const, data: rxResult.data };
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { success: false as const, error: "FORBIDDEN" };
+    console.error("[getPatientDetailPrescriptionsTab]", err);
+    return { success: false as const, error: "Failed to fetch prescriptions." };
   }
 }
 
@@ -310,7 +440,7 @@ export async function updatePatient(input: unknown) {
     const { id, age: _age, isActive, ...fields } = parsed.data;
 
     // Verify ownership — reuse this fetch for old-value diffing (no extra query)
-    const existing = await getPatientById(clinicId, id);
+    const existing = await getPatientByIdCore(clinicId, id);
     if (!existing) {
       return { success: false as const, error: "Patient not found." };
     }
@@ -421,7 +551,7 @@ export async function deactivatePatient(id: unknown) {
 
     const { clinicId } = session.user;
 
-    const existing = await getPatientById(clinicId, parsed.data);
+    const existing = await getPatientByIdCore(clinicId, parsed.data);
     if (!existing) {
       return { success: false as const, error: "Patient not found." };
     }

@@ -7,7 +7,7 @@
  * Post-mutation exit: useDetailExit (modal onClose from AppointmentViewModalClient / NewAppointmentModalClient).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useFormContext, useWatch, type DefaultValues } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useDetailExit } from "@/lib/hooks/use-detail-exit";
@@ -17,20 +17,13 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
-import {
-  DocumentsTab,
-  AppointmentListTab,
-  PrescriptionsTab,
-  DetailPanel,
-  DetailForm,
-  PanelCloseButton,
-} from "@/components/common";
+import { DetailPanel, DetailForm, PanelCloseButton } from "@/components/common";
 import type { DetailFormHandle } from "@/components/common/DetailForm";
 import type { FormFieldDescriptor } from "@/components/common/DetailForm";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import type {
   AppointmentCreateInitialValues,
-  AppointmentDetail,
+  AppointmentDetailCore,
   AppointmentSelectOption,
 } from "@/types/appointment";
 import {
@@ -277,8 +270,13 @@ function buildAppointmentFormFields(
 
 type EditProps = {
   mode: "edit";
-  appointment: AppointmentDetail;
+  appointment: AppointmentDetailCore;
   doctorOptions: AppointmentSelectOption[];
+  /** Async RSC tab bodies from the route — streamed inside `DetailPanel` `Suspense`. */
+  documentsTab: ReactNode;
+  appointmentsTab: ReactNode;
+  /** Omitted when the session role lacks `viewPrescriptions` (no server prefetch for that slice). */
+  prescriptionsTab?: ReactNode;
   onClose?: () => void;
 };
 
@@ -300,6 +298,9 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
   const { doctorOptions, onClose } = props;
   const isCreate = props.mode === "create";
   const appointment = !isCreate ? props.appointment : undefined;
+  const documentsTabSlot = props.mode === "edit" ? props.documentsTab : undefined;
+  const appointmentsTabSlot = props.mode === "edit" ? props.appointmentsTab : undefined;
+  const prescriptionsTabSlot = props.mode === "edit" ? props.prescriptionsTab : undefined;
   const initialValues = isCreate ? props.initialValues : undefined;
   const router = useRouter();
   const { exitAfterMutation } = useDetailExit({
@@ -591,34 +592,10 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
         formRef={formRef}
         form={form}
         detailsTabIcon={ClipboardList}
-        documentsTab={
-          !isCreate ? (
-            <DocumentsTab
-              documents={appointment!.patientDocuments}
-              patientId={appointment!.patientId}
-              appointmentId={appointment!.id}
-              emptyMessage="No documents for this patient yet."
-            />
-          ) : undefined
-        }
-        appointmentsTab={
-          !isCreate ? (
-            <AppointmentListTab
-              appointments={appointment!.patientAppointments}
-              currentAppointmentId={appointment!.id}
-              emptyMessage="No other appointments for this patient."
-            />
-          ) : undefined
-        }
+        documentsTab={documentsTabSlot}
+        appointmentsTab={appointmentsTabSlot}
         prescriptionsTab={
-          !isCreate && canViewPrescriptions ? (
-            <PrescriptionsTab
-              appointmentId={appointment!.id}
-              currentAppointmentId={appointment!.id}
-              initialPrescription={appointment!.prescription}
-              initialPrescriptionHistory={appointment!.prescriptionHistory}
-            />
-          ) : undefined
+          canViewPrescriptions ? prescriptionsTabSlot : undefined
         }
         sidebarTop={
           !isCreate ? (

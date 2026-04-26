@@ -1,22 +1,32 @@
 /**
  * app/(app)/appointments/_lib/appointment-detail-mapper.ts
  *
- * Maps the `getAppointmentDetail` server action result (DB shape) to the UI
- * `AppointmentDetail` type consumed by `AppointmentDetailPanel`.
+ * Maps the `getAppointmentDetail` / `getAppointmentDetailCore` server action results
+ * to the UI `AppointmentDetail` / `AppointmentDetailCore` types consumed by
+ * `AppointmentDetailPanel`.
  *
  * Used by both the full-page route (`appointments/view/[id]/page.tsx`) and the
  * intercepting modal (`@modal/(.)appointments/view/[id]/AppointmentViewModalContent.tsx`).
  */
 
 import { differenceInYears, format, isValid, parseISO } from "date-fns";
-import type { getAppointmentDetail } from "@/lib/actions/appointments";
-import type { AppointmentDetail } from "@/types/appointment";
+import type { getAppointmentDetail, getAppointmentDetailCore } from "@/lib/actions/appointments";
+import {
+  mapAppointmentSummaryRowsToPatientAppointments,
+  mapDocumentSummariesToPatientDocuments,
+  mapServerPrescriptionSummariesToPatientUi,
+} from "@/lib/detail-tab-ui-mappers";
+import type { AppointmentDetail, AppointmentDetailCore } from "@/types/appointment";
 import type { PatientGender } from "@/types/patient";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
-import { formatAppointmentHeading } from "@/lib/utils/format-appointment-heading";
 
 type AppointmentDetailData = Extract<
   Awaited<ReturnType<typeof getAppointmentDetail>>,
+  { success: true }
+>["data"];
+
+type AppointmentDetailCoreData = Extract<
+  Awaited<ReturnType<typeof getAppointmentDetailCore>>,
   { success: true }
 >["data"];
 
@@ -61,7 +71,8 @@ function ageFromPatientDob(raw: unknown): number | null {
   }
 }
 
-export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDetail {
+/** Maps core detail action payload (no tab aggregates) to the Details column + sidebar card + activity. */
+export function buildAppointmentDetailCore(r: AppointmentDetailCoreData): AppointmentDetailCore {
   const sa = r.scheduledAt ? new Date(r.scheduledAt) : null;
   return {
     id:              r.id,
@@ -72,9 +83,9 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     doctorId:        r.doctorId,
     doctorName:      r.doctorName,
     title:           r.title,
-    category:        r.category as AppointmentDetail["category"],
-    visitType:       r.visitType as AppointmentDetail["visitType"],
-    status:          r.status as AppointmentDetail["status"],
+    category:        r.category as AppointmentDetailCore["category"],
+    visitType:       r.visitType as AppointmentDetailCore["visitType"],
+    status:          r.status as AppointmentDetailCore["status"],
     scheduledDate:   sa ? format(sa, "yyyy-MM-dd") : "",
     scheduledTime:   sa ? format(sa, "HH:mm") : "",
     duration:        Number(r.duration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES),
@@ -84,33 +95,6 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
     notes:           r.notes ?? "",
     activityLog:     r.activityLog,
     activityLogHasMore: r.activityLogHasMore,
-    patientDocuments: (r.patientDocuments ?? []).map((d) => ({
-      id:         d.id,
-      title:      d.title,
-      fileName:   d.fileName,
-      mimeType:   d.mimeType,
-      fileSize:   d.fileSize,
-      type:       d.type,
-      uploadedAt:
-        d.uploadedAt instanceof Date
-          ? d.uploadedAt.toISOString()
-          : String(d.uploadedAt),
-    })),
-    patientAppointments: (r.patientAppointments ?? []).map((a) => ({
-      id:        a.id,
-      title:     a.title,
-      category:  a.category,
-      visitType: a.visitType,
-      heading:   formatAppointmentHeading({
-        category:  a.category,
-        visitType: a.visitType,
-        title:     a.title,
-      }),
-      doctor: a.doctor ?? "",
-      date:   a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
-      time:   a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
-      status: a.status as AppointmentDetail["patientAppointments"][number]["status"],
-    })),
     patientSummary: {
       fullName: trimToNull(r.patientName) ?? "—",
       ageYears: ageFromPatientDob(r.patientDateOfBirth),
@@ -121,24 +105,39 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
       allergies: trimToNull(r.patientAllergies),
       pastHistoryNotes: trimToNull(r.patientPastHistoryNotes),
     },
+  };
+}
+
+function mapAppointmentTabFields(r: AppointmentDetailData): Pick<
+  AppointmentDetail,
+  "patientDocuments" | "patientAppointments" | "prescription" | "prescriptionHistory"
+> {
+  return {
+    patientDocuments: mapDocumentSummariesToPatientDocuments(r.patientDocuments ?? []),
+    patientAppointments: mapAppointmentSummaryRowsToPatientAppointments(
+      r.patientAppointments ?? []
+    ),
     prescription: r.prescription ?? null,
-    prescriptionHistory: (r.prescriptionHistory ?? []).map((p) => ({
-      id: p.id,
-      chartId: p.chartId,
-      appointmentId: p.appointmentId,
-      scheduledAt:
-        p.scheduledAt instanceof Date
-          ? p.scheduledAt.toISOString()
-          : String(p.scheduledAt),
-      doctorName: p.doctorName,
-      activeItemCount: p.activeItemCount,
-      publishedAt:
-        p.publishedAt == null
-          ? ""
-          : p.publishedAt instanceof Date
-            ? p.publishedAt.toISOString()
-            : String(p.publishedAt),
-      items: p.items ?? [],
-    })),
+    prescriptionHistory: mapServerPrescriptionSummariesToPatientUi(
+      r.prescriptionHistory ?? []
+    ),
+  };
+}
+
+export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDetail {
+  const {
+    patientDocuments,
+    patientAppointments,
+    prescription,
+    prescriptionHistory,
+    ...corePayload
+  } = r;
+  void patientDocuments;
+  void patientAppointments;
+  void prescription;
+  void prescriptionHistory;
+  return {
+    ...buildAppointmentDetailCore(corePayload as AppointmentDetailCoreData),
+    ...mapAppointmentTabFields(r),
   };
 }
