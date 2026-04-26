@@ -11,13 +11,13 @@ export interface RxClinicalDocumentProps {
   items: PrescriptionItemForAppointmentTab[];
   /** When `undefined`, the Notes block is omitted (patient accordion). Otherwise shown. */
   notes?: string | null;
-  /** When set, shows the green “Published …” stamp (appointment published accordion). */
+  /** When set and `layout` is **`plain`**, shows the green “Published …” stamp. Omitted for **`accordionPanel`** — the accordion header already shows the time. */
   publishedAt?: string | null;
   layout?: RxClinicalDocumentLayout;
 }
 
 /**
- * Read-only ℞ body: optional published stamp, divider, medicine rows, optional notes.
+ * Read-only ℞ body: optional published stamp (plain layout only), divider, medicine rows, optional notes.
  */
 export function RxClinicalDocument({
   items,
@@ -30,12 +30,20 @@ export function RxClinicalDocument({
       ? "rounded-b-xl border-t px-5 py-4"
       : "border-t px-5 py-4";
 
+  const rootStyle =
+    layout === "accordionPanel"
+      ? {
+          borderColor: "var(--color-glass-border)",
+          background: "transparent" as const,
+        }
+      : {
+          borderColor: "var(--color-glass-border)",
+          background: "var(--color-surface)" as const,
+        };
+
   return (
-    <div
-      className={rootClass}
-      style={{ borderColor: "var(--color-glass-border)", background: "var(--color-surface)" }}
-    >
-      {publishedAt ? (
+    <div className={rootClass} style={rootStyle}>
+      {publishedAt && layout !== "accordionPanel" ? (
         <div className="mb-4 flex items-center gap-1.5">
           <CheckCircle2 className="size-3.5 shrink-0" style={{ color: "var(--color-green)" }} aria-hidden />
           <span className="text-[11px] font-semibold" style={{ color: "var(--color-green)" }}>

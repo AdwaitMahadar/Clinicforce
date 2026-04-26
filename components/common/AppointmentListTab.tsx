@@ -46,9 +46,12 @@ export function AppointmentListTab({
           currentAppointmentId !== undefined && appt.id === currentAppointmentId;
         const s = APPT_STATUS_STYLES[appt.status] ?? APPT_STATUS_STYLES.completed;
         const cardStyle = {
-          background: "var(--color-surface)",
+          background: "var(--color-glass-fill-data)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           border: "1px solid",
           borderColor: isCurrent ? "var(--color-blue-border)" : "var(--color-border)",
+          boxShadow: "var(--shadow-card)",
           opacity: appt.status === "cancelled" ? 0.7 : 1,
         } as const;
 

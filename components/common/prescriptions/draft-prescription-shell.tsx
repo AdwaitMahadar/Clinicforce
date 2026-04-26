@@ -92,7 +92,12 @@ export function DraftPrescriptionShell({
 
   const bodyAndNotes = (
     <>
-      <div className="flex flex-col gap-3 px-4 py-3">{children}</div>
+      <div
+        className="flex flex-col gap-3 px-4 py-3"
+        style={{ background: "var(--color-surface-alt)" }}
+      >
+        {children}
+      </div>
       <div
         className="border-t px-4 py-3"
         style={{ borderColor: "var(--color-glass-border)", background: "var(--color-surface-alt)" }}

@@ -105,12 +105,7 @@ export function PublishedPrescriptionAccordion({
         }}
       >
         <div style={{ overflow: "hidden" }}>
-          <RxClinicalDocument
-            items={rx.items}
-            notes={rx.notes}
-            publishedAt={rx.publishedAt}
-            layout="accordionPanel"
-          />
+          <RxClinicalDocument items={rx.items} notes={rx.notes} layout="accordionPanel" />
         </div>
       </div>
     </div>

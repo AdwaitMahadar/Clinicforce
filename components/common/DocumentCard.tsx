@@ -129,7 +129,10 @@ export function DocumentCard({ document: doc, className = "" }: DocumentCardProp
       className={`relative flex w-full items-start gap-2 overflow-visible rounded-lg border p-2.5 text-left ${className}`}
       style={{
         borderColor: "var(--color-border)",
-        background: "var(--color-surface)",
+        background: "var(--color-glass-fill-data)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        boxShadow: "var(--shadow-card)",
       }}
     >
       <button
