@@ -273,6 +273,8 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
       {draft && rx ? (
         <DraftPrescriptionShell
           rx={rx}
+          collapsible
+          defaultOpen={rx.items.length > 0 || showAddPicker}
           onClearClick={() => setClearOpen(true)}
           onPublishClick={() => void handlePublish()}
           notesFooter={

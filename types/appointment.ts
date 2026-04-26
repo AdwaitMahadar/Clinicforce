@@ -13,7 +13,12 @@ import type {
   AppointmentVisitType,
   AppointmentStatus,
 } from "@/lib/constants/appointment";
-import type { PatientAppointment, PatientDocument, PatientGender } from "@/types/patient";
+import type {
+  PatientAppointment,
+  PatientDocument,
+  PatientGender,
+  PatientPrescriptionSummary,
+} from "@/types/patient";
 import type { ActivityLogEntry } from "@/types/activity-log";
 import type { PrescriptionForAppointmentTab } from "@/types/prescription";
 
@@ -101,4 +106,10 @@ export interface AppointmentDetail {
   patientSummary:     AppointmentDetailPatientSummary;
   /** Admin/doctor only — `null` when absent or staff. */
   prescription:       PrescriptionForAppointmentTab | null;
+  /**
+   * Published prescriptions for this patient (`getPrescriptionsByPatient`), same shape as
+   * `PatientDetail.prescriptions`. Staff: `[]`. UI may omit the open visit when also showing
+   * `prescription` for the current appointment (dedupe by `appointmentId`).
+   */
+  prescriptionHistory: PatientPrescriptionSummary[];
 }

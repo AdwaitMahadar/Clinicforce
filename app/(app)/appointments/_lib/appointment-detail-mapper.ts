@@ -122,5 +122,23 @@ export function buildAppointmentDetail(r: AppointmentDetailData): AppointmentDet
       pastHistoryNotes: trimToNull(r.patientPastHistoryNotes),
     },
     prescription: r.prescription ?? null,
+    prescriptionHistory: (r.prescriptionHistory ?? []).map((p) => ({
+      id: p.id,
+      chartId: p.chartId,
+      appointmentId: p.appointmentId,
+      scheduledAt:
+        p.scheduledAt instanceof Date
+          ? p.scheduledAt.toISOString()
+          : String(p.scheduledAt),
+      doctorName: p.doctorName,
+      activeItemCount: p.activeItemCount,
+      publishedAt:
+        p.publishedAt == null
+          ? ""
+          : p.publishedAt instanceof Date
+            ? p.publishedAt.toISOString()
+            : String(p.publishedAt),
+      items: p.items ?? [],
+    })),
   };
 }

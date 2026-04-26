@@ -186,11 +186,20 @@ export async function getAppointmentDetail(id: unknown) {
 
     const canPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
     let prescription: PrescriptionForAppointmentTab | null = null;
+    let prescriptionHistory: import("@/lib/actions/prescriptions").PatientPrescriptionSummary[] =
+      [];
     if (canPrescriptions) {
-      const { getPrescriptionByAppointment } = await import("@/lib/actions/prescriptions");
-      const rxRes = await getPrescriptionByAppointment({ appointmentId: parsed.data });
+      const { getPrescriptionByAppointment, getPrescriptionsByPatient } =
+        await import("@/lib/actions/prescriptions");
+      const [rxRes, histRes] = await Promise.all([
+        getPrescriptionByAppointment({ appointmentId: parsed.data }),
+        getPrescriptionsByPatient({ patientId: appointment.patientId }),
+      ]);
       if (rxRes.success && rxRes.data) {
         prescription = toAppointmentTabPrescription(rxRes.data);
+      }
+      if (histRes.success) {
+        prescriptionHistory = histRes.data;
       }
     }
 
@@ -209,6 +218,7 @@ export async function getAppointmentDetail(id: unknown) {
         activityLog: activityLogEntries,
         activityLogHasMore,
         prescription,
+        prescriptionHistory,
       },
     };
   } catch (err) {
