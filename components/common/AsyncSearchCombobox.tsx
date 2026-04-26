@@ -7,7 +7,7 @@
  * Use `modal={false}` on Popover so focus works inside intercepting route modals (Dialog).
  */
 
-import { useEffect, useState, type Ref } from "react";
+import { useEffect, useState, type CSSProperties, type Ref } from "react";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +59,22 @@ export interface AsyncSearchComboboxProps<T> {
   align?: "start" | "center" | "end";
   id?: string;
   "aria-invalid"?: boolean;
+  /** Merged onto the closed trigger `Button` (after defaults). */
+  triggerClassName?: string;
+  /** Merged after default trigger inline styles so callers can retint (e.g. flush header bars). */
+  triggerStyle?: CSSProperties;
+  /** Closed trigger layout: **`end`** (default) = label then chevron; **`start`** = chevron then label (e.g. draft Rx line cards). */
+  chevronPosition?: "start" | "end";
+  /**
+   * **`always`** (default): chevron always visible at muted opacity.
+   * **`hover`**: chevron hidden until pointer is over the trigger (named `group/combobox` so parent `group` rows do not steal hover).
+   */
+  chevronVisibility?: "always" | "hover";
+  /**
+   * Merged onto the closed trigger label **only when** a selection is shown (not the placeholder).
+   * Does not affect dropdown **`CommandItem`** rows — e.g. **`font-semibold`** on draft Rx line cards.
+   */
+  closedSelectionLabelClassName?: string;
 }
 
 const DEFAULT_DEBOUNCE_MS = 300;
@@ -83,6 +99,11 @@ export function AsyncSearchCombobox<T>({
   align = "start",
   id,
   "aria-invalid": ariaInvalid,
+  triggerClassName,
+  triggerStyle,
+  chevronPosition = "end",
+  chevronVisibility = "always",
+  closedSelectionLabelClassName,
 }: AsyncSearchComboboxProps<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -143,6 +164,34 @@ export function AsyncSearchCombobox<T>({
 
   const showCheck = (item: T) => value === getOptionValue(item);
 
+  const triggerLayoutClass =
+    chevronPosition === "start" ? "justify-start gap-2" : "justify-between";
+
+  const triggerGroupClass = chevronVisibility === "hover" ? "group/combobox" : undefined;
+
+  const chevronClassName = cn(
+    "size-4 shrink-0 transition-opacity",
+    chevronVisibility === "hover"
+      ? "opacity-0 group-hover/combobox:opacity-50 data-[state=open]:opacity-50"
+      : "opacity-50"
+  );
+
+  const chevronEl = <ChevronsUpDown className={chevronClassName} aria-hidden />;
+
+  const closedTriggerLabelSpan = (
+    <span
+      className={cn(
+        "min-w-0 flex-1 truncate text-left",
+        closedSelectionLabel && closedSelectionLabelClassName
+      )}
+      style={{
+        color: closedSelectionLabel ? "var(--color-text-primary)" : "var(--color-text-muted)",
+      }}
+    >
+      {closedSelectionLabel ?? placeholder}
+    </span>
+  );
+
   if (disabled) {
     return (
       <Button
@@ -153,15 +202,30 @@ export function AsyncSearchCombobox<T>({
         disabled
         aria-invalid={ariaInvalid}
         onBlur={onBlur}
-        className="h-9 w-full justify-between rounded-md border px-3 font-normal shadow-xs"
+        className={cn(
+          "flex h-9 w-full rounded-md border px-3 font-normal shadow-xs",
+          triggerLayoutClass,
+          triggerGroupClass,
+          triggerClassName
+        )}
         style={{
           borderColor: "var(--color-border)",
           background: "var(--color-surface)",
           color: "var(--color-text-primary)",
+          ...triggerStyle,
         }}
       >
-        <span className="truncate text-left">{triggerLabel}</span>
-        <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        {chevronPosition === "start" ? (
+          <>
+            {chevronEl}
+            <span className="min-w-0 flex-1 truncate text-left">{triggerLabel}</span>
+          </>
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 truncate text-left">{triggerLabel}</span>
+            {chevronEl}
+          </>
+        )}
       </Button>
     );
   }
@@ -178,22 +242,30 @@ export function AsyncSearchCombobox<T>({
           aria-expanded={open}
           aria-invalid={ariaInvalid}
           onBlur={onBlur}
-          className="h-9 w-full justify-between rounded-md border px-3 font-normal shadow-xs"
+          className={cn(
+            "flex h-9 w-full rounded-md border px-3 font-normal shadow-xs",
+            triggerLayoutClass,
+            triggerGroupClass,
+            triggerClassName
+          )}
           style={{
             borderColor: "var(--color-border)",
             background: "var(--color-surface)",
             color: "var(--color-text-primary)",
+            ...triggerStyle,
           }}
         >
-          <span
-            className="truncate text-left"
-            style={{
-              color: closedSelectionLabel ? "var(--color-text-primary)" : "var(--color-text-muted)",
-            }}
-          >
-            {closedSelectionLabel ?? placeholder}
-          </span>
-          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+          {chevronPosition === "start" ? (
+            <>
+              {chevronEl}
+              {closedTriggerLabelSpan}
+            </>
+          ) : (
+            <>
+              {closedTriggerLabelSpan}
+              {chevronEl}
+            </>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent

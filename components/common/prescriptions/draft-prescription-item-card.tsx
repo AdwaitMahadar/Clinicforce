@@ -74,26 +74,58 @@ export function DraftMedicineCard({
       }}
     >
       <div
-        className="flex items-center justify-between px-4 py-2.5 border-b"
+        className="flex items-center gap-2 border-b px-4 py-2.5"
         style={{ borderColor: "var(--color-glass-border)", background: "var(--color-surface-alt)" }}
       >
-        <div className="flex items-center gap-2">
-          <span
-            className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              color: "var(--color-text-muted)",
+        <span
+          className="flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          {index + 1}
+        </span>
+        <div className="min-w-0 flex-1" onPointerDown={(e) => e.stopPropagation()}>
+          <AsyncSearchCombobox<MedicinePickerRow>
+            value={item.medicineId}
+            selectedDisplayLabel={item.displayMedicineName}
+            onValueChange={(nextId) => {
+              if (nextId && nextId !== item.medicineId) void onPatch({ id: item.id, medicineId: nextId });
             }}
-          >
-            {index + 1}
-          </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
-            Medicine
-          </span>
+            placeholder="Search medicines…"
+            searchPlaceholder="Search by name, brand, category…"
+            emptyLabel="No medicines found."
+            fetchItems={fetchMedicines}
+            getOptionValue={(m) => m.id}
+            getOptionLabel={(m) => m.name}
+            renderOption={(m) => (
+              <span className="flex flex-col gap-0.5 text-left">
+                <span className="font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
+                  {m.name}
+                </span>
+                <span className="text-xs truncate" style={{ color: "var(--color-text-secondary)" }}>
+                  {medicineSubtitle(m)}
+                </span>
+              </span>
+            )}
+            chevronPosition="start"
+            chevronVisibility="hover"
+            closedSelectionLabelClassName="font-semibold"
+            triggerClassName={cn(
+              "rounded-lg border-0 bg-transparent px-2 shadow-none ring-0",
+              "focus-visible:ring-1 focus-visible:ring-[color:var(--color-border)] focus-visible:ring-offset-0",
+              "hover:bg-[color:var(--color-surface)]/45 data-[state=open]:bg-[color:var(--color-surface)]/45"
+            )}
+            triggerStyle={{
+              background: "transparent",
+              borderColor: "transparent",
+            }}
+          />
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             ref={dragHandleRef}
             type="button"
@@ -118,32 +150,6 @@ export function DraftMedicineCard({
       </div>
 
       <div className="flex items-center gap-3 px-4 py-3" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="min-w-0 flex-1">
-          <AsyncSearchCombobox<MedicinePickerRow>
-            value={item.medicineId}
-            selectedDisplayLabel={item.displayMedicineName}
-            onValueChange={(nextId) => {
-              if (nextId && nextId !== item.medicineId) void onPatch({ id: item.id, medicineId: nextId });
-            }}
-            placeholder="Search medicines…"
-            searchPlaceholder="Search by name, brand, category…"
-            emptyLabel="No medicines found."
-            fetchItems={fetchMedicines}
-            getOptionValue={(m) => m.id}
-            getOptionLabel={(m) => m.name}
-            renderOption={(m) => (
-              <span className="flex flex-col gap-0.5 text-left">
-                <span className="font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
-                  {m.name}
-                </span>
-                <span className="text-xs truncate" style={{ color: "var(--color-text-secondary)" }}>
-                  {medicineSubtitle(m)}
-                </span>
-              </span>
-            )}
-          />
-        </div>
-
         <input
           type="text"
           className="h-9 w-24 shrink-0 rounded-lg border px-3 text-sm focus:outline-none focus:ring-1"
@@ -164,9 +170,29 @@ export function DraftMedicineCard({
             if (next !== (item.duration ?? null)) void onPatch({ id: item.id, duration: next });
           }}
         />
+        <input
+          type="text"
+          className="h-9 min-w-0 flex-1 truncate rounded-lg border px-3 text-sm focus:outline-none focus:ring-1"
+          style={{
+            background: "var(--color-surface-alt)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-text-primary)",
+          }}
+          placeholder="Remarks (optional)…"
+          value={draftRemarks}
+          onChange={(e) => setDraftRemarks(e.target.value)}
+          onFocus={() => {
+            remarksFocusedRef.current = true;
+          }}
+          onBlur={() => {
+            remarksFocusedRef.current = false;
+            const next = draftRemarks.trim() || null;
+            if (next !== (item.remarks ?? null)) void onPatch({ id: item.id, remarks: next });
+          }}
+        />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 px-4 pb-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="grid grid-cols-3 gap-3 px-4 pb-3 pt-1" onPointerDown={(e) => e.stopPropagation()}>
         {PRESCRIPTION_DOSE_SLOTS.map((slot) => {
           const en = item[slot.enabled];
           const qty = item[slot.qty];
@@ -187,29 +213,6 @@ export function DraftMedicineCard({
             />
           );
         })}
-      </div>
-
-      <div
-        className="border-t px-4 py-2.5"
-        style={{ borderColor: "var(--color-glass-border)" }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <textarea
-          rows={1}
-          className="w-full resize-none border-0 bg-transparent text-xs leading-relaxed placeholder:italic placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-0"
-          style={{ color: "var(--color-text-secondary)" }}
-          placeholder="Remarks (optional)…"
-          value={draftRemarks}
-          onChange={(e) => setDraftRemarks(e.target.value)}
-          onFocus={() => {
-            remarksFocusedRef.current = true;
-          }}
-          onBlur={() => {
-            remarksFocusedRef.current = false;
-            const next = draftRemarks.trim() || null;
-            if (next !== (item.remarks ?? null)) void onPatch({ id: item.id, remarks: next });
-          }}
-        />
       </div>
     </div>
   );
