@@ -120,6 +120,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 **`components/common/` inventory (what's built):**
 - `DataTable.tsx` — TanStack Table v8, server-side list data; padded headers/cells + `first:pl-8` / `last:pr-8` on edge columns; sort toggle on label/icon only; route `loading.tsx` for skeletons (not an `isLoading` prop on the table)
 - `TableFilterBar.tsx` — Notion-style collapsible filter panel with column/value selectors
+- `TableDashboardLayout.tsx` — Full-page list dashboard shell: optional `filters` + scrollable `children` (`overflow-y-auto`, `scrollbar-hover` — thumb on hover; idle **0px** WebKit / `scrollbar-width: none` Firefox so table width matches filter+pagination) + optional `footer` (`shrink-0`); pairs with `TableFilterBar` / `TablePagination` on patients & medicines dashboards
 - `TablePagination.tsx` — Reusable pagination footer
 - `StatusBadge.tsx` — Unified badge for appointment status, patient status, types, chart IDs
 - `InitialsBadge.tsx` — Deterministic initials avatar (hashed colour from name)
@@ -255,7 +256,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 **Built:**
 - Full app shell (TopNav, SideNav, AppShell, PageHeader) with matrix navigation
 - Home dashboard (metrics/overview)
-- Patients dashboard with DataTable, TableFilterBar (Notion-style), TablePagination
+- Patient and medicine dashboards with `TableDashboardLayout` + DataTable, TableFilterBar (Notion-style), TablePagination
 - Appointments dashboard with Month, Week, and Day calendar views
 - Medicines dashboard
 - All shared components in `components/common/`

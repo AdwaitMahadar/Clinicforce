@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
+  TableDashboardLayout,
   TableFilterBar,
   TablePagination,
 } from "@/components/common";
@@ -100,16 +101,23 @@ export default async function PatientsDashboardPage({ searchParams }: PageProps)
           }
         />
 
-        <TableFilterBar
-          searchPlaceholder="Search by name, ID, or phone number..."
-          filterColumns={PATIENT_FILTER_COLUMNS}
-        />
-
-        <div className="flex-1 min-h-0">
+        <TableDashboardLayout
+          filters={
+            <TableFilterBar
+              searchPlaceholder="Search by name, ID, or phone number..."
+              filterColumns={PATIENT_FILTER_COLUMNS}
+            />
+          }
+          footer={
+            <TablePagination
+              totalRows={total}
+              pageSize={DEFAULT_PAGE_SIZE}
+              entityLabel="patient"
+            />
+          }
+        >
           <PatientsTable data={rows} />
-        </div>
-
-        <TablePagination totalRows={total} pageSize={DEFAULT_PAGE_SIZE} entityLabel="patient" />
+        </TableDashboardLayout>
       </div>
     </div>
   );

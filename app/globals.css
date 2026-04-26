@@ -188,8 +188,22 @@
 /* ── Scrollbar — hidden by default, revealed on hover ─────────── */
 /* Apply to any overflow-y-auto container where the scrollbar     */
 /* should stay out of the way until the user hovers.              */
+/* WebKit: width 0 when idle so no gutter (table aligns with full- */
+/* width siblings); expand to 5px on hover so the thumb can paint.  */
+.scrollbar-hover::-webkit-scrollbar {
+  width:  0;
+  height: 0;
+}
+.scrollbar-hover:hover::-webkit-scrollbar {
+  width:  5px;
+  height: 5px;
+}
+.scrollbar-hover::-webkit-scrollbar-track {
+  background: transparent;
+}
 .scrollbar-hover::-webkit-scrollbar-thumb {
   background: transparent;
+  border-radius: 99px;
 }
 .scrollbar-hover:hover::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
@@ -197,11 +211,13 @@
 .scrollbar-hover:hover::-webkit-scrollbar-thumb:hover {
   background: var(--color-scrollbar-thumb-hover);
 }
-/* Firefox */
+/* Firefox — no reserved gutter until hover */
 .scrollbar-hover {
+  scrollbar-width: none;
   scrollbar-color: transparent transparent;
 }
 .scrollbar-hover:hover {
+  scrollbar-width: thin;
   scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 

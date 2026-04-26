@@ -288,6 +288,17 @@ Built on **TanStack Table v8**. Used for all list views (Patients, Medicines, et
 
 **Leading column visuals:** List rows may place a leading affordance in the first column before the primary label — e.g. **`InitialsBadge`** on `/patients/dashboard`, or a **`size-8` rounded square** (`--color-surface-alt`, `--color-border`) with a **category-mapped Lucide icon** on `/medicines/dashboard` (`MedicinesTable`). Keep colours on design tokens; do not duplicate one-off padding — inherit from `DataTable` cell rules.
 
+### `<TableDashboardLayout />` — List dashboard chrome (filter + scroll + footer)
+**Location:** `components/common/TableDashboardLayout.tsx`
+
+**Server Component–safe** (layout only; no hooks). Wraps full-page **`DataTable`** list dashboards that share **URL state** (`nuqs`) for search, filters, and pagination.
+
+- **`filters`:** Optional `React.ReactNode` — typically `<TableFilterBar />` (supports optional **`actions`** for export or other controls without changing this shell).
+- **`children`:** Required — the table region; rendered inside **`flex-1 min-h-0 overflow-y-auto`** with the **`scrollbar-hover`** class (`globals.css`) so the vertical scrollbar thumb stays hidden until the pointer is over **this** scroll area (not the filter or pagination rows). **Idle:** WebKit uses a **0px** scrollbar width (no reserved gutter — table edge lines up with the filter and pagination bars); **hover:** width returns to **5px** so the thumb is usable. Firefox: **`scrollbar-width: none`** until hover, then **`thin`**.
+- **`footer`:** Optional `React.ReactNode` — typically `<TablePagination />`; wrapped in **`shrink-0`** so it stays below the scroll region.
+
+**Composition:** `page.tsx` keeps **`PageHeader`** outside this shell; pass **`TableDashboardLayout`** **`className`** only when a route needs extra layout tweaks. **`TableDashboardSkeleton`** mirrors the same vertical order (header skeleton → filter strip → table block → pagination skeleton).
+
 ### `<SearchFilterBar />` — Search and Filter Row
 **Location:** `components/clinic/SearchFilterBar.tsx`
 

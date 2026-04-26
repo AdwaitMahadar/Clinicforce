@@ -10,7 +10,8 @@ interface TableDashboardSkeletonProps {
 
 /**
  * Matches `patients/dashboard` and `medicines/dashboard`: PageHeader,
- * filter bar, DataTable-shaped block, pagination strip.
+ * then the same vertical order as `<TableDashboardLayout />` — filter bar,
+ * DataTable-shaped block, pagination strip.
  */
 export function TableDashboardSkeleton({
   columnCount = 6,

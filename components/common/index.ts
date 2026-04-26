@@ -12,6 +12,8 @@ export type { ColumnDef } from "./DataTable";
 export { TableFilterBar } from "./TableFilterBar";
 export type { FilterColumn, ActiveFilter } from "./TableFilterBar";
 export { TablePagination } from "./TablePagination";
+export { TableDashboardLayout } from "./TableDashboardLayout";
+export type { TableDashboardLayoutProps } from "./TableDashboardLayout";
 
 // ─── Calendar components ──────────────────────────────────────────────────────
 export { MonthView }            from "./MonthView";

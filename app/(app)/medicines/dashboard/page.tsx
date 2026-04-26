@@ -15,6 +15,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
+  TableDashboardLayout,
   TableFilterBar,
   TablePagination,
 } from "@/components/common";
@@ -87,16 +88,23 @@ export default async function MedicinesDashboardPage({ searchParams }: PageProps
           }
         />
 
-        <TableFilterBar
-          searchPlaceholder="Search by name, brand, or category..."
-          filterColumns={MEDICINE_FILTER_COLUMNS}
-        />
-
-        <div className="flex-1 min-h-0">
+        <TableDashboardLayout
+          filters={
+            <TableFilterBar
+              searchPlaceholder="Search by name, brand, or category..."
+              filterColumns={MEDICINE_FILTER_COLUMNS}
+            />
+          }
+          footer={
+            <TablePagination
+              totalRows={total}
+              pageSize={DEFAULT_PAGE_SIZE}
+              entityLabel="medicine"
+            />
+          }
+        >
           <MedicinesTable data={rows} />
-        </div>
-
-        <TablePagination totalRows={total} pageSize={DEFAULT_PAGE_SIZE} entityLabel="medicine" />
+        </TableDashboardLayout>
       </div>
     </div>
   );

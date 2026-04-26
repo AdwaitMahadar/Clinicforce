@@ -271,6 +271,7 @@ Run **`pnpm exec tsc --noEmit`** after prescription-area changes. Before release
 > **Note on "Status":** Two states only — `active` and `inactive`, mapped from `patients.is_active boolean`. **`StatusBadge`** renders **inactive** with the red token family (`--color-red` / `--color-red-bg` / `--color-red-border`), same semantic weight as a cancelled appointment. The UI previously had a "Critical" state; this has been removed from both the UI and data model.
 
 ### Interaction
+- **Layout:** List chrome uses **`<TableDashboardLayout />`** — **`filters`** = `<TableFilterBar />`, **`children`** = `<PatientsTable />` (`<DataTable />`), **`footer`** = `<TablePagination />`. The layout’s scroll container keeps the pagination strip from overlapping tall result sets; the list scrollbar uses **`scrollbar-hover`** (thumb only while the pointer is over the table band; **no idle gutter** so the table’s right edge matches the filter and pagination bars).
 - **Row click:** Navigates to `/patients/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
 - **Actions column (rightmost):** **Eye** — same navigation as row click (all rows). **Calendar** — shown **only for active rows** (`status !== "inactive"`); `router.push` to `/appointments/new?…` with validated query keys (`patientId`, `patientLabel`, `visitType`, optional `category`, optional `doctorId`) parsed on the server into `AppointmentDetailPanel` **`initialValues`** (intercepting modal or full-page). Visit type uses **`FOLLOW_UP_WINDOW_DAYS`** vs `lastVisitAt` (`follow-up-visit` when the last qualifying visit’s calendar day is within the window ending today, else `first-visit`). Action cells call **`stopPropagation`** so the row click handler does not run.
 - **Empty table:** `DataTable` **`emptyState`** shows the no-results copy plus a **New Patient** button matching the page header control (`gap-2 shadow-sm`, ink fill) using **`router.push("/patients/new")`**.
@@ -489,6 +490,7 @@ The **Patient's Past History** textarea is backed by `patients.past_history_note
 > **SKU removed.** The `sku` field was present in early mock data but is not part of the DB schema and has been fully removed from the UI, types, and mock data.
 
 ### Interaction
+- **Layout:** Same list-dashboard shell as patients — **`<TableDashboardLayout />`** with **`<TableFilterBar />`**, **`<MedicinesTable />`**, and **`<TablePagination />`** (`docs/06-UI-Design-System.md`); **`scrollbar-hover`** on the scroll region (idle **no gutter**, full-width alignment with filter/pagination).
 - **Row click:** Navigates to `/medicines/view/[id]` using `<DataTable onRowClick />` (client `router.push`). Soft navigation from the dashboard opens the intercepting modal; a direct URL or hard refresh uses the full-page detail route.
 
 ### Server Actions Needed
