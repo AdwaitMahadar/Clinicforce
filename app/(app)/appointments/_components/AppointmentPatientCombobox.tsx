@@ -7,7 +7,6 @@ import { searchPatientsForPicker } from "@/lib/actions/patients";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
 import type { PatientPickerHit } from "@/types/patient";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RhfFieldLike = {
   value: unknown;
   onChange: (v: string) => void;

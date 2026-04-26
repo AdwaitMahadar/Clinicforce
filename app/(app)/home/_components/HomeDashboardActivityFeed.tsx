@@ -41,7 +41,8 @@ export function HomeDashboardActivityFeed({ entries, initialHasMore }: Props) {
     setHasMore(initialHasMore);
     pageRef.current = 1;
     isFetchingRef.current = false;
-  }, [entries]); // intentionally omit initialHasMore — it always changes with entries
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `initialHasMore` tracks the same SSR batch as `entries`
+  }, [entries]);
 
   // Stable callback — never recreated so ActivityLog's IntersectionObserver
   // does not disconnect/reconnect on every state change.

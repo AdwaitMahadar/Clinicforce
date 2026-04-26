@@ -400,7 +400,7 @@ export function PrescriptionsTab({
               No prescription yet
             </p>
             <p className="text-xs max-w-xs" style={{ color: "var(--color-text-muted)" }}>
-              Add a medicine from your clinic library to create this visit's prescription.
+              Add a medicine from your clinic library to create this visit&apos;s prescription.
             </p>
           </div>
           <Button type="button" size="sm" onClick={() => setShowAddPicker(true)}>

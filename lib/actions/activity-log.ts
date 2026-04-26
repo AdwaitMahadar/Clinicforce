@@ -266,7 +266,7 @@ export async function getRecentActivity(input: unknown = {}) {
     }
 
     const { page, limit } = parsed.data;
-    const { clinicId, id: userId, type: userType } = session.user;
+    const { clinicId, id: userId } = session.user;
     const offset = (page - 1) * limit;
 
     // Staff lack viewFullActivityLog — scope to their own actions only

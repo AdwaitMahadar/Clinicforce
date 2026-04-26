@@ -38,7 +38,7 @@ export function PatientPrescriptionsTab({ patientId, initialPrescriptions }: Pat
             No published prescriptions
           </p>
           <p className="text-xs max-w-xs leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
-            Published prescriptions from this patient's visits will appear here.
+            Published prescriptions from this patient&apos;s visits will appear here.
           </p>
         </div>
       </div>
