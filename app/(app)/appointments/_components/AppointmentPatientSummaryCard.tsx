@@ -6,12 +6,33 @@
  * Any missing / empty optional value renders as "—".
  */
 
+import { Mars, UserRound, Venus } from "lucide-react";
+import { InitialsBadge } from "@/components/common";
+import { Badge } from "@/components/ui/badge";
 import type { AppointmentDetailPatientSummary } from "@/types/appointment";
+import type { PatientGender } from "@/types/patient";
+import { cn } from "@/lib/utils";
 
 function dash(s: string | null | undefined): string {
   const t = s?.trim();
   return t && t.length > 0 ? t : "—";
 }
+
+function GenderIcon({ gender }: { gender: PatientGender | null }) {
+  if (gender === "Male") {
+    return <Mars className="size-3.5 shrink-0" aria-hidden />;
+  }
+  if (gender === "Female") {
+    return <Venus className="size-3.5 shrink-0" aria-hidden />;
+  }
+  if (gender === "Other" || gender === "Prefer not to say") {
+    return <UserRound className="size-3.5 shrink-0" aria-hidden />;
+  }
+  return null;
+}
+
+const labelCls =
+  "text-[10px] font-bold uppercase tracking-widest shrink-0 mb-1";
 
 export function AppointmentPatientSummaryCard({
   summary,
@@ -19,85 +40,108 @@ export function AppointmentPatientSummaryCard({
   summary: AppointmentDetailPatientSummary;
 }) {
   const name = dash(summary.fullName);
-  const age =
+  const ageLabel =
     summary.ageYears != null && Number.isFinite(summary.ageYears)
       ? `${summary.ageYears} yrs`
       : "—";
-  const gender = summary.gender != null ? summary.gender : "—";
-  const blood = dash(summary.bloodGroup);
+  const gender = summary.gender;
+  const genderLabel = gender ?? "—";
   const allergies = dash(summary.allergies);
   const history = dash(summary.pastHistoryNotes);
 
-  const labelCls =
-    "text-[10px] font-bold uppercase tracking-widest shrink-0";
-  const valueCls = "text-xs font-medium text-right min-w-0";
+  const badgeClass =
+    "rounded-full border px-2.5 py-1 text-[11px] font-semibold gap-1.5";
 
   return (
     <div
-      className="rounded-xl p-3"
+      className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl"
       style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
       }}
     >
-      <p
-        className="text-[10px] font-bold uppercase tracking-widest mb-2"
-        style={{ color: "var(--color-text-muted)" }}
-      >
-        Patient
-      </p>
-      <p
-        className="text-sm font-bold leading-snug mb-3"
-        style={{ color: "var(--color-text-primary)" }}
-      >
-        {name}
-      </p>
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className={labelCls} style={{ color: "var(--color-text-muted)" }}>
-            Age
-          </span>
-          <span className={valueCls} style={{ color: "var(--color-text-primary)" }}>
-            {age}
-          </span>
+      <div className="scrollbar-hover flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden p-3">
+        <div className="flex min-w-0 items-stretch gap-3">
+          <div className="flex shrink-0 self-stretch min-h-0 flex-col">
+            <div className="h-full min-h-8 w-auto shrink-0 aspect-square">
+              <InitialsBadge
+                name={summary.fullName.trim() || name}
+                size="md"
+                className="size-full min-h-0 rounded-lg"
+                fallbackClassName="text-lg"
+              />
+            </div>
+          </div>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <p
+              className="text-sm font-bold leading-snug"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {name}
+            </p>
+            <div className="mt-2 flex flex-row flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(badgeClass, "pointer-events-none shrink-0")}
+                style={{
+                  background: "var(--color-surface-alt)",
+                  color: "var(--color-text-secondary)",
+                  borderColor: "var(--color-border)",
+                }}
+              >
+                {ageLabel}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={cn(badgeClass, "pointer-events-none shrink-0")}
+                style={{
+                  background: "var(--color-surface-alt)",
+                  color: "var(--color-text-secondary)",
+                  borderColor: "var(--color-border)",
+                }}
+              >
+                {gender ? (
+                  <>
+                    <GenderIcon gender={gender} />
+                    <span>{genderLabel}</span>
+                  </>
+                ) : (
+                  genderLabel
+                )}
+              </Badge>
+            </div>
+          </div>
         </div>
-        <div className="flex items-baseline justify-between gap-3">
-          <span className={labelCls} style={{ color: "var(--color-text-muted)" }}>
-            Gender
-          </span>
-          <span className={valueCls} style={{ color: "var(--color-text-primary)" }}>
-            {gender}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between gap-3">
-          <span className={labelCls} style={{ color: "var(--color-text-muted)" }}>
-            Blood group
-          </span>
-          <span className={valueCls} style={{ color: "var(--color-text-primary)" }}>
-            {blood}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between gap-3">
-          <span className={labelCls} style={{ color: "var(--color-text-muted)" }}>
-            Allergies
-          </span>
-          <span className={valueCls} style={{ color: "var(--color-text-primary)" }}>
-            {allergies}
-          </span>
-        </div>
+
         <div
-          className="space-y-1 pt-2 border-t"
+          className="my-3 shrink-0 border-t"
           style={{ borderColor: "var(--color-border)" }}
-        >
-          <p className={labelCls} style={{ color: "var(--color-text-muted)" }}>
-            Past history
-          </p>
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: "var(--color-text-primary)" }}
-          >
-            {history}
-          </p>
+          aria-hidden
+        />
+
+        <div className="min-w-0 space-y-4">
+          <div>
+            <p className={labelCls} style={{ color: "var(--color-text-muted)" }}>
+              Allergies
+            </p>
+            <p
+              className="text-xs font-medium leading-relaxed"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {allergies}
+            </p>
+          </div>
+          <div>
+            <p className={labelCls} style={{ color: "var(--color-text-muted)" }}>
+              Past history
+            </p>
+            <p
+              className="text-xs font-medium leading-relaxed"
+              style={{ color: "var(--color-text-primary)" }}
+            >
+              {history}
+            </p>
+          </div>
         </div>
       </div>
     </div>

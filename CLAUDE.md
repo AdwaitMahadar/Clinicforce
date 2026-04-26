@@ -122,7 +122,7 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 - `TableFilterBar.tsx` — Notion-style collapsible filter panel with column/value selectors
 - `TablePagination.tsx` — Reusable pagination footer
 - `StatusBadge.tsx` — Unified badge for appointment status, patient status, types, chart IDs
-- `InitialsBadge.tsx` — Deterministic initials avatar (hashed colour from ID)
+- `InitialsBadge.tsx` — Deterministic initials avatar (hashed colour from name)
 - `ClinicBrandMark.tsx` — Clinic logo as CSS `background-image` over `InitialsBadge` (sidebar + login)
 - `AppointmentEventCard.tsx` — FullCalendar custom event renderer
 - `MonthView.tsx` — Custom two-panel month layout for appointments

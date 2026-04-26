@@ -5,7 +5,8 @@
  * Colours via CSS variables only — see globals.css.
  *
  * With `topSlot` (appointment detail): sidebar height splits 40% / 60% between the
- * slot and the activity log; the slot scrolls internally on overflow.
+ * slot and the activity log. The slot region is a flex column so **`topSlot`** can
+ * use **`h-full`** and scroll inside itself (e.g. **`AppointmentPatientSummaryCard`**).
  * Without `topSlot`: activity log uses the full column height.
  *
  * Phase 6+: ActivityLog pagination is fully wired.
@@ -121,8 +122,8 @@ export function DetailSidebar({
     >
       {topSlot ? (
         <div className="grid h-full min-h-0 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] overflow-hidden">
-          <div className="min-h-0 flex flex-col overflow-hidden px-4 pb-2 pt-4">
-            <div className="scrollbar-hover min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden px-4 pb-2 pt-4">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {topSlot}
             </div>
           </div>

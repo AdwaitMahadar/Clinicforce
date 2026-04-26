@@ -33,6 +33,8 @@ interface InitialsBadgeProps {
   name: string;
   size?: "sm" | "md" | "lg";
   className?: string;
+  /** Merged onto `AvatarFallback` (e.g. `text-lg` when the root is sized with `size-full`). */
+  fallbackClassName?: string;
 }
 
 /**
@@ -41,21 +43,26 @@ interface InitialsBadgeProps {
  *
  * @example <InitialsBadge name="Jane Smith" size="md" />
  */
-export function InitialsBadge({ name, size = "md", className }: InitialsBadgeProps) {
+export function InitialsBadge({
+  name,
+  size = "md",
+  className,
+  fallbackClassName,
+}: InitialsBadgeProps) {
   const initials = toInitials(name);
   const hue = hashToHue(name);
   const { avatar, text } = SIZE[size];
 
   return (
     <Avatar
-      className={cn("rounded-lg border flex-shrink-0", avatar, className)}
+      className={cn("rounded-lg border shrink-0", avatar, className)}
       style={{
         background: `hsl(${hue} 60% 90%)`,
         borderColor: `hsl(${hue} 40% 82%)`,
       }}
     >
       <AvatarFallback
-        className={cn("rounded-lg bg-transparent font-bold", text)}
+        className={cn("rounded-lg bg-transparent font-bold", text, fallbackClassName)}
         style={{ color: `hsl(${hue} 50% 30%)` }}
       >
         {initials}
