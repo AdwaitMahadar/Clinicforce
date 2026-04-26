@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -44,10 +45,12 @@ import {
   updatePrescriptionNotes,
 } from "@/lib/actions/prescriptions";
 import type { PrescriptionForAppointmentTab } from "@/types/prescription";
+import type { PatientPrescriptionSummary } from "@/types/patient";
 import { AsyncSearchCombobox } from "@/components/common/AsyncSearchCombobox";
 import { DraftPrescriptionShell } from "@/components/common/prescriptions/draft-prescription-shell";
 import { DraftSortableCard } from "@/components/common/prescriptions/draft-prescription-item-card";
 import { PublishedPrescriptionAccordion } from "@/components/common/prescriptions/published-prescription-accordion";
+import { PrescriptionPublishedHistoryList } from "@/components/common/prescriptions/prescription-published-history-list";
 import {
   applyPayload,
   failToast,
@@ -61,10 +64,21 @@ import { cn } from "@/lib/utils";
 export interface PrescriptionsTabProps {
   appointmentId: string;
   initialPrescription: PrescriptionForAppointmentTab | null;
+  /** This visit — used to dedupe `initialPrescriptionHistory` so the published current row is not listed twice. */
+  currentAppointmentId: string;
+  /** Published prescriptions for the patient (`getPrescriptionsByPatient`); drafts never appear. */
+  initialPrescriptionHistory: PatientPrescriptionSummary[];
 }
 
-export function PrescriptionsTab({ appointmentId, initialPrescription }: PrescriptionsTabProps) {
+export function PrescriptionsTab({
+  appointmentId,
+  initialPrescription,
+  currentAppointmentId,
+  initialPrescriptionHistory,
+}: PrescriptionsTabProps) {
+  const router = useRouter();
   const [rx, setRx] = useState<PrescriptionForAppointmentTab | null>(initialPrescription);
+  const [history, setHistory] = useState<PatientPrescriptionSummary[]>(initialPrescriptionHistory);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearPending, setClearPending] = useState(false);
   const [showAddPicker, setShowAddPicker] = useState(false);
@@ -77,6 +91,15 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
   useEffect(() => {
     setRx(initialPrescription);
   }, [initialPrescription]);
+
+  useEffect(() => {
+    setHistory(initialPrescriptionHistory);
+  }, [initialPrescriptionHistory]);
+
+  const otherPrescriptions = useMemo(
+    () => history.filter((p) => p.appointmentId !== currentAppointmentId),
+    [history, currentAppointmentId]
+  );
 
   const published = rx?.publishedAt != null;
   const draft = rx != null && !published;
@@ -181,7 +204,8 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
     const res = await publishPrescription({ prescriptionId: rx.id });
     if (!(await failToast(res))) return;
     applyPayload(setRx, res.data);
-  }, [rx]);
+    router.refresh();
+  }, [rx, router]);
 
   const handleNotesBlur = useCallback(
     async (raw: string) => {
@@ -268,7 +292,7 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
 
   return (
     <div className="flex flex-col gap-4">
-      {published && rx ? <PublishedPrescriptionAccordion rx={rx} /> : null}
+      {published && rx ? <PublishedPrescriptionAccordion rx={rx} highlightCurrent /> : null}
 
       {draft && rx ? (
         <DraftPrescriptionShell
@@ -386,6 +410,23 @@ export function PrescriptionsTab({ appointmentId, initialPrescription }: Prescri
       ) : null}
 
       {standaloneAddPicker}
+
+      {otherPrescriptions.length > 0 ? (
+        <div
+          className="flex flex-col gap-2 border-t pt-4"
+          style={{ borderColor: "var(--color-border)" }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            Other prescriptions
+          </p>
+          <div className="max-h-[min(24rem,50vh)] min-h-0 overflow-y-auto pr-1">
+            <PrescriptionPublishedHistoryList prescriptions={otherPrescriptions} />
+          </div>
+        </div>
+      ) : null}
 
       <AlertDialogPrimitive.Root open={clearOpen} onOpenChange={(o) => !clearPending && setClearOpen(o)}>
         <AlertDialogPrimitive.Portal>

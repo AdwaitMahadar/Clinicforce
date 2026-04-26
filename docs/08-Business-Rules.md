@@ -139,7 +139,7 @@ Future versions may enforce transition logic (e.g. preventing a `completed` appo
 
 ## 6. Prescription Rules (structured in-app Rx)
 
-Structured prescriptions are **not** uploaded files — they are rows in **`prescriptions`** and **`prescription_items`**, edited on the appointment detail **Prescriptions** tab and listed (published only) on the patient detail **Prescriptions** tab. **PDF or printable output is out of scope** (future); publish persists data only.
+Structured prescriptions are **not** uploaded files — they are rows in **`prescriptions`** and **`prescription_items`**, edited on the appointment detail **Prescriptions** tab and listed (published only) on the patient detail **Prescriptions** tab. **PDF or printable output is out of scope** (future); publish persists data only. The appointment **Prescriptions** tab also shows **other visits’** published rows for the same patient (**`getPrescriptionsByPatient`** embedded in **`getAppointmentDetail`** as **`prescriptionHistory`**); the UI omits the open visit from that list when it would duplicate the current visit’s published Rx — this does **not** change the **one prescription per appointment** rule below.
 
 ### Access
 - Only **Admin** and **Doctor** may read or mutate prescriptions (`requireRole(session, ["admin", "doctor"])` in `lib/actions/prescriptions.ts`). **Staff** receive no prescription data on reads that would otherwise include it (`getPatientDetail.prescriptions: []`) and have no UI entry points (`viewPrescriptions` / `createPrescription`).
@@ -161,6 +161,7 @@ Structured prescriptions are **not** uploaded files — they are rows in **`pres
 
 ### Patient history list
 - **`getPrescriptionsByPatient`** returns **published** prescriptions only (`published_at IS NOT NULL`, active prescription row). **Drafts** exist only on the appointment until published — they do **not** appear on the patient list.
+- **`getAppointmentDetail`** (admin/doctor) embeds the **same** published list as **`prescriptionHistory`** for the appointment’s patient so the appointment **Prescriptions** tab can render **Other prescriptions** without an extra client fetch; staff receive **`prescriptionHistory: []`** (see **`docs/05-Authentication.md`**).
 
 ---
 

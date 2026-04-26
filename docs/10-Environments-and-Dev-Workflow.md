@@ -66,6 +66,12 @@ pnpm db:migrate
 ```
 This runs `drizzle-kit migrate` against your local Docker Postgres (via `DATABASE_URL` in `.env.local`). Run this every time you add or change a schema file after generating a migration.
 
+### Typecheck (local quality gate)
+```bash
+pnpm exec tsc --noEmit
+```
+Run before opening a PR or tagging a release — catches type errors without a full production build.
+
 ### Generating a new migration (after schema edits)
 ```bash
 pnpm db:generate

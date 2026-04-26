@@ -614,7 +614,9 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
           !isCreate && canViewPrescriptions ? (
             <PrescriptionsTab
               appointmentId={appointment!.id}
+              currentAppointmentId={appointment!.id}
               initialPrescription={appointment!.prescription}
+              initialPrescriptionHistory={appointment!.prescriptionHistory}
             />
           ) : undefined
         }
