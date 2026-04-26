@@ -18,17 +18,30 @@ function dash(s: string | null | undefined): string {
   return t && t.length > 0 ? t : "—";
 }
 
-function GenderIcon({ gender }: { gender: PatientGender | null }) {
+function GenderIcon({ gender }: { gender: PatientGender }) {
   if (gender === "Male") {
-    return <Mars className="size-3.5 shrink-0" aria-hidden />;
+    return <Mars className="size-3 shrink-0" aria-hidden />;
   }
   if (gender === "Female") {
-    return <Venus className="size-3.5 shrink-0" aria-hidden />;
+    return <Venus className="size-3 shrink-0" aria-hidden />;
+  }
+  return <UserRound className="size-3 shrink-0" aria-hidden />;
+}
+
+/** Accent for gender pill: icon, label, and outline — background stays `surface-alt`. */
+function genderBadgeAccent(
+  gender: PatientGender | null
+): { color: string; borderColor: string } | undefined {
+  if (gender === "Male") {
+    return { color: "var(--color-blue)", borderColor: "var(--color-blue-border-emphasis)" };
+  }
+  if (gender === "Female") {
+    return { color: "var(--color-purple)", borderColor: "var(--color-purple-border)" };
   }
   if (gender === "Other" || gender === "Prefer not to say") {
-    return <UserRound className="size-3.5 shrink-0" aria-hidden />;
+    return { color: "var(--color-amber)", borderColor: "var(--color-amber-border)" };
   }
-  return null;
+  return undefined;
 }
 
 const labelCls =
@@ -50,7 +63,8 @@ export function AppointmentPatientSummaryCard({
   const history = dash(summary.pastHistoryNotes);
 
   const badgeClass =
-    "rounded-full border px-2.5 py-1 text-[11px] font-semibold gap-1.5";
+    "rounded-full border px-2 py-0.5 text-[10px] font-semibold gap-1 leading-none";
+  const genderAccent = genderBadgeAccent(gender);
 
   return (
     <div
@@ -74,12 +88,12 @@ export function AppointmentPatientSummaryCard({
           </div>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <p
-              className="text-sm font-bold leading-snug"
+              className="text-md font-bold leading-snug tracking-tight"
               style={{ color: "var(--color-text-primary)" }}
             >
               {name}
             </p>
-            <div className="mt-2 flex flex-row flex-wrap items-center gap-2">
+            <div className="mt-1.5 flex flex-row flex-wrap items-center gap-1.5">
               <Badge
                 variant="outline"
                 className={cn(badgeClass, "pointer-events-none shrink-0")}
@@ -96,8 +110,10 @@ export function AppointmentPatientSummaryCard({
                 className={cn(badgeClass, "pointer-events-none shrink-0")}
                 style={{
                   background: "var(--color-surface-alt)",
-                  color: "var(--color-text-secondary)",
-                  borderColor: "var(--color-border)",
+                  ...(genderAccent ?? {
+                    color: "var(--color-text-secondary)",
+                    borderColor: "var(--color-border)",
+                  }),
                 }}
               >
                 {gender ? (
