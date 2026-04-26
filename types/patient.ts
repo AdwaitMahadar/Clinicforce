@@ -58,6 +58,11 @@ export interface PatientAppointment {
   date:      string;
   time:      string;
   status:    AppointmentStatus;
+  /** Optional visit fee (INR); null when omitted or redacted for staff until visit is completed. */
+  fee:       number | null;
+  description: string | null;
+  /** Appointment `notes` (clinical); null when redacted server-side. */
+  clinicalNotes: string | null;
 }
 
 /**

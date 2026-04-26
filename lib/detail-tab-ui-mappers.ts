@@ -26,7 +26,7 @@ export function mapDocumentSummariesToPatientDocuments(
   }));
 }
 
-/** Rows match `getPatientAppointmentSummaries` / tab actions after optional title redaction. */
+/** Rows match tab actions / `getPatientDetail` appointments after title, notes, and fee redaction. */
 export function mapAppointmentSummaryRowsToPatientAppointments(
   rows: Array<{
     id: string;
@@ -36,6 +36,9 @@ export function mapAppointmentSummaryRowsToPatientAppointments(
     doctor: string;
     scheduledAt: Date | string;
     status: string;
+    fee: number | null;
+    description: string | null;
+    notes: string | null;
   }>
 ): PatientAppointment[] {
   return rows.map((a) => ({
@@ -52,6 +55,9 @@ export function mapAppointmentSummaryRowsToPatientAppointments(
     date: a.scheduledAt ? format(new Date(a.scheduledAt), "MMM d, yyyy") : "",
     time: a.scheduledAt ? format(new Date(a.scheduledAt), "hh:mm a") : "",
     status: a.status as AppointmentStatus,
+    fee: a.fee,
+    description: a.description,
+    clinicalNotes: a.notes,
   }));
 }
 

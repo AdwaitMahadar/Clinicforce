@@ -47,6 +47,9 @@ export interface PatientAppointmentSummary {
   doctor: string;
   scheduledAt: Date;
   status: string;
+  fee: number | null;
+  description: string | null;
+  notes: string | null;
 }
 
 export interface PatientDetail {
@@ -280,6 +283,9 @@ export async function getPatientAppointmentSummaries(
       visitType: appointments.visitType,
       scheduledAt: appointments.scheduledAt,
       status: appointments.status,
+      fee: appointments.fee,
+      description: appointments.description,
+      notes: appointments.notes,
       doctorName: sql<string>`COALESCE(
         NULLIF(TRIM(${users.firstName} || ' ' || ${users.lastName}), ''),
         ${users.name}
@@ -304,6 +310,9 @@ export async function getPatientAppointmentSummaries(
     doctor: a.doctorName ?? "",
     scheduledAt: a.scheduledAt,
     status: a.status,
+    fee: a.fee != null && Number.isFinite(Number(a.fee)) ? Number(a.fee) : null,
+    description: a.description,
+    notes: a.notes,
   }));
 }
 

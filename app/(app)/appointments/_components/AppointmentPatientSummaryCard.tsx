@@ -6,7 +6,8 @@
  * Any missing / empty optional value renders as "—".
  */
 
-import { Mars, UserRound, Venus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ExternalLink, Mars, UserRound, Venus } from "lucide-react";
 import { InitialsBadge } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import type { AppointmentDetailPatientSummary } from "@/types/appointment";
@@ -47,10 +48,36 @@ function genderBadgeAccent(
 const labelCls =
   "text-[10px] font-bold uppercase tracking-widest shrink-0 mb-1";
 
+function PatientOpenPill({ patientId, label }: { patientId: string; label: string }) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      onClick={() => router.push(`/patients/view/${patientId}`)}
+      className={cn(
+        "cursor-pointer inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0",
+        "transition-[background-color,border-color,opacity] duration-150",
+        "hover:opacity-[0.92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-surface)]"
+      )}
+      style={{
+        borderColor: "var(--color-border)",
+        background: "var(--color-surface-alt)",
+        color: "var(--color-text-secondary)",
+      }}
+      aria-label={`Open patient ${label}`}
+    >
+      <ExternalLink className="size-2.5 shrink-0 opacity-80" aria-hidden strokeWidth={2.25} />
+      Open
+    </button>
+  );
+}
+
 export function AppointmentPatientSummaryCard({
   summary,
+  patientId,
 }: {
   summary: AppointmentDetailPatientSummary;
+  patientId: string;
 }) {
   const name = dash(summary.fullName);
   const ageLabel =
@@ -125,6 +152,7 @@ export function AppointmentPatientSummaryCard({
                   genderLabel
                 )}
               </Badge>
+              <PatientOpenPill patientId={patientId} label={name} />
             </div>
           </div>
         </div>

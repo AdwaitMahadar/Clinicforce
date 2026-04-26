@@ -599,7 +599,10 @@ export function AppointmentDetailPanel(props: AppointmentDetailPanelProps) {
         }
         sidebarTop={
           !isCreate ? (
-            <AppointmentPatientSummaryCard summary={appointment!.patientSummary} />
+            <AppointmentPatientSummaryCard
+              summary={appointment!.patientSummary}
+              patientId={appointment!.patientId}
+            />
           ) : undefined
         }
         events={!isCreate ? appointment!.activityLog : []}

@@ -302,9 +302,13 @@ export async function getPatientDetailAppointmentsTab(id: unknown) {
     }
 
     const rows = await getPatientAppointmentSummaries(clinicId, parsed.data);
+    const canNotes = hasPermission(session.user.type, "viewClinicalNotes");
+    const isStaff = session.user.type === "staff";
     const data = rows.map((a) => ({
       ...a,
       title: canTitle ? a.title : null,
+      notes: canNotes ? a.notes : null,
+      fee: isStaff && a.status !== "completed" ? null : a.fee,
     }));
     return { success: true as const, data };
   } catch (err) {

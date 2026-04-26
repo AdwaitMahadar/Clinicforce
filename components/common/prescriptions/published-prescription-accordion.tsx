@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown } from "lucide-react";
 import type { PrescriptionForAppointmentTab } from "@/types/prescription";
 import { formatPrescriptionChartId } from "@/lib/utils/chart-id";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { RxClinicalDocument } from "@/components/common/prescriptions/rx-clinical-document";
 
 /** Single published Rx for the current appointment — collapsible read-only ℞. */
@@ -14,7 +15,7 @@ export function PublishedPrescriptionAccordion({
   highlightCurrent = false,
 }: {
   rx: PrescriptionForAppointmentTab;
-  /** When true (appointment tab, this visit): blue border + **Current** badge — same tokens as `AppointmentListTab`. */
+  /** When true (appointment tab, this visit): blue border + inline **Current** `Badge` (same tokens as `AppointmentListTab`). */
   highlightCurrent?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -51,16 +52,17 @@ export function PublishedPrescriptionAccordion({
                 {formatPrescriptionChartId(rx.chartId)}
               </span>
               {highlightCurrent ? (
-                <span
-                  className="text-[9px] font-semibold uppercase tracking-wide shrink-0 px-1.5 py-0.5 rounded"
+                <Badge
+                  variant="outline"
+                  className="pointer-events-none h-auto shrink-0 border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
                   style={{
                     background: "var(--color-blue-bg)",
                     color: "var(--color-blue)",
-                    border: "1px solid var(--color-blue-border)",
+                    borderColor: "var(--color-blue-border)",
                   }}
                 >
                   Current
-                </span>
+                </Badge>
               ) : null}
               <span
                 className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
