@@ -48,6 +48,9 @@ function genderBadgeAccent(
 const labelCls =
   "text-[10px] font-bold uppercase tracking-widest shrink-0 mb-1";
 
+const badgeClass =
+  "rounded-full border px-2 py-0.5 text-[10px] font-semibold gap-1 leading-none";
+
 function PatientOpenPill({ patientId, label }: { patientId: string; label: string }) {
   const router = useRouter();
   return (
@@ -57,7 +60,7 @@ function PatientOpenPill({ patientId, label }: { patientId: string; label: strin
       className={cn(
         "cursor-pointer inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0",
         "transition-[background-color,border-color,opacity] duration-150",
-        "hover:opacity-[0.92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-surface)]"
+        "hover:opacity-[0.92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-border) focus-visible:ring-offset-2 focus-visible:ring-offset-(--color-surface)"
       )}
       style={{
         borderColor: "var(--color-border)",
@@ -89,8 +92,6 @@ export function AppointmentPatientSummaryCard({
   const allergies = dash(summary.allergies);
   const history = dash(summary.pastHistoryNotes);
 
-  const badgeClass =
-    "rounded-full border px-2 py-0.5 text-[10px] font-semibold gap-1 leading-none";
   const genderAccent = genderBadgeAccent(gender);
 
   return (
@@ -123,7 +124,7 @@ export function AppointmentPatientSummaryCard({
             <div className="mt-1.5 flex flex-row flex-wrap items-center gap-1.5">
               <Badge
                 variant="outline"
-                className={cn(badgeClass, "pointer-events-none shrink-0")}
+                className={cn(badgeClass, "pointer-events-none h-auto shrink-0")}
                 style={{
                   background: "var(--color-surface-alt)",
                   color: "var(--color-text-secondary)",
@@ -134,7 +135,7 @@ export function AppointmentPatientSummaryCard({
               </Badge>
               <Badge
                 variant="outline"
-                className={cn(badgeClass, "pointer-events-none shrink-0")}
+                className={cn(badgeClass, "pointer-events-none h-auto shrink-0")}
                 style={{
                   background: "var(--color-surface-alt)",
                   ...(genderAccent ?? {

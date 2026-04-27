@@ -2,11 +2,12 @@
 
 /**
  * Detail panel "Appointments" tab — visit cards: non-current rows accordion-expand for
- * extra read-only fields; the **current** visit is a flat summary only (no **Open** pill).
- * **Open** pill + status on the header top row; chevron on the date/time row, full-width.
+ * extra read-only fields; **current** visit is a flat summary (no **Open** in the body).
+ * Accordion: full-width header **`button`** (heading + status chip + date row + chevron); expanded
+ * row matches **`PatientOpenPill`** sizing (`ROW_CHIP_SHELL` / **`OpenAppointmentPill`**). **Current** = Shadcn **`Badge`**.
  */
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, ExternalLink } from "lucide-react";
 import type { PatientAppointment } from "@/types/patient";
@@ -19,12 +20,52 @@ import {
 import { formatAppointmentFeeInr } from "@/lib/utils/format-appointment-fee";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  CATEGORY_COLORS,
+  VALID_APPOINTMENT_CATEGORIES,
+} from "@/lib/appointment-calendar-styles";
 
 const APPT_STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
   scheduled: { bg: "var(--color-amber-bg)", text: "var(--color-amber)", border: "var(--color-amber-border)" },
   completed: { bg: "var(--color-blue-bg)", text: "var(--color-blue)", border: "var(--color-blue-border)" },
   cancelled: { bg: "var(--color-red-bg)", text: "var(--color-red)", border: "var(--color-red-border)" },
   "no-show": { bg: "var(--color-purple-bg)", text: "var(--color-purple)", border: "var(--color-purple-border)" },
+};
+
+/** Visit-type chips — distinct tokens from category calendar colours (visit `general` ≠ category `general`). */
+const VISIT_TYPE_CHIP_STYLES: Record<
+  AppointmentVisitType,
+  { bg: string; text: string; border: string }
+> = {
+  general: {
+    bg: "var(--color-surface-alt)",
+    text: "var(--color-text-secondary)",
+    border: "var(--color-border)",
+  },
+  "first-visit": {
+    bg: "var(--color-green-bg)",
+    text: "var(--color-green)",
+    border: "var(--color-green-border)",
+  },
+  "follow-up-visit": {
+    bg: "var(--color-purple-bg)",
+    text: "var(--color-purple)",
+    border: "var(--color-purple-border)",
+  },
+};
+
+type ChipSurface = { bg: string; text: string; border: string };
+
+/** Layout shell shared with `PatientOpenPill` / `OpenAppointmentPill` (`px-2.5`). */
+const ROW_CHIP_SHELL =
+  "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0";
+
+const READONLY_ROW_CHIP = cn(ROW_CHIP_SHELL, "pointer-events-none max-w-full min-w-0");
+
+const NEUTRAL_OPEN_SURFACE: ChipSurface = {
+  bg: "var(--color-surface-alt)",
+  text: "var(--color-text-secondary)",
+  border: "var(--color-border)",
 };
 
 export interface AppointmentListTabProps {
@@ -59,42 +100,68 @@ function cardShellStyle(isCurrent: boolean) {
   } as const;
 }
 
+function chipStyle(surface: ChipSurface): CSSProperties {
+  return { background: surface.bg, color: surface.text, borderColor: surface.border };
+}
+
 function StatusChip({ status }: { status: string }) {
   const s = APPT_STATUS_STYLES[status] ?? APPT_STATUS_STYLES.completed;
+  const surface: ChipSurface = { bg: s.bg, text: s.text, border: s.border };
   return (
-    <span
-      className="text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap capitalize shrink-0"
-      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
-    >
+    <span className={cn(READONLY_ROW_CHIP, "capitalize")} style={chipStyle(surface)}>
       {status}
     </span>
   );
 }
 
-function OpenVisitPill({ heading, appointmentId }: { heading: string; appointmentId: string }) {
+/** Same Open control as `PatientOpenPill` in `AppointmentPatientSummaryCard`. */
+function OpenAppointmentPill({ appointmentId, heading }: { appointmentId: string; heading: string }) {
   const router = useRouter();
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        router.push(`/appointments/view/${appointmentId}`);
-      }}
+      onClick={() => router.push(`/appointments/view/${appointmentId}`)}
       className={cn(
-        "cursor-pointer inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0",
-        "transition-[background-color,border-color,opacity] duration-150",
-        "hover:opacity-[0.92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-glass-fill-data)]"
+        ROW_CHIP_SHELL,
+        "cursor-pointer transition-[background-color,border-color,opacity] duration-150",
+        "hover:opacity-[0.92] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-border) focus-visible:ring-offset-2 focus-visible:ring-offset-(--color-surface)"
       )}
-      style={{
-        borderColor: "var(--color-border)",
-        background: "var(--color-surface-alt)",
-        color: "var(--color-text-secondary)",
-      }}
+      style={chipStyle(NEUTRAL_OPEN_SURFACE)}
       aria-label={`Open appointment ${heading}`}
     >
       <ExternalLink className="size-2.5 shrink-0 opacity-80" aria-hidden strokeWidth={2.25} />
       Open
     </button>
+  );
+}
+
+function MetaLabeledChip({ label, value, surface }: { label: string; value: string; surface: ChipSurface }) {
+  return (
+    <span className={READONLY_ROW_CHIP} style={chipStyle(surface)}>
+      <span className="shrink-0 opacity-70">{label}</span>
+      <span className="min-w-0 truncate">{value}</span>
+    </span>
+  );
+}
+
+function AppointmentExpandedMetaRow({ appt }: { appt: PatientAppointment }) {
+  const catKey = (VALID_APPOINTMENT_CATEGORIES.has(appt.category) ? appt.category : "general") as AppointmentCategory;
+  const c = CATEGORY_COLORS[catKey];
+  const visit =
+    VISIT_TYPE_CHIP_STYLES[appt.visitType as AppointmentVisitType] ?? VISIT_TYPE_CHIP_STYLES.general;
+
+  return (
+    <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-x-2 overflow-x-auto scrollbar-hover">
+      <MetaLabeledChip label="Category" value={categoryLabel(appt.category)} surface={{ bg: c.bg, text: c.text, border: c.border }} />
+      <MetaLabeledChip label="Visit type" value={visitTypeLabel(appt.visitType)} surface={visit} />
+      <span className={READONLY_ROW_CHIP} style={chipStyle(NEUTRAL_OPEN_SURFACE)}>
+        <span className="shrink-0 opacity-70">Fee</span>
+        <span className="tabular-nums" style={{ color: "var(--color-text-primary)" }}>
+          {formatAppointmentFeeInr(appt.fee)}
+        </span>
+      </span>
+      <OpenAppointmentPill appointmentId={appt.id} heading={appt.heading} />
+    </div>
   );
 }
 
@@ -105,32 +172,7 @@ function AppointmentExpandedDetails({ appt }: { appt: PatientAppointment }) {
 
   return (
     <div className="px-4 pb-4 pt-3 space-y-3">
-      <div className="grid min-w-0 grid-cols-3 gap-3 sm:gap-4">
-        <div className="grid min-w-0 gap-0.5">
-          <span className={labelCls} style={{ color: muted }}>
-            Category
-          </span>
-          <span className="text-sm break-words" style={{ color: primary }}>
-            {categoryLabel(appt.category)}
-          </span>
-        </div>
-        <div className="grid min-w-0 gap-0.5">
-          <span className={labelCls} style={{ color: muted }}>
-            Visit type
-          </span>
-          <span className="text-sm break-words" style={{ color: primary }}>
-            {visitTypeLabel(appt.visitType)}
-          </span>
-        </div>
-        <div className="grid min-w-0 gap-0.5">
-          <span className={labelCls} style={{ color: muted }}>
-            Fee
-          </span>
-          <span className="text-sm tabular-nums" style={{ color: primary }}>
-            {formatAppointmentFeeInr(appt.fee)}
-          </span>
-        </div>
-      </div>
+      <AppointmentExpandedMetaRow appt={appt} />
       <div className="grid gap-0.5">
         <span className={labelCls} style={{ color: muted }}>
           Description
@@ -211,23 +253,15 @@ function AppointmentAccordionRow({ appt }: { appt: PatientAppointment }) {
     >
       <button
         type="button"
-        className="w-full text-left p-3"
+        className="w-full text-left p-3 rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-border) focus-visible:ring-inset"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p
-              className="text-sm font-bold truncate"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {appt.heading}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5 self-start pt-0.5">
-            <OpenVisitPill heading={appt.heading} appointmentId={appt.id} />
-            <StatusChip status={appt.status} />
-          </div>
+          <p className="text-sm font-bold truncate min-w-0 pr-1" style={{ color: "var(--color-text-primary)" }}>
+            {appt.heading}
+          </p>
+          <StatusChip status={appt.status} />
         </div>
         <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
           {appt.doctor}
