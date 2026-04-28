@@ -386,7 +386,7 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
-          "default": "'{\"theme\":\"system\"}'::jsonb"
+          "default": "'{\"theme\":\"light\"}'::jsonb"
         },
         "is_active": {
           "name": "is_active",

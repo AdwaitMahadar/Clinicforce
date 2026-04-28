@@ -12,5 +12,5 @@ export const DEFAULT_CLINIC_SETTINGS: ClinicSettingsJson = {
 };
 
 export const DEFAULT_USER_PREFERENCES: UserPreferencesJson = {
-  theme: "system",
+  theme: "light",
 };
