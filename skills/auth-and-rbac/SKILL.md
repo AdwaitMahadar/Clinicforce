@@ -36,7 +36,7 @@ Clinicforce uses **Better-Auth** with the Drizzle ORM adapter (PostgreSQL provid
 ### Request pipeline
 
 - **Middleware** — Binds the request to a tenant (`x-forwarded-host` then `host` → **`extractSubdomainFromHost`** → `clinicId` via in-memory cache, DB on miss); forwards **`x-clinic-id`** and **`x-subdomain`**. Requires session cookie on protected routes.
-- **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); strictly requires **`x-clinic-id`** to be set by middleware (throws **`MISSING_CLINIC_CONTEXT`** if missing) and throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Deduplicated per request via React `cache()`. Middleware and session serve different jobs (request vs user); both stay.
+- **`getSession()`** — Loads user + `clinicSubdomain` + `clinicName` (join to `clinics`); **`users.preferences`** and **`clinics.settings`** for the authenticated shell (`ClinicAppearanceProvider`); strictly requires **`x-clinic-id`** to be set by middleware (throws **`MISSING_CLINIC_CONTEXT`** if missing) and throws **`CLINIC_MISMATCH`** if `x-clinic-id` ≠ `user.clinicId`. Deduplicated per request via React `cache()`. Middleware and session serve different jobs (request vs user); both stay.
 
 ### Middleware Behaviour
 
@@ -74,9 +74,12 @@ export interface AppSession {
     firstName: string;
     lastName: string;
     email: string;
+    preferences: UserPreferencesJson; // theme: light | dark | system
+    clinic: { settings: ClinicSettingsJson }; // primary/secondary + defaults + optional logoUpdatedAt
   };
 }
 ```
+(`UserPreferencesJson` / `ClinicSettingsJson` — `types/clinic-settings.ts`; full shape in `docs/05-Authentication.md`.)
 
 *   **`session.user.clinicId`** — ONLY acceptable source for DB query scoping.
 *   **`session.user.clinicSubdomain`** — tenant slug from DB (e.g. S3 key prefix); not a substitute for `clinicId` in SQL filters.
@@ -141,6 +144,7 @@ const session = await requirePermission("manageUsers");
 | **Appt. clinical notes + patient past history** | **Hidden + API redacted** | Full | Full |
 | **Appt. title field (form) + title API** | **Hidden; create stores null; update strips title; reads return `title: null`** | Full | Full |
 | **Detail right column + main-column Documents/Appointments tabs** | **Hidden** (Details-only, tab bar hidden) | Visible | Visible |
+| **Settings — clinic appearance** | Read-only current colors; theme pref | Edit colors + reset to stored defaults | + set defaults + logo upload/remove |
 
 Staff **cannot** delete patients or documents, or **view/upload/open** documents (`getUploadPresignedUrl` / `confirmDocumentUpload` / `getViewPresignedUrl` → `requireRole(session, ["admin", "doctor"])`; `getPatientDetail` / `getAppointmentDetail` return empty document arrays; `searchGlobal` skips the documents query; `UniversalSearch` hides the Documents group via `viewDocuments`). **Prescriptions** mirror documents: `viewPrescriptions` / `createPrescription` are admin+doctor only; staff get no tab / list and actions **`requireRole(session, ["admin", "doctor"])`**; **`getPatientDetail`** → **`prescriptions: []`**; **`getAppointmentDetail`** → **`prescription: null`**, **`prescriptionHistory: []`**. Staff has **no access to medicines** (nav tab hidden; every medicines `page.tsx` uses `requirePermission("viewMedicines")`; server actions `requireRole(session, ["admin", "doctor"])`; `searchGlobal` skips medicines query → `medicines: []`; `UniversalSearch` hides Medicines group via `viewMedicines`). Appointment `notes` and patient `pastHistoryNotes` are hidden in UI and **redacted/ignored in patient + appointment server actions** for staff (including **`getPatientDetailAppointmentsTab`** / **`getAppointmentDetailAppointmentsTab`** row **`notes`**); staff **`fee`** on those appointment-summary rows is **`null`** unless **`status === 'completed'`**. The **detail right column** (activity log + optional patient summary) and **main-column Documents/Appointments tabs** are hidden for staff — `DetailPanel` gates both via `usePermission("viewDetailSidebar")`. `ModalDetailPanelBodySkeleton` applies the **same `noSidebar` logic** so the Suspense fallback skeleton matches the final rendered layout with no layout shift.
 

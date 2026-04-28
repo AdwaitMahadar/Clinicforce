@@ -26,6 +26,7 @@ The "Tenant" table representing a physical clinic.
 - `address`: `text`
 - `phone`: `varchar(20)`
 - `email`: `varchar(255)`
+- `settings`: `jsonb` **notNull** — clinic-wide appearance and logo metadata. Shape (see `types/clinic-settings.ts` / `lib/constants/clinic-settings.ts`): `primaryColor`, `secondaryColor`, `defaultPrimaryColor`, `defaultSecondaryColor` (hex strings), optional `logoUpdatedAt` (ISO string cache buster). Every row must have all four color keys after migrate + seed; defaults align with the product palette in `app/globals.css`.
 - `is_active`: `boolean` (Default: `true`)
 - `created_at`: `timestamp`
 - `updated_at`: `timestamp`
@@ -48,6 +49,7 @@ These tables are managed by Better-Auth but extended to include `clinic_id` for 
 - `address`: `text`
 - `chart_id`: `integer` (User-friendly ID, e.g., 101)
 - `type`: `enum` ('admin', 'doctor', 'staff') (Default: 'staff')
+- `preferences`: `jsonb` **notNull** — per-user UI preferences. Shape: `theme`: `'light' | 'dark' | 'system'` (see `types/clinic-settings.ts`). Default `system` after migrate + seed.
 - `is_active`: `boolean` (Default: `true`)
 - `created_at`: `timestamp`
 - `updated_at`: `timestamp`

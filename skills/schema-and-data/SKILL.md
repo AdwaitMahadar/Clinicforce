@@ -26,13 +26,13 @@ This is a distilled summary of the Drizzle ORM PostgreSQL schema. For full detai
 
 ### Shared / System Tables
 - **`clinics`**: The tenant record. Provides the boundary.
-  - Key fields: `id` (uuid), `subdomain` (unique), `name`
+  - Key fields: `id` (uuid), `subdomain` (unique), `name`, **`settings` (jsonb)** — `primaryColor` / `secondaryColor`, `defaultPrimaryColor` / `defaultSecondaryColor`, optional `logoUpdatedAt`; defaults in `lib/constants/clinic-settings.ts`
   - Local/staging provisioning: `scripts/seed.ts` (`pnpm db:seed` / `pnpm tsx scripts/seed.ts` — see `docs/10-Environments-and-Dev-Workflow.md`)
 
 ### Better-Auth Auth Tables
 *(Extended with `clinic_id`)*
 - **`users`**: RBAC accounts. Types: `'admin'`, `'doctor'`, `'staff'`.
-  - Keys: `id` (text), `clinic_id`
+  - Keys: `id` (text), `clinic_id`, **`preferences` (jsonb)** — `theme: light | dark | system`; default `system`
   - Unique index: `(clinic_id, email)`, `(clinic_id, chart_id)`
 - **`sessions`**, **`accounts`**, **`verifications`**: Standard Better-auth tables.
 

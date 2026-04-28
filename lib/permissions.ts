@@ -64,6 +64,14 @@ export const PERMISSIONS = {
   editMedicine: ["admin", "doctor"],
   deleteMedicine: ["admin", "doctor"],
 
+  // ── Settings (clinic appearance) ─────────────────────────────────────────
+  /** Edit current primary/secondary colors and reset to stored defaults. Admin + doctor; staff: no. */
+  editClinicThemeColors: ["admin", "doctor"],
+  /** Copy current colors into the clinic default fields. Admin only. */
+  setClinicThemeDefaults: ["admin"],
+  /** Logo presign, confirm, delete. Admin only. */
+  manageClinicLogo: ["admin"],
+
   // ── Activity Log ──────────────────────────────────────────────────────────
   /** View activity log in entity detail page sidebars. */
   viewActivityLog: ["admin", "doctor"],

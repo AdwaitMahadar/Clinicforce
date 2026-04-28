@@ -33,40 +33,17 @@ export interface AppSession {
     firstName: string;
     lastName: string;
     email: string;
+    /** From `users.preferences` — theme, etc. */
+    preferences: UserPreferencesJson;
+    /** From `clinics.settings` — appearance + optional `logoUpdatedAt`. */
+    clinic: { settings: ClinicSettingsJson };
   };
 }
-
-export const getSession = cache(async (): Promise<AppSession> => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) throw new Error("UNAUTHORIZED");
-
-  // Fetch user inner-joined to clinics — includes clinics.subdomain as clinicSubdomain
-  const row = await db
-    .select({
-      id: users.id,
-      clinicId: users.clinicId,
-      clinicSubdomain: clinics.subdomain,
-      clinicName: clinics.name,
-      type: users.type,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-    })
-    .from(users)
-    .innerJoin(clinics, eq(users.clinicId, clinics.id))
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-  if (!row[0]) throw new Error("USER_NOT_FOUND");
-
-  // Validate user belongs to the clinic derived from the request subdomain
-  const subdomainClinicId = (await headers()).get("x-clinic-id");
-  if (subdomainClinicId && row[0].clinicId !== subdomainClinicId) {
-    throw new Error("CLINIC_MISMATCH");
-  }
-
-  return { user: { id, clinicId, clinicSubdomain, clinicName, type, firstName, lastName, email } };
-});
 ```
+
+The select joins **`users`** and **`clinics`**, and returns **`users.preferences`** and **`clinics.settings`** alongside the existing user/clinic name fields. **`clinicName`** and **`clinicSubdomain`** remain the only safe clinic *identifiers* to surface in the client; **`clinicId`** and raw clinic UUIDs are never sent to the browser.
+
+`app/(app)/layout.tsx` passes **`user.preferences.theme`**, **`user.clinic.settings` primary/secondary** into **`ClinicAppearanceProvider`**, and **`buildClinicLogoPublicUrl(clinicSubdomain, settings.logoUpdatedAt)`** for the sidebar (cache buster when set).
 
 (`import { cache } from "react"` in the real module.) React `cache()` deduplicates by call site within a single request: multiple `await getSession()` invocations during one render / server action chain share the first execution’s result (one Better-Auth read + one user join query per request).
 
@@ -373,6 +350,9 @@ The full permission map reflects the PRD RBAC table:
 | `viewPrescriptions` / `createPrescription` | — | ✓ | ✓ |
 | `editDocument` / `deleteDocument` | — | ✓ | ✓ |
 | `viewMedicines` / `createMedicine` / `editMedicine` / `deleteMedicine` | — | ✓ | ✓ |
+| `editClinicThemeColors` (current colors + reset to default) | — | ✓ | ✓ |
+| `setClinicThemeDefaults` | — | — | ✓ |
+| `manageClinicLogo` | — | — | ✓ |
 
 **Rules:**
 - UI gating (`RoleGate`, `usePermission`) is for UX only. Server actions must still call `requireRole()` independently.
@@ -384,6 +364,7 @@ The full permission map reflects the PRD RBAC table:
 - **Appointment fee (staff UI):** By **`user.type === 'staff'`** (not a separate permission): **Fee** is hidden on **new** appointment; on **edit**, fee field and header fee line show only when **`status === 'completed'`**, and the fee input is non-editable via **`DetailForm`** **`TextField.readOnly`** (normal visual weight, not `disabled` opacity). Admin and doctor keep full fee edit access. **`getPatientDetailAppointmentsTab`** / **`getAppointmentDetailAppointmentsTab`** return **`fee: null`** on each summary row for **staff** unless that row’s **`status === 'completed'`** (staff do not see the Appointments tab in **`DetailPanel`**, but the actions stay aligned with other reads).
 - **Documents — staff excluded:** `viewDocuments` and `uploadDocument` are `["admin", "doctor"]`. **`getUploadPresignedUrl`**, **`confirmDocumentUpload`**, and **`getViewPresignedUrl`** use `requireRole(session, ["admin", "doctor"])`. For **staff**, **`getPatientDetail`** returns **`documents: []`**, **`getAppointmentDetail`** returns **`patientDocuments: []`**, and **`searchGlobal`** skips the documents DB query and returns **`documents: []`**. **`UniversalSearch`** gates the Documents result group with **`usePermission("viewDocuments")`**. Staff cannot open or upload files via server actions even if a client bypasses the UI.
 - **Prescriptions — staff excluded:** `viewPrescriptions` and `createPrescription` are `["admin", "doctor"]` (mirrors the documents split: view vs mutate). Prescription **server actions** (`lib/actions/prescriptions.ts`) use **`requireRole(session, ["admin", "doctor"])`**. For **staff**, **`getPatientDetail`** returns **`prescriptions: []`** and **`getAppointmentDetail`** returns **`prescription: null`** with **`prescriptionHistory: []`** (response-only; DB unchanged). UI: gate read surfaces with **`usePermission("viewPrescriptions")`** and add/edit/clear/reorder with **`usePermission("createPrescription")`** (appointment Prescriptions tab, patient read-only Rx list). Staff cannot read or change structured prescriptions even if a client bypasses the UI.
+- **Settings — clinic theme:** `editClinicThemeColors` is `["admin", "doctor"]`; `setClinicThemeDefaults` and `manageClinicLogo` are `["admin"]`. Server: `lib/actions/settings.ts` uses `hasPermission()` for color/logo mutations; per-user **theme** (`updateUserTheme`) is allowed for all roles. UI (General tab): gate color controls and **Reset to default** with `editClinicThemeColors`, **Set as default** with `setClinicThemeDefaults`, logo upload/remove with `manageClinicLogo` (see product RBAC in `docs/01-PRD.md` / `docs/07-Page-Specifications.md` Settings).
 - **Detail right column + main-column Documents/Appointments tabs — staff hidden:** `viewDetailSidebar` is `["admin", "doctor"]`. `DetailPanel` internally calls `usePermission("viewDetailSidebar")` and computes `noSidebar = isCreate || !canViewSidebar`. When `noSidebar` is true, the main column is full-width, **Documents** / **Appointments** tabs are not composed, and the tab strip is hidden when only **Details** remains (same layout width as create mode). View modal pages (`@modal/(.)patients/view/[id]` and `@modal/(.)appointments/view/[id]`) call `getSession()` and use `size="lg"` for staff (vs. `"xl"` for other roles) so the narrower modal matches the full-width form. `ModalDetailPanelBodySkeleton` (the `<Suspense>` fallback) applies the same `noSidebar = isCreate || !canViewSidebar` logic via `usePermission` so the loading skeleton layout matches the final render for all roles with no layout shift.
 
 ---

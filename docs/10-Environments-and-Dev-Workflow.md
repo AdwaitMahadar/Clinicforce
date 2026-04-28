@@ -78,6 +78,16 @@ pnpm db:generate
 ```
 Creates SQL under `lib/db/migrations/`; then run `pnpm db:migrate` to apply locally.
 
+**Settings columns (`clinics.settings`, `users.preferences`)** — migration `0014_clammy_omega_flight.sql` adds non-null `jsonb` columns with server defaults so existing rows backfill automatically. If you ever need to repair rows manually (e.g. partial restore), align values with `lib/constants/clinic-settings.ts`:
+
+```sql
+UPDATE clinics SET settings = '{"primaryColor":"#2D9B6F","secondaryColor":"#2563EB","defaultPrimaryColor":"#2D9B6F","defaultSecondaryColor":"#2563EB"}'::jsonb
+WHERE settings IS NULL OR settings->>'primaryColor' IS NULL;
+
+UPDATE users SET preferences = '{"theme":"system"}'::jsonb
+WHERE preferences IS NULL OR preferences->>'theme' IS NULL;
+```
+
 ### Seed script (`scripts/seed.ts`)
 
 Edit the **SEED CONFIG** block at the top of the file, then run:

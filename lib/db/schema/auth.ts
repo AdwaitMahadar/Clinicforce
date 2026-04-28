@@ -7,8 +7,16 @@ import {
   integer,
   uuid,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { clinics } from "./clinics";
+import { DEFAULT_USER_PREFERENCES } from "@/lib/constants/clinic-settings";
+import type { UserPreferencesJson } from "@/types/clinic-settings";
+
+const userPreferencesDefault = sql.raw(
+  `'${JSON.stringify(DEFAULT_USER_PREFERENCES)}'::jsonb`
+);
 
 export const userTypeEnum = pgEnum("user_type", ["admin", "doctor", "staff"]);
 
@@ -36,6 +44,11 @@ export const users = pgTable(
     address: text("address"),
     chartId: integer("chart_id"),
     type: userTypeEnum("type").notNull().default("staff"),
+    /** Theme and other per-user UI prefs; never null after migrate/seed. */
+    preferences: jsonb("preferences")
+      .$type<UserPreferencesJson>()
+      .notNull()
+      .default(userPreferencesDefault),
     isActive: boolean("is_active").notNull().default(true),
   },
   (t) => [

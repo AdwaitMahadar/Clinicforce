@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { getSession } from "@/lib/auth/session";
 import { AppSessionProvider } from "@/lib/auth/session-context";
 import { buildClinicLogoPublicUrl } from "@/lib/clinic/build-clinic-logo-url";
+import { ClinicAppearanceProvider } from "@/lib/clinic/clinic-appearance-context";
 import {
   SIDEBAR_COLLAPSED_COOKIE_NAME,
   parseSidebarCollapsedCookie,
@@ -36,34 +37,46 @@ export default async function AppLayout({ children, modal }: AppLayoutProps) {
 
   const userTypeLabel = USER_TYPE_LABELS[session.user.type];
 
-  const clinicLogoUrl = buildClinicLogoPublicUrl(session.user.clinicSubdomain);
+  const clinicLogoUrl = buildClinicLogoPublicUrl(
+    session.user.clinicSubdomain,
+    session.user.clinic.settings.logoUpdatedAt
+  );
 
   const cookieStore = await cookies();
   const initialCollapsed = parseSidebarCollapsedCookie(
     cookieStore.get(SIDEBAR_COLLAPSED_COOKIE_NAME)?.value
   );
 
+  const { primaryColor, secondaryColor } = session.user.clinic.settings;
+  const { theme: initialTheme } = session.user.preferences;
+
   return (
-    <AppSessionProvider
-      user={{
-        type: session.user.type,
-        firstName: session.user.firstName,
-        lastName: session.user.lastName,
-        email: session.user.email,
-        clinicName: session.user.clinicName,
-      }}
+    <ClinicAppearanceProvider
+      initialTheme={initialTheme}
+      initialPrimary={primaryColor}
+      initialSecondary={secondaryColor}
     >
-      <AppShell
-        modal={modal}
-        userDisplayName={displayName}
-        userTypeLabel={userTypeLabel}
-        avatarSeed={session.user.id}
-        initialCollapsed={initialCollapsed}
-        clinicName={session.user.clinicName}
-        clinicLogoUrl={clinicLogoUrl}
+      <AppSessionProvider
+        user={{
+          type: session.user.type,
+          firstName: session.user.firstName,
+          lastName: session.user.lastName,
+          email: session.user.email,
+          clinicName: session.user.clinicName,
+        }}
       >
-        <NuqsAdapter>{children}</NuqsAdapter>
-      </AppShell>
-    </AppSessionProvider>
+        <AppShell
+          modal={modal}
+          userDisplayName={displayName}
+          userTypeLabel={userTypeLabel}
+          avatarSeed={session.user.id}
+          initialCollapsed={initialCollapsed}
+          clinicName={session.user.clinicName}
+          clinicLogoUrl={clinicLogoUrl}
+        >
+          <NuqsAdapter>{children}</NuqsAdapter>
+        </AppShell>
+      </AppSessionProvider>
+    </ClinicAppearanceProvider>
   );
 }

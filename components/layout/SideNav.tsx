@@ -53,7 +53,9 @@ function AccountMenu({ trigger }: { trigger: React.ReactNode }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="top" sideOffset={6}>
-        <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings">Settings</Link>
+        </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onSelect={handleLogout}>
           Log out
         </DropdownMenuItem>

@@ -1,30 +1,36 @@
-import { Suspense } from "react";
-import { getSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
 import {
-  PatientPrefetchAppointments,
-  PatientPrefetchDocuments,
-  PatientPrefetchPrescriptions,
-} from "./patient-detail-tab-prefetch";
+  fetchPatientDetailAppointmentsTabCached,
+  fetchPatientDetailDocumentsTabCached,
+  fetchPatientDetailPrescriptionsTabCached,
+} from "@/lib/detail-tab-fetch-cache";
+import { ParallelTabDataPrefetch } from "@/lib/parallel-tab-data-prefetch";
 
-/** Prescriptions prefetch only when `viewPrescriptions` — same gate as `prescriptionsTab` on view routes. */
+/**
+ * Invisible parallel warm-up for patient detail tab slices.
+ * Documents + appointments only when `viewDetailSidebar` (matches `DetailPanel`).
+ * Prescriptions only when `viewPrescriptions` (matches routes + panel).
+ */
 export async function PatientDetailPrefetchGroup({ patientId }: { patientId: string }) {
-  const session = await getSession();
-  const prefetchPrescriptions = hasPermission(session.user.type, "viewPrescriptions");
-
   return (
-    <>
-      <Suspense fallback={null}>
-        <PatientPrefetchDocuments patientId={patientId} />
-      </Suspense>
-      <Suspense fallback={null}>
-        <PatientPrefetchAppointments patientId={patientId} />
-      </Suspense>
-      {prefetchPrescriptions ? (
-        <Suspense fallback={null}>
-          <PatientPrefetchPrescriptions patientId={patientId} />
-        </Suspense>
-      ) : null}
-    </>
+    <ParallelTabDataPrefetch
+      slices={[
+        {
+          key: "documents",
+          when: (s) => hasPermission(s.user.type, "viewDetailSidebar"),
+          prefetch: () => fetchPatientDetailDocumentsTabCached(patientId),
+        },
+        {
+          key: "appointments",
+          when: (s) => hasPermission(s.user.type, "viewDetailSidebar"),
+          prefetch: () => fetchPatientDetailAppointmentsTabCached(patientId),
+        },
+        {
+          key: "prescriptions",
+          when: (s) => hasPermission(s.user.type, "viewPrescriptions"),
+          prefetch: () => fetchPatientDetailPrescriptionsTabCached(patientId),
+        },
+      ]}
+    />
   );
 }

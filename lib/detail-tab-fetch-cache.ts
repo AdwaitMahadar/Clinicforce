@@ -1,8 +1,8 @@
 /**
  * lib/detail-tab-fetch-cache.ts
  *
- * Single module-level `React.cache` wrappers for appointment/patient detail **tab**
- * server actions. Prefetch RSCs and real tab loaders must import **only** these
+ * Single module-level `React.cache` wrappers for appointment/patient/settings **tab**
+ * server actions. `lib/parallel-tab-data-prefetch.tsx` and real tab loaders must import **only** these
  * exports — never define `cache()` inline elsewhere or deduplication breaks silently.
  *
  * Server-only — import from async Server Components or other server modules only.
@@ -19,6 +19,10 @@ import {
   getPatientDetailAppointmentsTab,
   getPatientDetailPrescriptionsTab,
 } from "@/lib/actions/patients";
+import {
+  getSettingsDetailIntegrationsTab,
+  getSettingsDetailTemplatesTab,
+} from "@/lib/actions/settings";
 
 export const fetchAppointmentDetailDocumentsTabCached = cache(
   async (appointmentId: string) => getAppointmentDetailDocumentsTab(appointmentId)
@@ -42,4 +46,12 @@ export const fetchPatientDetailAppointmentsTabCached = cache(
 
 export const fetchPatientDetailPrescriptionsTabCached = cache(
   async (patientId: string) => getPatientDetailPrescriptionsTab(patientId)
+);
+
+export const fetchSettingsDetailTemplatesTabCached = cache(async () =>
+  getSettingsDetailTemplatesTab()
+);
+
+export const fetchSettingsDetailIntegrationsTabCached = cache(async () =>
+  getSettingsDetailIntegrationsTab()
 );

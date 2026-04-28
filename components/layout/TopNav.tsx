@@ -162,20 +162,23 @@ export function TopNav() {
 
         <div className="h-5 w-px bg-[var(--color-border)] mx-1" />
 
-        <div
-          className="size-9 rounded-lg flex items-center justify-center flex-shrink-0 select-none shadow-sm"
+        <Link
+          href="/settings"
+          className={cn(
+            "size-9 rounded-lg flex items-center justify-center flex-shrink-0 select-none shadow-sm transition-[box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-muted)] focus-visible:ring-offset-2",
+            pathname === "/settings" && "ring-1 ring-[var(--color-border)]"
+          )}
           style={{ background: "var(--color-ink)", color: "var(--color-ink-fg)" }}
-          title="Clinicforce"
-          aria-label="Clinicforce"
-          role="img"
+          title="Settings"
+          aria-label="Open settings"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- static mark from public/ */}
           <img
             src="/clinicforce-mark.png"
-            alt="Clinicforce"
+            alt=""
             className="size-6 object-contain"
           />
-        </div>
+        </Link>
       </div>
     </div>
   );

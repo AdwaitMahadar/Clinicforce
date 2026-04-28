@@ -31,7 +31,7 @@ This document outlines the enterprise-grade technical foundation for the Clinicf
 *   **Drag-and-drop:** [`@dnd-kit/core`](https://dndkit.com/) + [`@dnd-kit/sortable`](https://dndkit.com/) — sortable lists (e.g. prescription line items on the appointment **Prescriptions** tab)
 *   **Calendar:** [FullCalendar React](https://fullcalendar.io/docs/react); date pickers via **react-day-picker** / Shadcn Calendar
 *   **Forms:** [React Hook Form](https://react-hook-form.com/) + Zod integration.
-*   **URL state:** [nuqs](https://nuqs.47ng.com/)
+*   **Color picker (settings):** [react-colorful](https://github.com/omgovich/react-colorful) — lightweight hex picker used inside popovers on the Settings **General** tab (`HexColorPicker`).
 *   **Toasts:** [Sonner](https://sonner.emilkowal.ski/)
 
 ## 4. Development Environment (Local)

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { clinics, users } from "@/lib/db/schema";
+import type { ClinicSettingsJson, UserPreferencesJson } from "@/types/clinic-settings";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { cache } from "react";
@@ -17,6 +18,15 @@ export interface AppSession {
     firstName: string;
     lastName: string;
     email: string;
+    /** Per-user UI prefs; not null in DB. */
+    preferences: UserPreferencesJson;
+    /**
+     * Clinic `settings` jsonb (appearance + optional logo cache buster).
+     * Exposed to server actions and, via layout, to `ClinicAppearanceProvider` (colors + theme) — never pass `clinicId` to the client.
+     */
+    clinic: {
+      settings: ClinicSettingsJson;
+    };
   };
 }
 
@@ -40,6 +50,8 @@ export const getSession = cache(async (): Promise<AppSession> => {
       firstName: users.firstName,
       lastName: users.lastName,
       email: users.email,
+      preferences: users.preferences,
+      clinicSettings: clinics.settings,
     })
     .from(users)
     .innerJoin(clinics, eq(users.clinicId, clinics.id))
@@ -72,6 +84,8 @@ export const getSession = cache(async (): Promise<AppSession> => {
       firstName: row[0].firstName ?? "",
       lastName: row[0].lastName ?? "",
       email: row[0].email,
+      preferences: row[0].preferences,
+      clinic: { settings: row[0].clinicSettings },
     },
   };
 });

@@ -1,0 +1,2 @@
+ALTER TABLE "clinics" ADD COLUMN "settings" jsonb DEFAULT '{"primaryColor":"#2D9B6F","secondaryColor":"#2563EB","defaultPrimaryColor":"#2D9B6F","defaultSecondaryColor":"#2563EB"}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN "preferences" jsonb DEFAULT '{"theme":"system"}'::jsonb NOT NULL;

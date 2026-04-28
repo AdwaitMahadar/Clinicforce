@@ -28,7 +28,7 @@ The sidebar always shows **Dashboard** and **Reports** for whichever top-nav ent
 
 **Collapsed width persistence:** The user can collapse or expand the sidebar (`components/layout/SideNav.tsx`). The preference is stored in an HTTP cookie named `sidebar-collapsed` (`1` = collapsed, `0` = expanded), with `Max-Age` of one year and `Path=/`, `SameSite=Lax`. `app/(app)/layout.tsx` reads the cookie with `cookies()` before render and passes `initialCollapsed` through `AppShell` to `SideNav` so the first HTML paint matches the saved width (no flash). Toggling updates the cookie via `document.cookie` on the client.
 
-**Sidebar clinic branding:** The top brand row shows `clinicName` from `getSession()` (`clinics.name`) and a public logo URL built in `(app)/layout` as `{ASSETS_BASE_URL}/{subdomain}/assets/logo/logo.png` (`lib/clinic/build-clinic-logo-url.ts`, normalised subdomain; `ASSETS_BASE_URL` is the browser-facing asset prefix — see `docs/10-Environments-and-Dev-Workflow.md`). The shared clinic mark is **`ClinicBrandMark`** (`components/common/ClinicBrandMark.tsx`) — used by **`SideNav`** and the login right panel — always rendering **`InitialsBadge`** from `clinicName` with the logo URL as a CSS **`background-image`** on a stacked layer (`background-size: contain`, centered, no repeat). When the asset loads, it covers the initials; if it fails or is slow, initials stay visible — no React loading state, skeleton, or `<img>` hooks. The top nav’s right “product” slot is `public/clinicforce-mark.png` inside a `--color-ink` rounded square (`<TopNav />`, `size-6` image).
+**Sidebar clinic branding:** The top brand row shows `clinicName` from `getSession()` (`clinics.name`) and a public logo URL built in `(app)/layout` as `{ASSETS_BASE_URL}/{subdomain}/assets/logo/logo.png` (`lib/clinic/build-clinic-logo-url.ts`, normalised subdomain; `ASSETS_BASE_URL` is the browser-facing asset prefix — see `docs/10-Environments-and-Dev-Workflow.md`). The shared clinic mark is **`ClinicBrandMark`** (`components/common/ClinicBrandMark.tsx`) — used by **`SideNav`** and the login right panel — always rendering **`InitialsBadge`** from `clinicName` with the logo URL as a CSS **`background-image`** on a stacked layer (`background-size: contain`, centered, no repeat). When the asset loads, it covers the initials; if it fails or is slow, initials stay visible — no React loading state, skeleton, or `<img>` hooks. The top nav’s right “product” slot is `public/clinicforce-mark.png` inside a `--color-ink` rounded square, as a **Next.js `Link` to `/settings`** (`<TopNav />`, `size-6` image; soft navigation opens the intercepting modal when applicable).
 
 **Sidebar user avatar:** The bottom account row shows a DiceBear **open-peeps** illustration loaded from `https://api.dicebear.com/7.x/open-peeps/svg` with `seed` set to `session.user.id` (passed as `avatarSeed` from `(app)/layout` through `AppShell`), plus constrained `skinColor` and `backgroundColor` palettes in the query string, and a `face` parameter restricted to an allowlist of neutral or professional expressions (see `DICEBEAR_OPEN_PEEPS_FACE_ALLOWLIST` in `components/layout/SideNav.tsx`). The same user always gets the same avatar. It is rendered as a plain `<img>` (not `next/image`) inside a `size-9` rounded, overflow-hidden frame.
 
@@ -47,6 +47,8 @@ Routes follow the pattern `/{entity}/{view}`. All routes are **static segments**
 ```
 
 The root `/` should redirect to `/home/dashboard`.
+
+**Settings** (`/settings`) sits **outside** the entity × view matrix (no `/settings/dashboard`); it uses the same intercepting-modal + full-page pattern as entity detail (see **Settings** in `docs/07-Page-Specifications.md`).
 
 ### Active State Rules
 - The top navbar item matching the current route segment highlights as active (pill style, dark background).
@@ -128,7 +130,10 @@ app/
       new/page.tsx
       view/
         [id]/page.tsx           ← Full page medicine detail
+    settings/
+      page.tsx                  ← Full page settings (non-matrix)
     @modal/                     ← Parallel route for intercepting modals
+      (.)settings/page.tsx
       (.)patients/view/[id]/page.tsx
       (.)appointments/new/page.tsx
       (.)appointments/view/[id]/page.tsx
@@ -330,7 +335,7 @@ Layout for entity create/edit: **header** slot, a **main column** with **tabbed 
 
 **Tab streaming:** When **`documentsTab`**, **`appointmentsTab`**, or **`prescriptionsTab`** is passed, **`DetailPanel`** wraps that slot in **`React.Suspense`** with **`DetailPanelTabSkeleton`** (`components/common/skeletons/DetailPanelTabSkeleton.tsx`) as the fallback so async Server Component tab bodies can resolve after the shell. The **Details** tab body (`form` prop) is not wrapped in **`Suspense`** here — outer routes own blocking semantics for the primary column.
 
-**End-to-end composition (appointments & patients):** **`/appointments/view/[id]`** and **`/patients/view/[id]`** (full-page and intercepting **`*ViewModalContent`**) await **`loadAppointmentDetailViewData`** / **`loadPatientDetailViewData`** (`appointments/_lib/appointment-detail-view-data.ts`, `patients/_lib/patient-detail-view-data.ts`) so the async boundary waits only on **core** detail +, for appointments, **`getActiveDoctors`** in parallel — then **`notFound()`** if the helper returns **`null`**. The route renders a **fragment**: (1) **`AppointmentDetailPrefetchGroup`** / **`PatientDetailPrefetchGroup`** as the **first** sibling — an async Server Component that reads **`getSession()`**, wraps each **`AppointmentPrefetch*`** / **`PatientPrefetch*`** in its **own** **`<Suspense fallback={null}>`**, and **omits** the prescriptions prefetch when **`hasPermission(..., "viewPrescriptions")`** is false (matches tab visibility). Each prefetch component **awaits** the matching export from **`lib/detail-tab-fetch-cache.ts`** and **returns `null`** so tab server work starts in parallel without mounting tab UIs. (2) The **`AppointmentDetailPanel`** / **`PatientDetailPanel`** with **`documentsTab`**, **`appointmentsTab`**, and optional **`prescriptionsTab`** set to async **`*TabLoader`** RSC roots — those loaders call the **same** cached functions with the **same** arguments, so **`React.cache`** serves the prefetch result inside **one** navigation (see **`docs/04-API-Specification.md`** — never define a second **`cache()`** wrapper for these slices in feature code). Shared row mapping for tab props lives in **`lib/detail-tab-ui-mappers.ts`**, also used by monolithic **`buildAppointmentDetail`** / **`buildPatientDetail`** for parity.
+**End-to-end composition (appointments & patients):** **`/appointments/view/[id]`** and **`/patients/view/[id]`** (full-page and intercepting **`*ViewModalContent`**) await **`loadAppointmentDetailViewData`** / **`loadPatientDetailViewData`** (`appointments/_lib/appointment-detail-view-data.ts`, `patients/_lib/patient-detail-view-data.ts`) so the async boundary waits only on **core** detail +, for appointments, **`getActiveDoctors`** in parallel — then **`notFound()`** if the helper returns **`null`**. The route renders a **fragment**: (1) **`AppointmentDetailPrefetchGroup`** / **`PatientDetailPrefetchGroup`** as the **first** sibling — thin wrappers around **`lib/parallel-tab-data-prefetch.tsx`**, which reads **`getSession()`** once and, per slice, runs **`hasPermission`** gates matching **`DetailPanel`** (**`viewDetailSidebar`** for documents + appointments tab data; **`viewPrescriptions`** for prescriptions), each slice in its **own** **`<Suspense fallback={null}>`**, each **`await`**ing the matching export from **`lib/detail-tab-fetch-cache.ts`** and **returning `null`** so tab server work starts in parallel without mounting tab UIs. (2) The **`AppointmentDetailPanel`** / **`PatientDetailPanel`** with **`documentsTab`**, **`appointmentsTab`**, and optional **`prescriptionsTab`** set to async **`*TabLoader`** RSC roots — those loaders call the **same** cached functions with the **same** arguments, so **`React.cache`** serves the prefetch result inside **one** navigation (see **`docs/04-API-Specification.md`** — never define a second **`cache()`** wrapper for these slices in feature code). Shared row mapping for tab props lives in **`lib/detail-tab-ui-mappers.ts`**, also used by monolithic **`buildAppointmentDetail`** / **`buildPatientDetail`** for parity.
 
 **Medicine detail:** Still a single blocking **`getMedicineDetail`** — no **`DetailPanel`** optional tabs; no prefetch group. Optionally deferring only the activity block behind **`Suspense`** (shell vs sidebar) is a future refinement if needed.
 
@@ -464,6 +469,10 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 --text-secondary: #7A7769  /* Labels, subtitles */
 --text-muted:     #A8A395  /* Placeholders, timestamps */
 
+--background-secondary: #EDEAE4  /* Meta pills — Settings section role badges */
+--border-tertiary:      #D4D0C6  /* Softer pill outline */
+--text-tertiary:        #949083  /* Pill label text (maps to --color-* in globals) */
+
 --green:    #2D9B6F  --green-bg:  #E6F5EE
 --amber:    #D97706  --amber-bg:  #FEF3C7
 --red:      #DC2626  --red-bg:    #FEE2E2
@@ -477,6 +486,8 @@ The week and day views use **FullCalendar** with the `timeGridWeek` and `timeGri
 ```
 
 **Rule:** Use `--role-color-*` only for actor name text in activity log and any future role-attribution UI. Do not substitute status-badge colours (`--color-blue/green/amber`) for role identification — they have independent semantic meaning.
+
+**Clinic accent (per-tenant):** `--color-clinic-primary` and `--color-clinic-secondary` in `globals.css` `@theme inline` (defaults align with seed / `lib/constants/clinic-settings.ts`); **`ClinicAppearanceProvider`** (`lib/clinic/clinic-appearance-context.tsx`) sets them on `html` from **`getSession()`** / DB. Shadcn bridge tokens (`--primary`, `--color-primary`, etc.) are unchanged. **Theme:** `data-theme` on `html` and **`html.dark`** for the dark shell (`globals.css`); **`useClinicAppearance`** for client sync and General-tab preview.
 
 **Intercepting modal (`ModalShell`):** `--color-modal-overlay` (scrim, `color-mix` on text primary) and `--shadow-modal` (panel elevation). Declared in `globals.css` `@theme inline`; consume only via `var(…)` in components.
 

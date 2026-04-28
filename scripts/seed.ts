@@ -51,6 +51,7 @@ const USER_SEED = {
 
 import { and, asc, eq } from "drizzle-orm";
 import type { DB } from "../lib/db/index";
+import { DEFAULT_CLINIC_SETTINGS, DEFAULT_USER_PREFERENCES } from "../lib/constants/clinic-settings";
 import { clinics as clinicsTable } from "../lib/db/schema/clinics";
 
 function die(message: string): never {
@@ -134,6 +135,7 @@ async function seedClinic() {
       address: CLINIC_SEED.address.trim() || null,
       phone: CLINIC_SEED.phone.trim() || null,
       email: CLINIC_SEED.email.trim() || null,
+      settings: { ...DEFAULT_CLINIC_SETTINGS },
     })
     .returning({
       id: clinics.id,
@@ -229,6 +231,7 @@ async function seedUser() {
       type: USER_SEED.type,
       chartId: USER_SEED.chartId,
       name: `${USER_SEED.firstName.trim()} ${USER_SEED.lastName.trim()}`.trim() || USER_SEED.displayName.trim(),
+      preferences: { ...DEFAULT_USER_PREFERENCES },
     })
     .where(eq(users.id, userId));
 

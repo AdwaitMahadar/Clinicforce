@@ -32,6 +32,10 @@
   --color-text-primary:   #1A1A18; /* Headings, body copy                      */
   --color-text-secondary: #7A7769; /* Labels, subtitles, secondary detail      */
   --color-text-muted:     #A8A395; /* Placeholders, timestamps, captions       */
+  /* Meta pills / section role hints (e.g. Settings General tab badges) */
+  --color-background-secondary: #EDEAE4;
+  --color-border-tertiary:      #D4D0C6;
+  --color-text-tertiary:        #949083;
 
   /* ── Brand / Ink ────────────────────────────────────────────── */
   --color-ink:      #1A1A18;       /* Dark brand colour — buttons, logo bg     */
@@ -97,6 +101,10 @@
   --color-scrollbar-thumb:       var(--color-border);
   --color-scrollbar-thumb-hover: #C8C2B8;
 
+  /* ── Clinic-owned accent (injected on `html` by `ClinicAppearanceProvider` / DB) ─ */
+  --color-clinic-primary:   #2D9B6F;
+  --color-clinic-secondary: #2563EB;
+
   /* ── Shadcn token bridge ────────────────────────────────────── */
   --color-background:         var(--background);
   --color-foreground:         var(--foreground);
@@ -138,6 +146,33 @@
   --border:                var(--color-border);
   --input:                 var(--color-border);
   --ring:                  var(--color-text-muted);
+}
+
+/* User preference: dark (see `ClinicAppearanceProvider` — `html.dark`) */
+html.dark {
+  color-scheme: dark;
+  --color-bg: #141412;
+  --color-surface: #1A1A18;
+  --color-surface-alt: #22221F;
+  --color-border: #2E2D2A;
+  --color-text-primary: #F5F4EF;
+  --color-text-secondary: #A8A39A;
+  --color-text-muted: #6B6860;
+  --color-background-secondary: #252522;
+  --color-border-tertiary: #3D3A36;
+  --color-text-tertiary: #8A8680;
+  --color-ink: #E8E6E0;
+  --color-ink-fg: #1A1A18;
+  --color-glass-fill: rgba(30, 30, 28, 0.82);
+  --color-glass-fill-sm: rgba(30, 30, 28, 0.55);
+  --color-glass-fill-card: rgba(28, 28, 26, 0.88);
+  --color-glass-fill-data: rgba(28, 28, 26, 0.85);
+  --color-glass-border: rgba(80, 78, 72, 0.45);
+  --color-glass-border-sm: rgba(80, 78, 72, 0.4);
+  --color-row-hover: rgba(50, 48, 44, 0.35);
+  --color-row-header: rgba(45, 44, 40, 0.4);
+  --color-scrollbar-thumb: #3D3A36;
+  --color-scrollbar-thumb-hover: #4A4740;
 }
 
 /* ── Base reset ───────────────────────────────────────────────── */

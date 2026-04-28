@@ -70,7 +70,7 @@ app/
     home/dashboard/         ← Clinic overview
     home/reports/           ← Clinic reports
     appointments/dashboard/     ← Appointments calendar (Month/Week/Day views)
-    appointments/_components/   ← e.g. AppointmentDetailPanel, AppointmentPatientSummaryCard, AppointmentCalendarClient, combobox; detail-tabs/ ← `*DetailPrefetchGroup` (Rx prefetch only with viewPrescriptions) + per-slice prefetch RSCs + async tab loaders (React.cache via lib/detail-tab-fetch-cache.ts)
+    appointments/_components/   ← e.g. AppointmentDetailPanel, AppointmentPatientSummaryCard, AppointmentCalendarClient, combobox; detail-tabs/ ← `AppointmentDetailPrefetchGroup` (uses `lib/parallel-tab-data-prefetch.tsx` — slices gated with `viewDetailSidebar` + `viewPrescriptions`) + async tab loaders (React.cache via lib/detail-tab-fetch-cache.ts)
     appointments/_lib/          ← Server helpers (picker options, appointment-detail-mapper, appointment-detail-view-data.ts → loadAppointmentDetailViewData, calendar-range.ts)
     patients/_lib/              ← Server helpers (patient-detail-mapper, patient-detail-view-data.ts → loadPatientDetailViewData)
     medicines/_lib/             ← Server helpers (medicine detail mapper)
@@ -78,7 +78,7 @@ app/
     appointments/reports/   ← Appointments reports
     appointments/view/[id]/ ← Full-page appointment detail (direct URL fallback)
     patients/dashboard/     ← Patient records table
-    patients/_components/   ← Patient specific components; detail-tabs/ ← `PatientDetailPrefetchGroup` (Rx gate matches routes) + prefetch/loader RSCs (shared React.cache with appointments)
+    patients/_components/   ← Patient specific components; detail-tabs/ ← `PatientDetailPrefetchGroup` (`ParallelTabDataPrefetch` + same permission gates as `DetailPanel`) + prefetch/loader RSCs (shared React.cache with appointments)
     patients/new/           ← New patient page
     patients/reports/       ← Patients reports
     patients/view/[id]/     ← Full-page patient detail
@@ -87,7 +87,9 @@ app/
     medicines/new/          ← New medicine page
     medicines/reports/      ← Medicines reports
     medicines/view/[id]/    ← Full-page medicine detail
+    settings/               ← `page.tsx` full-page fallback; `_lib/settings-view-data.ts` → `loadSettingsViewData`; `_components/SettingsPanel`, `SettingsGeneralTab`, `SettingsViewContent`, `SettingsViewModalClient`, `detail-tabs/SettingsDetailPrefetchGroup` + `Settings*TabLoader`
     @modal/                 ← Intercepting route modals (parallel route)
+      (.)settings/                ← Settings modal (soft nav to `/settings`)
       (.)appointments/view/[id]/  ← Appointment detail modal
       (.)appointments/new/        ← New appointment modal
       (.)medicines/view/[id]/     ← Medicine detail modal
@@ -106,10 +108,11 @@ components/
 
 lib/
   hooks/                    ← Client hooks shared by feature code (e.g. `use-detail-exit.ts` — post-mutation navigation for entity detail panels)
-  detail-tab-fetch-cache.ts ← **Only** module-level `React.cache` wrappers for appointment/patient **tab** server actions — prefetch RSCs + `*TabLoader` must import these exports (never duplicate `cache()` elsewhere or dedupe breaks)
+  detail-tab-fetch-cache.ts ← **Only** module-level `React.cache` wrappers for appointment/patient/settings **tab** server actions — `ParallelTabDataPrefetch` + `*TabLoader` must import these exports (never duplicate `cache()` elsewhere or dedupe breaks)
+  parallel-tab-data-prefetch.tsx ← Shared async RSC: parallel invisible tab-slice prefetch (`getSession` + optional `when` per slice + `<Suspense fallback={null}>`); patient/appointment `*DetailPrefetchGroup` compose slice thunks here
   detail-tab-ui-mappers.ts  ← Shared DB/action row → tab UI shapes (`DocumentsTab`, appointment lists, Rx summaries); used by `*TabLoader` RSCs and monolithic `buildAppointmentDetail` / `buildPatientDetail`
-  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`), `app.ts` (`DEFAULT_PAGE_SIZE`), and `appointment.ts` (`DEFAULT_APPOINTMENT_DURATION_MINUTES`)
-  db/                       ← Drizzle schema + query functions
+  constants/                ← Shared `as const` enum lists (no Zod) — wired into Drizzle pgEnum, Zod, and `types/`; includes `sidebar.ts` (`sidebar-collapsed` cookie for `SideNav`), `app.ts` (`DEFAULT_PAGE_SIZE`), `appointment.ts` (`DEFAULT_APPOINTMENT_DURATION_MINUTES`), and `clinic-settings.ts` (defaults for `clinics.settings` + `users.preferences` jsonb)
+  db/                       ← Drizzle schema + query functions (`clinics.settings`, `users.preferences` — see `docs/03-Database-Schema.md`)
   validators/               ← Zod schemas (shared between forms and server actions); `common.ts` exports `idSchema` + `n()` helper (reused by all entity action files)
   auth/                     ← Better-Auth config; `session-context.tsx` — `AppSessionProvider` + `useAppSession()` + `usePermission()` client hooks (no extra server calls); `require-permission.ts` — `requirePermission(permission, redirectTo?)` server-side page guard (calls `getSession()` + `hasPermission()`, redirects if unauthorised, returns session)
   permissions.ts            ← `PERMISSIONS` map + `Permission` type + `hasPermission(role, permission)` — single source of truth for all UI role decisions; consumed by `usePermission` and `<RoleGate>`
@@ -158,8 +161,8 @@ types/                      ← UI/view-model TypeScript types (patient, appoint
 
 Two-axis matrix: **top navbar** (entity/domain) × **left sidebar** (view within domain).
 
-- **Top nav:** Home | Appointments | Patients | Medicines (**Medicines** hidden for **staff** — `usePermission("viewMedicines")` in `TopNav.tsx`)
-- **Side nav:** Dashboard | Reports
+- **Top nav:** Home | Appointments | Patients | Medicines (**Medicines** hidden for **staff** — `usePermission("viewMedicines")` in `TopNav.tsx`). **Settings** (non-matrix): `TopNav` right **Clinicforce** mark links to `/settings`.
+- **Side nav:** Dashboard | Reports. **Settings:** bottom **account** menu (⋮) includes **Settings** → `/settings`.
 - **Active state:** Driven by `usePathname()` — never managed manually
 - **Active item rule:** Only the active top-nav item shows its label; inactive items show icon only
 
@@ -194,6 +197,7 @@ Patient and medicine **dashboard** tables pass **`onRowClick`** to `<DataTable /
 - **Detail right column + main-column Documents/Appointments tabs — staff excluded:** `DetailPanel` hides the right sidebar and suppresses Documents/Appointments tab props via `usePermission("viewDetailSidebar")` (staff see Details-only, tab bar hidden). View modals use `size="lg"` for staff (narrower, form-only)
 - **Documents — staff excluded:** `viewDocuments` / `uploadDocument` are admin/doctor only. **`getUploadPresignedUrl`**, **`confirmDocumentUpload`**, **`getViewPresignedUrl`** use `requireRole(session, ["admin", "doctor"])`. **`getPatientDetail`** / **`getAppointmentDetail`** return empty document lists for staff; **`searchGlobal`** skips the documents query for staff. **`UniversalSearch`** hides the Documents group via `usePermission("viewDocuments")` (see `docs/05-Authentication.md`).
 - **Prescriptions — staff excluded:** `viewPrescriptions` / `createPrescription` are admin/doctor only (same pattern as documents). Prescription server actions must call `requireRole(session, ["admin", "doctor"])`; UI gates the Prescriptions tab and patient Rx list with `usePermission("viewPrescriptions")` and mutations with `usePermission("createPrescription")` (see `docs/05-Authentication.md`).
+- **Settings — clinic appearance:** `editClinicThemeColors` (admin/doctor); `setClinicThemeDefaults` and `manageClinicLogo` (admin); per-user **theme** preference applies to all roles (`updateUserTheme`). Server actions use `hasPermission()` / `requireRole()` per `lib/permissions.ts` (see `docs/05-Authentication.md`).
 
 ### Appointments
 - Status enum: `scheduled | completed | cancelled | no-show`
@@ -269,6 +273,7 @@ Skill location: `skills/sync-docs-and-skills/SKILL.md`
 - RBAC: `ForbiddenError` + `requireRole()` in `lib/auth/rbac.ts`, enforced in all server actions
 - Document upload: presigned URLs (`lib/actions/documents.ts` — admin/doctor only), shared S3 client (`lib/storage/s3-client.ts`), `DocumentCard` + `UploadDocumentDialog` on patient and appointment detail (sidebar; staff use neither)
 - **Structured prescriptions:** `lib/actions/prescriptions.ts` (draft/publish, line items, notes, reorder); appointment **`PrescriptionsTab`** + patient **`PatientPrescriptionsTab`** (published history only); validators `lib/validators/prescription.ts`; schema `prescriptions` / `prescription_items` / `meal_timing` (`docs/03-Database-Schema.md`, `docs/08-Business-Rules.md` §6)
+- **Settings / clinic shell:** `getSession()` includes `user.preferences` and `user.clinic.settings`; `ClinicAppearanceProvider` (`lib/clinic/clinic-appearance-context.tsx`) sets `--color-clinic-primary` / `--color-clinic-secondary`, `data-theme`, and `html.dark`; `lib/validators/settings.ts` + `lib/actions/settings.ts` (theme, colors merge, logo S3, RBAC per `lib/permissions.ts`); public logo URL + `?v=` in `lib/clinic/build-clinic-logo-url.ts`; **Settings General tab** (`app/(app)/settings/_components/SettingsGeneralTab.tsx` + `SettingsPanel`) — theme buttons, color pickers + Save/Cancel, reset/set-default, admin logo upload + remove
 
 **Not yet built (planned):**
 - All **Reports** views (placeholder UI only; no analytics backend yet)

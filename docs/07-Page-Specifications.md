@@ -34,6 +34,20 @@ New-record modals open at `/{entity}/new` (intercepting route) or fall back to f
 
 ---
 
+## Settings — `/settings`
+
+> **Status:** **Built** — full-page + intercepting modal; blocking `loadSettingsViewData`; General tab (`SettingsGeneralTab`): Light/Dark/System theme with immediate persist; clinic primary/secondary color pickers with live `--color-clinic-*` preview, Save/Cancel, reset-to-default (doctor/admin), set-current-as-default (admin); logo PNG upload/remove + confirm with cache-buster (`manageClinicLogo`); Templates/Integrations remain placeholder tab loaders + prefetch.
+
+**Purpose:** Clinic appearance and per-user preferences. **Not** part of the `/{entity}/{view}` matrix; single static path `/settings`.
+
+**Full page:** `app/(app)/settings/page.tsx` — `DetailPageShell` breadcrumb `Settings` → `SettingsViewContent` (awaits `loadSettingsViewData`, `SettingsDetailPrefetchGroup`, `SettingsPanel` without close control).
+
+**Intercepting modal:** `app/(app)/@modal/(.)settings/page.tsx` — `ModalShell` `size="xl"`; inner `Suspense` with `ModalDetailPanelBodySkeleton` → `SettingsViewContent` with `forModal` → `SettingsViewModalClient` (passes `onClose` = `router.back()` to `SettingsPanel`).
+
+**Data:** `loadSettingsViewData()` and tab slice pattern — see `docs/04-API-Specification.md` (Settings blocking shell + `getSettingsDetail*Tab`). Tab bodies share `lib/detail-tab-fetch-cache.ts` with `ParallelTabDataPrefetch` via `SettingsDetailPrefetchGroup`.
+
+---
+
 ## 1. Home Dashboard — `/home/dashboard`
 
 > **Status:** **Built** — stats + today's schedule + real recent activity feed. `getRecentActivity()` is called in the `Promise.all` alongside stats and appointments. The "Recent Activity" column renders via `HomeDashboardActivityFeed` with a DataTable-style card and constrained scrollable area.
@@ -136,7 +150,7 @@ The dashboard has three calendar sub-views controlled by a view-switcher pill:
 
 > **Status:** Built (modal + full-page fallback — **`loadAppointmentDetailViewData`** wraps **`getAppointmentDetailCore`** + doctors + tab loaders / prefetch; monolithic **`getAppointmentDetail`** still available; create / update / delete actions).
 
-**Tab streaming modules:** `app/(app)/appointments/_components/detail-tabs/` defines **`AppointmentDetailPrefetchGroup`** (server async — documents + appointments prefetches always; **prescriptions** prefetch only when **`hasPermission(type, "viewPrescriptions")`**, matching view routes) plus **`AppointmentPrefetch*`** (each awaits `lib/detail-tab-fetch-cache.ts` and returns `null` when composed inside per-tab `<Suspense>` on the route) and **`AppointmentDocumentsTabLoader`**, **`AppointmentAppointmentsTabLoader`**, **`AppointmentPrescriptionsTabLoader`**. **`DetailPanel`** wraps each optional tab slot in **`React.Suspense`** with **`DetailPanelTabSkeleton`** (`components/common/skeletons/`) as the tab-body fallback.
+**Tab streaming modules:** `app/(app)/appointments/_components/detail-tabs/` defines **`AppointmentDetailPrefetchGroup`** (delegates to **`lib/parallel-tab-data-prefetch.tsx`** — documents + appointments prefetches only with **`viewDetailSidebar`**; prescriptions only with **`viewPrescriptions`**, matching **`DetailPanel`** + view routes) and **`AppointmentDocumentsTabLoader`**, **`AppointmentAppointmentsTabLoader`**, **`AppointmentPrescriptionsTabLoader`**. **`DetailPanel`** wraps each optional tab slot in **`React.Suspense`** with **`DetailPanelTabSkeleton`** (`components/common/skeletons/`) as the tab-body fallback.
 
 **Blocking shell:** **`loadAppointmentDetailViewData`** (`appointments/_lib/appointment-detail-view-data.ts`) is the single import used by **`appointments/view/[id]/page.tsx`** and **`@modal/(.)appointments/view/[id]/AppointmentViewModalContent.tsx`** — **`Promise.all`** of core + doctors, then **`buildAppointmentDetailCore`** + picker mapping; **`notFound()`** when **`null`**.
 
@@ -330,7 +344,7 @@ Run **`pnpm exec tsc --noEmit`** after prescription-area changes. Before release
 
 > **Status:** Built — **`loadPatientDetailViewData`** wraps **`getPatientDetailCore`** on view routes + tab loaders / prefetch; monolithic **`getPatientDetail`** still available; create / update + documents in `lib/actions/patients.ts` (and documents actions).
 
-**Tab streaming modules:** `app/(app)/patients/_components/detail-tabs/` includes **`PatientDetailPrefetchGroup`** (server async — same **Rx** gate as appointments: no prescriptions prefetch for **staff**) and **`PatientPrefetch*`** + **`Patient*TabLoader`** (same **`React.cache`** dedupe — see `docs/04-API-Specification.md`). Tab **`Suspense`** + **`DetailPanelTabSkeleton`** fallback is owned by **`DetailPanel`** (see `docs/06-UI-Design-System.md`).
+**Tab streaming modules:** `app/(app)/patients/_components/detail-tabs/` includes **`PatientDetailPrefetchGroup`** (same **`ParallelTabDataPrefetch`** permission gates as appointments: **`viewDetailSidebar`** for documents + appointments; **`viewPrescriptions`** for prescriptions — **staff** run **no** tab-slice prefetches) and **`Patient*TabLoader`** (same **`React.cache`** dedupe — see `docs/04-API-Specification.md`). Tab **`Suspense`** + **`DetailPanelTabSkeleton`** fallback is owned by **`DetailPanel`** (see `docs/06-UI-Design-System.md`).
 
 **Blocking shell:** **`loadPatientDetailViewData`** (`patients/_lib/patient-detail-view-data.ts`) is used by **`patients/view/[id]/page.tsx`** and **`@modal/(.)patients/view/[id]/PatientViewModalContent.tsx`** — **`getPatientDetailCore`** → **`buildPatientDetailCore`**; **`notFound()`** when **`null`**.
 
@@ -743,6 +757,10 @@ The application provides intercepting routes to display forms seamlessly over th
   > **Status:** UI built.
   Intercepting routes rendering the edit flows for appointments and medicines within a `ModalShell`, using the same **`ModalShell` + inner `Suspense`** pattern as patient view. Client wrappers **`AppointmentViewModalClient`** and **`MedicineViewModalClient`** pass **`onClose`** (`router.back`) into the detail panel so Save / delete / reactivation-dismiss match patient modal behavior.
 
+- **`@modal/(.)settings/`**:
+  > **Status:** In progress (shell + tabs; full General UI + theme in follow-up). **Entry:** `SideNav` account menu + `TopNav` mark → `/settings`.
+  Intercepting route for `/settings` — `ModalShell` `size="xl"`, `Suspense` + `ModalDetailPanelBodySkeleton`, **`SettingsViewContent`** with **`forModal`**. Client **`SettingsViewModalClient`** wraps **`SettingsPanel`** and passes **`onClose`** (`router.back`).
+
 ---
 
 ## 19. URL Reference Summary
@@ -763,7 +781,8 @@ The application provides intercepting routes to display forms seamlessly over th
 | `/medicines/new` | New medicine form | `MedicineDetailPanel mode="create"` | `createMedicine` |
 | `/medicines/reports` | Medicine Reports | Placeholder | `—` |
 | `/medicines/view/[id]` | Medicine detail | `MedicineDetailPanel mode="edit"` | `getMedicineDetail`, `updateMedicine`, `deactivateMedicine` |
-| `/@modal/(.)*` | Intercepting Modals | `ModalShell` + Detail Panels | Same data helpers as full-page **`view/[id]`** for appointment/patient (e.g. **`loadAppointmentDetailViewData`**); all edit / new actions |
+| `/settings` | Settings (non-matrix) | `SettingsViewContent` + `SettingsPanel` | `loadSettingsViewData`, `SettingsDetailPrefetchGroup`, `Settings*TabLoader` + **`lib/detail-tab-fetch-cache.ts`** |
+| `/@modal/(.)*` | Intercepting modals | `ModalShell` + detail / settings | Same as full-page counterparts (e.g. **`loadAppointmentDetailViewData`**, **`SettingsViewContent forModal`**) |
 
 ---
 
