@@ -15,6 +15,7 @@ import {
   mapServerPrescriptionSummariesToPatientUi,
 } from "@/lib/detail-tab-ui-mappers";
 import { formatPatientChartId } from "@/lib/utils/chart-id";
+import { mapDbGenderToDisplay } from "@/lib/utils/map-patient-gender";
 import type { getPatientDetail, getPatientDetailCore } from "@/lib/actions/patients";
 import type { PatientDetail, PatientDetailCore } from "@/types/patient";
 
@@ -54,7 +55,7 @@ export function buildPatientDetailCore(r: PatientDetailCoreData): PatientDetailC
         ? r.dateOfBirth.slice(0, 10)
         : ""
       : "",
-    gender:                (r.gender as PatientDetailCore["gender"]) ?? "Other",
+    gender:                mapDbGenderToDisplay(r.gender) ?? "Other",
     address:               r.address ?? "",
     bloodGroup:            r.bloodGroup ?? "",
     allergies:             r.allergies ?? null,

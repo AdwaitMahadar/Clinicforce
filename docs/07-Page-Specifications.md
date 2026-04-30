@@ -346,7 +346,7 @@ Run **`pnpm exec tsc --noEmit`** after prescription-area changes. Before release
 
 **Tab streaming modules:** `app/(app)/patients/_components/detail-tabs/` includes **`PatientDetailPrefetchGroup`** (same **`ParallelTabDataPrefetch`** permission gates as appointments: **`viewDetailSidebar`** for documents + appointments; **`viewPrescriptions`** for prescriptions — **staff** run **no** tab-slice prefetches) and **`Patient*TabLoader`** (same **`React.cache`** dedupe — see `docs/04-API-Specification.md`). Tab **`Suspense`** + **`DetailPanelTabSkeleton`** fallback is owned by **`DetailPanel`** (see `docs/06-UI-Design-System.md`).
 
-**Blocking shell:** **`loadPatientDetailViewData`** (`patients/_lib/patient-detail-view-data.ts`) is used by **`patients/view/[id]/page.tsx`** and **`@modal/(.)patients/view/[id]/PatientViewModalContent.tsx`** — **`getPatientDetailCore`** → **`buildPatientDetailCore`**; **`notFound()`** when **`null`**.
+**Blocking shell:** **`loadPatientDetailViewData`** (`patients/_lib/patient-detail-view-data.ts`) is used by **`patients/view/[id]/page.tsx`** and **`@modal/(.)patients/view/[id]/PatientViewModalContent.tsx`** — **`getPatientDetailCore`** → **`buildPatientDetailCore`**; **`notFound()`** when **`null`**. **`buildPatientDetailCore`** maps DB **`patients.gender`** (lowercase enum) to title-case **`PatientGender`** for the shell using **`mapDbGenderToDisplay`** in **`lib/utils/map-patient-gender.ts`** (same helper as appointment **`AppointmentPatientSummaryCard`** data path).
 
 ### Layout
 `PatientDetailPanel` uses `<DetailPanel />`:

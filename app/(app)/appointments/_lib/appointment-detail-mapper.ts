@@ -17,8 +17,8 @@ import {
   mapServerPrescriptionSummariesToPatientUi,
 } from "@/lib/detail-tab-ui-mappers";
 import type { AppointmentDetail, AppointmentDetailCore } from "@/types/appointment";
-import type { PatientGender } from "@/types/patient";
 import { DEFAULT_APPOINTMENT_DURATION_MINUTES } from "@/lib/constants/appointment";
+import { mapDbGenderToDisplay } from "@/lib/utils/map-patient-gender";
 
 type AppointmentDetailData = Extract<
   Awaited<ReturnType<typeof getAppointmentDetail>>,
@@ -43,17 +43,6 @@ function trimToNull(s: string | null | undefined): string | null {
   if (s == null) return null;
   const t = String(s).trim();
   return t === "" ? null : t;
-}
-
-/** Maps DB enum string to display label; returns `null` when missing or unknown (no default). */
-function mapDbGenderToDisplay(g: string | null | undefined): PatientGender | null {
-  const t = trimToNull(g);
-  if (t === null) return null;
-  const lower = t.toLowerCase();
-  if (lower === "male") return "Male";
-  if (lower === "female") return "Female";
-  if (lower === "other") return "Other";
-  return null;
 }
 
 function ageFromPatientDob(raw: unknown): number | null {

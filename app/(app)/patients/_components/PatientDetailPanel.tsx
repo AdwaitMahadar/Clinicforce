@@ -71,9 +71,11 @@ const BLOOD_GROUP_OPTIONS = PATIENT_BLOOD_GROUPS.map((b) => ({
 }));
 
 function patientGenderToForm(g: PatientDetailCore["gender"]): "male" | "female" | "other" {
-  if (g === "Male") return "male";
-  if (g === "Female") return "female";
-  if (g === "Other") return "other";
+  const lower = String(g).toLowerCase();
+  if (lower === "male") return "male";
+  if (lower === "female") return "female";
+  if (lower === "other") return "other";
+  if (g === "Prefer not to say") return "other";
   return "other";
 }
 
