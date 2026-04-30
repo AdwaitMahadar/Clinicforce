@@ -156,7 +156,7 @@ Better-Auth email/token verification records.
 - `clinic_id`: `uuid` (References `clinics.id`)
 - `name`: `varchar(255)` **notNull**
 - `description`: `text`
-- `category`: `varchar(100)` (Antibiotics, Painkillers, etc.)
+- `category`: `varchar(100)` (select options from `MEDICINE_CATEGORIES` in `lib/constants/medicine.ts`)
 - `brand`: `varchar(255)`
 - `form`: `varchar(100)` (Tablet, Syrup, etc.)
 - `last_prescribed_date`: `timestamp` (Manually updated)

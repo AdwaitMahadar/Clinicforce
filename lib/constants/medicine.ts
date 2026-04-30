@@ -4,14 +4,20 @@
  */
 
 export const MEDICINE_CATEGORIES = [
+  "Analgesic",
+  "Anti inflammatory",
+  "Antacid",
+  "Short acting Steroid",
+  "Long acting Steroid",
   "Antibiotics",
-  "Painkillers",
-  "Diabetes Care",
+  "Calcium",
+  "VIT D3",
+  "VIT B12",
+  "Multivitamins",
+  "Muscle relaxants",
+  "Minerals",
+  "Cartilage stimulant",
   "Antihistamines",
-  "Vitamins",
-  "Cardiovascular",
-  "Antifungals",
-  "Antivirals",
 ] as const;
 
 export const MEDICINE_FORMS = [

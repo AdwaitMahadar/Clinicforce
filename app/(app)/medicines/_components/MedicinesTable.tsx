@@ -3,14 +3,20 @@
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
-  Droplets,
+  Bandage,
+  Bone,
+  Dumbbell,
   FlaskConical,
-  Heart,
+  Gem,
+  Link2,
   Pill,
+  PillBottle,
   Shield,
-  ShieldPlus,
+  Sparkles,
   Sun,
+  Timer,
   Wind,
+  Zap,
 } from "lucide-react";
 import { DataTable, StatusBadge } from "@/components/common";
 import type { ColumnDef } from "@/components/common";
@@ -18,14 +24,20 @@ import type { MedicineRow } from "@/types/medicine";
 
 /** Category label → Lucide icon (dashboard list only; detail panel uses form-based icons). */
 const MEDICINE_CATEGORY_ICONS: Record<string, LucideIcon> = {
+  Analgesic: Pill,
+  "Anti inflammatory": Bandage,
+  Antacid: FlaskConical,
+  "Short acting Steroid": Zap,
+  "Long acting Steroid": Timer,
   Antibiotics: Shield,
-  Painkillers: Pill,
-  "Diabetes Care": Droplets,
+  Calcium: Bone,
+  "VIT D3": Sun,
+  "VIT B12": PillBottle,
+  Multivitamins: Sparkles,
+  "Muscle relaxants": Dumbbell,
+  Minerals: Gem,
+  "Cartilage stimulant": Link2,
   Antihistamines: Wind,
-  Vitamins: Sun,
-  Cardiovascular: Heart,
-  Antifungals: FlaskConical,
-  Antivirals: ShieldPlus,
 };
 
 function MedicineCategoryLeadingIcon({ category }: { category: string }) {
