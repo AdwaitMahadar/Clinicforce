@@ -37,7 +37,7 @@ import {
 } from "@/lib/actions/patients";
 import { useDetailExit } from "@/lib/hooks/use-detail-exit";
 import { usePermission } from "@/lib/auth/session-context";
-import { PatientDobAgeSync } from "./PatientDobAgeSync";
+import { PatientDobAgeSync, flushApproximateDobFromAgeIfAgeDirty, PatientAgeFormControl } from "./PatientDobAgeSync";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -108,8 +108,11 @@ const PATIENT_FIELDS: FormFieldDescriptor<CreatePatientInput>[] = [
   {
     name: "age",
     label: "Age",
-    type: "number",
+    type: "custom",
     placeholder: "Years",
+    renderControl: (field, opts) => (
+      <PatientAgeFormControl field={field} disabled={opts?.isSaving} />
+    ),
   },
   {
     name: "gender",
@@ -310,6 +313,9 @@ export function PatientDetailPanel(props: PatientDetailPanelProps) {
         defaultValues={EMPTY_CREATE}
         fields={visibleFields}
         insideForm={<PatientDobAgeSync />}
+        beforeFormValidate={(methods) =>
+          flushApproximateDobFromAgeIfAgeDirty(methods)
+        }
         onSubmit={handleSubmitCreate}
       />
     );
@@ -359,6 +365,9 @@ export function PatientDetailPanel(props: PatientDetailPanelProps) {
       defaultValues={viewDefaultValues}
       fields={visibleFields as FormFieldDescriptor<UpdatePatientInput>[]}
       insideForm={<PatientDobAgeSync />}
+      beforeFormValidate={(methods) =>
+        flushApproximateDobFromAgeIfAgeDirty(methods)
+      }
       onSubmit={handleSubmitUpdate}
     />
   );

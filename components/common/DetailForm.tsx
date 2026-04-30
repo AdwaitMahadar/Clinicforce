@@ -17,6 +17,8 @@
  *
  * `forwardRef` + `DetailFormHandle`: `submit()` runs validation and `onSubmit`;
  * `reset()` resets to `defaultValues`. Footer actions live in the parent.
+ * Optional `beforeFormValidate` runs immediately before validation (native submit
+ * and `ref.submit()`) — e.g. patient age → approximate DOB when `dirtyFields.age`.
  *
  * ─── Field types ──────────────────────────────────────────────────────────────
  *
@@ -37,6 +39,7 @@ import {
   type FieldValues,
   type DefaultValues,
   type Path,
+  type UseFormReturn,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { $ZodType } from "zod/v4/core";
@@ -121,7 +124,7 @@ export interface SelectField<TValues extends FieldValues> extends BaseField<TVal
 export interface CustomField<TValues extends FieldValues> extends BaseField<TValues> {
   type: "custom";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  renderControl: (field: any) => React.ReactNode;
+  renderControl: (field: any, options?: { isSaving: boolean }) => React.ReactNode;
 }
 
 export type FormFieldDescriptor<TValues extends FieldValues> =
@@ -159,6 +162,12 @@ export interface DetailFormProps<TValues extends FieldValues> {
    * effects for cross-field sync). Not wrapped in a FormField row.
    */
   insideForm?: React.ReactNode;
+
+  /**
+   * Runs immediately before RHF validation on native submit and on `ref.submit()`.
+   * Use to flush derived fields (e.g. patient age → approximate DOB).
+   */
+  beforeFormValidate?: (methods: UseFormReturn<TValues>) => void;
 }
 
 // ─── Field control renderer ───────────────────────────────────────────────────
@@ -170,7 +179,7 @@ function renderFieldControl<TValues extends FieldValues>(
   isSaving: boolean
 ): React.ReactNode {
   if (descriptor.type === "custom") {
-    return descriptor.renderControl(field);
+    return descriptor.renderControl(field, { isSaving });
   }
 
   if (descriptor.type === "textarea") {
@@ -326,6 +335,7 @@ function DetailFormInner<TValues extends FieldValues>(
     onSubmit,
     className,
     insideForm,
+    beforeFormValidate,
   }: DetailFormProps<TValues>,
   ref: React.ForwardedRef<DetailFormHandle>
 ) {
@@ -349,13 +359,20 @@ function DetailFormInner<TValues extends FieldValues>(
     [onSubmit]
   );
 
-  const handleFormSubmit = form.handleSubmit(runValidatedSubmit);
+  const runSubmitPipeline = useCallback(
+    (e?: React.BaseSyntheticEvent) => {
+      beforeFormValidate?.(form);
+      return form.handleSubmit(runValidatedSubmit)(e);
+    },
+    [beforeFormValidate, form, runValidatedSubmit]
+  );
 
   useImperativeHandle(
     ref,
     () => ({
       submit: () =>
         new Promise<void>((resolve, reject) => {
+          beforeFormValidate?.(form);
           form.handleSubmit(
             async (values) => {
               try {
@@ -374,13 +391,13 @@ function DetailFormInner<TValues extends FieldValues>(
         form.reset(defaultValues);
       },
     }),
-    [form, runValidatedSubmit, defaultValues]
+    [beforeFormValidate, form, runValidatedSubmit, defaultValues]
   );
 
   return (
     <Form {...form}>
       <form
-        onSubmit={handleFormSubmit}
+        onSubmit={runSubmitPipeline}
         className={cn("flex flex-col h-full", className)}
       >
         <div className="flex-1 overflow-y-auto p-6 space-y-5">

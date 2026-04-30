@@ -6,7 +6,9 @@
  *   - <PatientDetailPanel> component (client-side React Hook Form)
  *   - Server actions: createPatient, updatePatient, reactivation flag (`isActive: true` on update) (`lib/actions/patients.ts`)
  *
- * `age` is UI-only (not persisted). Server resolves `dateOfBirth` from `age` when DOB is empty.
+ * `age` is UI-only (not persisted). The client debounces age → approximate DOB (Jan 1)
+ * and flushes on submit when the age field is dirty; the server still resolves empty DOB + age via
+ * `resolveSaveDateOfBirth` in `lib/actions/patients.ts`.
  *
  * Rule: Never define validation inline in a component. Always import from here.
  * Rule: Never include clinicId, createdBy, createdAt, updatedAt, or id in create schemas.
